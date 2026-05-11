@@ -4,28 +4,32 @@ function runCmd($cmd) {
     return shell_exec($cmd . " 2>&1");
 }
 
-// ACCIONES
+$output = "";
+
 if (isset($_GET['action'])) {
 
-    if ($_GET['action'] == "start") {
-        runCmd("docker start openwebrx");
+    $action = $_GET['action'];
+    $output .= "Ejecutando: $action\n\n";
+
+    if ($action == "start") {
+        $output .= runCmd("docker start openwebrx");
     }
 
-    if ($_GET['action'] == "stop") {
-        runCmd("docker stop openwebrx");
+    if ($action == "stop") {
+        $output .= runCmd("docker stop openwebrx");
     }
 
-    if ($_GET['action'] == "restart") {
-        runCmd("docker restart openwebrx");
+    if ($action == "restart") {
+        $output .= runCmd("docker restart openwebrx");
     }
+
+    $output .= "\n--- FIN ---\n";
 }
 
-// ESTADO
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -36,58 +40,111 @@ $isRunning = ($status != "");
 
 <style>
 body {
-    background:#1a1a1a;
-    color:white;
+    background:#121212;
+    color:#fff;
 }
 
-.card {
-    background:#2c2c2c;
-    border:none;
+.panel {
+    background:#1e1e1e;
+    padding:15px;
+    border-radius:12px;
 }
 
-.status-running { color: lime; font-weight:bold; }
-.status-stopped { color: red; font-weight:bold; }
+.topbar {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.btn {
+    border-radius:8px;
+}
+
+.terminal {
+    background:#000;
+    color:#00ff66;
+    padding:15px;
+    height:320px;
+    overflow-y:auto;
+    font-family: monospace;
+    font-size: 13px;
+    border-radius:12px;
+    white-space: pre-wrap;
+}
+
+.status-ok { color: lime; font-weight:bold; }
+.status-bad { color: red; font-weight:bold; }
+
+.spacer {
+    flex-grow:1;
+}
 </style>
-
 </head>
 
 <body>
 
 <div class="container py-4">
 
-    <!-- HEADER -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-3">📡 OpenWebRX Control Panel</h3>
 
-        <h2>📡 OpenWebRX Control</h2>
+    <!-- PANEL SUPERIOR -->
+    <div class="panel mb-3">
 
-        <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-            🔙 Panel PHPPlus
-        </a>
+        <div class="topbar">
+
+            <span>
+                Estado:
+                <?php if ($isRunning): ?>
+                    <span class="status-ok">🟢 RUNNING</span>
+                <?php else: ?>
+                    <span class="status-bad">🔴 STOPPED</span>
+                <?php endif; ?>
+            </span>
+
+            <div class="ms-3"></div>
+
+            <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
+            <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
+            <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
+
+            <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
+                🌐 OPEN WEB
+            </a>
+
+            <div class="spacer"></div>
+
+            <a href="mmdvm.php" class="btn btn-secondary btn-sm">
+                🔙 PANEL PHPPLUS
+            </a>
+
+        </div>
 
     </div>
 
-    <!-- STATUS -->
-    <div class="card p-3 mb-3">
-        <h5>Estado del servicio:</h5>
+    <!-- TERMINAL -->
+    <div class="panel">
+        <h5>📟 Consola Docker</h5>
 
-        <?php if ($isRunning): ?>
-            <span class="status-running">RUNNING</span>
-        <?php else: ?>
-            <span class="status-stopped">STOPPED</span>
-        <?php endif; ?>
+        <div class="terminal">
+<?php
 
-    </div>
+if ($output == "") {
 
-    <!-- BOTONES -->
-    <div class="card p-3">
+    echo "Sin acción ejecutada...\n\n";
 
-        <a href="?action=start" class="btn btn-success m-1">▶ START</a>
-        <a href="?action=stop" class="btn btn-danger m-1">⏹ STOP</a>
-        <a href="?action=restart" class="btn btn-warning m-1">🔄 RESTART</a>
+    echo "Docker containers:\n";
+    echo runCmd("docker ps -a --filter name=openwebrx");
 
-        <a href="http://localhost:8073" target="_blank" class="btn btn-info m-1">
-            🌐 Abrir OpenWebRX
-        </a>
+    echo "\n\nÚltimos logs:\n";
+    echo runCmd("docker logs --tail 20 openwebrx 2>&1");
+
+} else {
+    echo $output;
+}
+
+?>
+        </div>
 
     </div>
 
