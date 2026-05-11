@@ -208,15 +208,52 @@ if (isset($_GET['action'])) {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
         .pulse { animation: pulse 2s infinite; }
         @media (max-width:600px) { th,td { padding:10px; font-size:0.9rem; } .btn { padding:8px 12px; } }
-    </style>
+</style>
 </head>
 <body>
     <div class="wrap">
-        <div class="header">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L12 22M12 2L5 9L9 13L5 17L12 22M12 2L19 9L15 13L19 17L12 22" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h1>Gestión de dispositivos Bluetooth</h1>
+
+        <div class="header" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+
+           <!-- ICONO BLUETOOTH CON FONDO BLANCO -->
+<div style="
+    width:48px;
+    height:48px;
+    background:#0f2a3a;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.3);
+">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+         xmlns="http://www.w3.org/2000/svg">
+        <path d="M7 7L17 17L12 22V2L17 7L7 17"
+              stroke="#00d4ff"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+    </svg>
+</div>
+
+            <!-- TITULO -->
+            <h1 style="margin:0; font-size:1.4rem;">
+                Gestión de dispositivos Bluetooth
+            </h1>
+
+            <!-- BOTON A LA DERECHA -->
+            <a href="mmdvm.php"
+               style="margin-left:auto;
+                      background:#2ecc71;
+                      color:#000;
+                      padding:8px 14px;
+                      border-radius:8px;
+                      text-decoration:none;
+                      font-weight:600;
+                      white-space:nowrap;">
+                🏠 Panel PHPPLUS
+            </a>
+
         </div>
         
         <div class="card">
@@ -427,4 +464,5 @@ if (isset($_GET['action'])) {
     </script>
 </body>
 </html>
+
 
