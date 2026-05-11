@@ -157,8 +157,8 @@ body {
             <div class="spacer"></div>
 
             <!-- 🏠 PHPPLUS -->
-            <a href="mmdvm.php" class="btn btn-outline-light btn-sm" title="PHPPLUS Home">
-                <i class="bi bi-house-fill"></i>
+            <a href="mmdvm.php" class="btn btn-outline-light btn-sm" title="Panel PHPPLUS">
+            <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
             </a>
 
         </div>
