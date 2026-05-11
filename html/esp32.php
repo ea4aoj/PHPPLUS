@@ -79,25 +79,34 @@ button{ background:var(--primary); color:white; } button:hover{ opacity:.9; } bu
 
 
 
-    <div style="margin-bottom: 16px; display:flex; justify-content:center;">
-    <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-    <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
-</a>
+    <div style="margin-bottom: 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
 
-        <button id="connectBtn">🔌 Conectar</button>
-        <button id="disconnectBtn" class="danger hidden">❌ Desconectar</button>
-        <button id="eraseBtn" class="warning">🗑️ Borrar Flash</button>
-        <button id="flashBtn" class="success" disabled>🚀 Programar</button>
+    <button id="connectBtn">🔌 Conectar</button>
+    <button id="disconnectBtn" class="danger hidden">❌ Desconectar</button>
+    <button id="eraseBtn" class="warning">🗑️ Borrar Flash</button>
+    <button id="flashBtn" class="success" disabled>🚀 Programar</button>
 
-        <select id="baudRate">
-            <option value="115200">115200</option>
-            <option value="460800" selected>460800 ⚡</option>
-            <option value="921600">921600 🚀</option>
-        </select>
+    <select id="baudRate">
+        <option value="115200">115200</option>
+        <option value="460800" selected>460800 ⚡</option>
+        <option value="921600">921600 🚀</option>
+    </select>
 
-        <a href="https://raw.githubusercontent.com/manel1954/PHPPLUS/main/esp32/firmware.zip" style="text-decoration: none; margin-left: auto;">
-            <button type="button" style="background-color: #673AB7;">📥 Descarga firmware</button>
-        </a>
+    <a href="https://raw.githubusercontent.com/manel1954/PHPPLUS/main/esp32/firmware.zip"
+       style="text-decoration:none;">
+        <button type="button" style="background-color:#673AB7;">
+            📥 Descarga firmware
+        </button>
+    </a>
+
+    <a href="mmdvm.php"
+       style="margin-left:auto; text-decoration:none;">
+        <button type="button">
+            <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+        </button>
+    </a>
+
+</div>
     </div>
     <div id="progressContainer" class="progress-wrapper hidden">
         <div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
