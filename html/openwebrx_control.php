@@ -25,15 +25,13 @@ if (isset($_GET['action'])) {
 
     if ($action == "enable") {
         $output .= runCmd("sudo systemctl enable openwebrx");
-        $output .= "\nAutostart ACTIVADO\n";
     }
 
     if ($action == "disable") {
         $output .= runCmd("sudo systemctl disable openwebrx");
-        $output .= "\nAutostart DESACTIVADO\n";
     }
 
-    $output .= "\n--- FIN ---\n";
+    $output .= "\n--- FIN ACCIÓN ---\n\n";
 }
 
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
@@ -54,14 +52,15 @@ $isEnabled = ($autostart == "enabled");
 
 <style>
 body {
-    background:#121212;
+    background:#0f1115;
     color:#fff;
 }
 
 .panel {
-    background:#1e1e1e;
+    background:#1b1f2a;
     padding:15px;
     border-radius:12px;
+    margin-bottom:15px;
 }
 
 .topbar {
@@ -73,18 +72,20 @@ body {
 
 .btn {
     border-radius:8px;
+    font-size: 0.85rem;
 }
 
 .terminal {
     background:#000;
     color:#00ff66;
     padding:15px;
-    height:600px;
+    height:70vh;
     overflow-y:auto;
     font-family: monospace;
     font-size: 13px;
     border-radius:12px;
     white-space: pre-wrap;
+    border:1px solid #333;
 }
 
 .status-ok { color: lime; font-weight:bold; }
@@ -93,6 +94,11 @@ body {
 .spacer {
     flex-grow:1;
 }
+
+.title {
+    font-weight: bold;
+    font-size: 18px;
+}
 </style>
 </head>
 
@@ -100,12 +106,12 @@ body {
 
 <div class="container py-4">
 
-    <h3 class="mb-3">📡 OpenWebRX Control Panel</h3>
-
-    <!-- PANEL SUPERIOR -->
-    <div class="panel mb-3">
-
+    <div class="panel">
         <div class="topbar">
+
+            <div class="title">📡 OpenWebRX Control Panel</div>
+
+            <div class="ms-3"></div>
 
             <span>
                 Docker:
@@ -117,64 +123,55 @@ body {
             </span>
 
             <span>
-                Systemd:
+                Autostart:
                 <?php if ($isEnabled): ?>
-                    <span class="status-ok">🟢 AUTOSTART ON</span>
+                    <span class="status-ok">🟢 ENABLED</span>
                 <?php else: ?>
-                    <span class="status-bad">🔴 AUTOSTART OFF</span>
+                    <span class="status-bad">🔴 DISABLED</span>
                 <?php endif; ?>
             </span>
 
-            <div class="ms-3"></div>
+            <div class="spacer"></div>
 
             <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
 
-            <a href="?action=enable" class="btn btn-primary btn-sm">⚡ ENABLE AUTOSTART</a>
-            <a href="?action=disable" class="btn btn-secondary btn-sm">🛑 DISABLE AUTOSTART</a>
+            <a href="?action=enable" class="btn btn-primary btn-sm">⚡ ENABLE</a>
+            <a href="?action=disable" class="btn btn-secondary btn-sm">🛑 DISABLE</a>
 
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
-
-            <div class="spacer"></div>
 
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 🔙 PHPPLUS
             </a>
 
         </div>
-
     </div>
 
-    <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 Consola Docker / System</h5>
+        <h5>📟 Consola / Logs OpenWebRX</h5>
 
         <div class="terminal">
+
 <?php
 
-if ($output == "") {
+echo "===== ESTADO DOCKER =====\n";
+echo runCmd("docker ps -a --filter name=openwebrx");
 
-    echo "Sin acción ejecutada...\n\n";
+echo "\n===== LOGS (últimos 80 líneas) =====\n";
+echo runCmd("docker logs --tail 80 openwebrx 2>&1");
 
-    echo "Docker status:\n";
-    echo runCmd("docker ps -a --filter name=openwebrx");
-
-    echo "\nSystemd status:\n";
-    echo runCmd("systemctl status openwebrx --no-pager");
-
-    echo "\nÚltimos logs:\n";
-    echo runCmd("docker logs --tail 20 openwebrx 2>&1");
-
-} else {
+if ($output != "") {
+    echo "\n===== ACCIONES EJECUTADAS =====\n";
     echo $output;
 }
 
 ?>
-        </div>
 
+        </div>
     </div>
 
 </div>
