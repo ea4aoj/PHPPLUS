@@ -11,21 +11,22 @@ if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
 
-    // 🔥 LIMPIEZA SIEMPRE AL INICIO DE ACCIÓN
-    $output = "🧹 Limpiando terminal...\n\n";
+    $output .= "==================================================\n";
+    $output .= "🧹 ACCIÓN: $action\n";
+    $output .= "==================================================\n\n";
 
     if ($action == "start") {
-        $output .= "▶ STARTING OpenWebRX...\n\n";
+        $output .= "▶ STARTING OpenWebRX...\n";
         $output .= runCmd("docker start openwebrx");
     }
 
     if ($action == "stop") {
-        $output .= "⏹ STOPPING OpenWebRX...\n\n";
+        $output .= "⏹ STOPPING OpenWebRX...\n";
         $output .= runCmd("docker stop openwebrx");
     }
 
     if ($action == "restart") {
-        $output .= "🔄 RESTARTING OpenWebRX...\n\n";
+        $output .= "🔄 RESTARTING OpenWebRX...\n";
         $output .= runCmd("docker restart openwebrx");
     }
 
@@ -44,7 +45,9 @@ if (isset($_GET['action'])) {
         }
     }
 
-    $output .= "\n--- FIN ACCIÓN ---\n\n";
+    $output .= "\n==================================================\n";
+    $output .= "✔ ACCIÓN TERMINADA\n";
+    $output .= "==================================================\n\n";
 }
 
 /* STATUS */
@@ -78,7 +81,7 @@ body {
     margin-bottom:15px;
 }
 
-/* 🔥 FIX IMPORTANTE: barra en una sola línea */
+/* TOP BAR */
 .topbar {
     display:flex;
     align-items:center;
@@ -93,7 +96,7 @@ body {
     white-space:nowrap;
 }
 
-/* 🔧 BOTONES MÁS PEQUEÑOS SIN CSS EXTRA */
+/* BOTONES PEQUEÑOS */
 .btn {
     border-radius:8px;
     font-size:0.75rem;
@@ -162,7 +165,7 @@ body {
 
             <div class="spacer"></div>
 
-            <!-- 🏠 PANEL PHPPLUS -->
+            <!-- HOME PHPPLUS -->
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-house-fill me-1"></i> PANEL PHPPLUS
             </a>
@@ -172,27 +175,31 @@ body {
 
     <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 OpenWebRX Console</h5>
+        <h5>📟 OpenWebRX Console (LIVE STATUS)</h5>
 
         <div class="terminal">
 <?php
 
+/* ===== BLOQUE 1: ACCIÓN ===== */
 if ($output != "") {
     echo $output;
-} else {
-
-    echo "===== DOCKER STATUS =====\n";
-    echo runCmd("docker ps -a --filter name=openwebrx");
-
-    echo "\n===== DOCKER INSPECT =====\n";
-    echo runCmd("docker inspect openwebrx --format '{{.State.Status}} | {{.State.Health.Status}}' 2>/dev/null");
-
-    echo "\n===== LIVE LOGS =====\n";
-    echo runCmd("docker logs --tail 200 openwebrx 2>&1");
-
-    echo "\n===== SYSTEM STATUS =====\n";
-    echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
 }
+
+/* ===== BLOQUE 2: ESTADO REAL SIEMPRE ===== */
+echo "\n================ DOCKER STATUS ================\n";
+echo runCmd("docker ps -a --filter name=openwebrx");
+
+/* ===== BLOQUE 3: INSPECT ===== */
+echo "\n================ CONTAINER INFO ================\n";
+echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null");
+
+/* ===== BLOQUE 4: LOGS REALES ===== */
+echo "\n================ LIVE LOGS (LAST 200) ================\n";
+echo runCmd("docker logs --tail 200 openwebrx 2>&1");
+
+/* ===== BLOQUE 5: SISTEMA ===== */
+echo "\n================ SYSTEM STATUS ================\n";
+echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
 
 ?>
         </div>
