@@ -18,6 +18,6 @@ frplus=$(sed -n '13p'  $usuario/MMDVMHost/MMDVMHost.ini)
 wget --post-data="callBM=$bm&callPLUS=$plus&masterBM=$masterbm&masterPLUS=$masterplus&radio=$masterradio&version=$version&ESPECIAL=$masterespecial&YSFGateway=$masterYSFGateway" \
 http://associacioader.com/prueba1.php
 
-sudo rm -R /home/pi/associacioader.com
-sudo rm -R /home/pi/A108/associacioader.com
-sudo rm /home/pi/Desktop/st-data
+#sudo rm -R /home/pi/associacioader.com
+#sudo rm -R /home/pi/A108/associacioader.com
+#sudo rm /home/pi/Desktop/st-data
