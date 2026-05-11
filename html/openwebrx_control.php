@@ -78,21 +78,27 @@ body {
     margin-bottom:15px;
 }
 
+/* 🔥 FIX IMPORTANTE: barra en una sola línea */
 .topbar {
     display:flex;
     align-items:center;
-    gap:10px;
-    flex-wrap:wrap;
+    gap:8px;
+    flex-wrap: nowrap;
+    overflow-x:auto;
 }
 
 .title {
     font-weight:bold;
     font-size:18px;
+    white-space:nowrap;
 }
 
+/* 🔧 BOTONES MÁS PEQUEÑOS SIN CSS EXTRA */
 .btn {
     border-radius:8px;
-    font-size:0.85rem;
+    font-size:0.75rem;
+    padding:4px 8px;
+    white-space:nowrap;
 }
 
 .terminal {
@@ -143,22 +149,22 @@ body {
                 <?php endif; ?>
             </span>
 
-            <div class="ms-3"></div>
+            <div class="ms-2"></div>
 
             <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
-            <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTOSTART</a>
+            <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTO</a>
 
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
-                🌐 OPEN WEB
+                🌐 WEB
             </a>
 
             <div class="spacer"></div>
 
-            <!-- 🏠 PHPPLUS -->
+            <!-- 🏠 PHPPLUS FIX -->
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm" title="Panel PHPPLUS">
-            <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+                <i class="bi bi-house-fill me-1"></i> PHPPLUS
             </a>
 
         </div>
