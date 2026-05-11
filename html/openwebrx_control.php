@@ -52,17 +52,19 @@ $isEnabled = ($autostart == "enabled");
 
 <style>
 body {
-    background:#0f1115;
+    background:#0e1117;
     color:#fff;
 }
 
+/* PANEL */
 .panel {
-    background:#1b1f2a;
+    background:#161b22;
     padding:15px;
     border-radius:12px;
     margin-bottom:15px;
 }
 
+/* TOP BAR */
 .topbar {
     display:flex;
     align-items:center;
@@ -70,34 +72,38 @@ body {
     flex-wrap:wrap;
 }
 
-.btn {
-    border-radius:8px;
-    font-size: 0.85rem;
+.title {
+    font-weight:bold;
+    font-size:18px;
 }
 
+/* BOTONES */
+.btn {
+    border-radius:8px;
+    font-size:0.85rem;
+}
+
+/* TERMINAL */
 .terminal {
     background:#000;
     color:#00ff66;
     padding:15px;
-    height:70vh;
+    height:75vh;
     overflow-y:auto;
     font-family: monospace;
     font-size: 13px;
     border-radius:12px;
     white-space: pre-wrap;
     border:1px solid #333;
+    box-shadow: inset 0 0 10px rgba(0,255,100,0.1);
 }
 
+/* ESTADOS */
 .status-ok { color: lime; font-weight:bold; }
 .status-bad { color: red; font-weight:bold; }
 
 .spacer {
     flex-grow:1;
-}
-
-.title {
-    font-weight: bold;
-    font-size: 18px;
 }
 </style>
 </head>
@@ -106,12 +112,11 @@ body {
 
 <div class="container py-4">
 
+    <!-- HEADER -->
     <div class="panel">
         <div class="topbar">
 
             <div class="title">📡 OpenWebRX Control Panel</div>
-
-            <div class="ms-3"></div>
 
             <span>
                 Docker:
@@ -151,30 +156,42 @@ body {
         </div>
     </div>
 
+    <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 Consola / Logs OpenWebRX</h5>
+        <h5>📟 Logs OpenWebRX (auto-scroll)</h5>
 
-        <div class="terminal">
-
+        <div id="terminal" class="terminal">
 <?php
 
 echo "===== ESTADO DOCKER =====\n";
 echo runCmd("docker ps -a --filter name=openwebrx");
 
-echo "\n===== LOGS (últimos 80 líneas) =====\n";
-echo runCmd("docker logs --tail 80 openwebrx 2>&1");
+echo "\n===== LOGS OPENWEBRX =====\n";
+echo runCmd("docker logs --tail 120 openwebrx 2>&1");
 
 if ($output != "") {
-    echo "\n===== ACCIONES EJECUTADAS =====\n";
+    echo "\n===== ACCIONES =====\n";
     echo $output;
 }
 
 ?>
-
         </div>
     </div>
 
 </div>
+
+<!-- AUTO SCROLL SCRIPT -->
+<script>
+const terminal = document.getElementById("terminal");
+
+// baja automáticamente al cargar
+terminal.scrollTop = terminal.scrollHeight;
+
+// si el contenido cambia, sigue bajando
+setInterval(() => {
+    terminal.scrollTop = terminal.scrollHeight;
+}, 1000);
+</script>
 
 </body>
 </html>
