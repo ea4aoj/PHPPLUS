@@ -156,47 +156,50 @@ setInterval(() => {
 <div class="box">
 <h2>⚙️ Control Radio Sonde auto_rx</h2>
 
-<form method="post">
+<form method="post" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
 
-<button class="start" name="action" value="start">▶️ Arrancar</button>
-<button class="stop" name="action" value="stop">⏹️ Parar</button>
-<button class="restart" name="action" value="restart">🔄 Reiniciar</button>
+    <a href="<?php echo (isset($_SERVER['HTTPS']) ? 'https' : 'http'); ?>://<?php echo $_SERVER['HTTP_HOST']; ?>:5000"
+       target="_blank"
+       style="text-decoration:none;">
+        <button type="button" style="background:#0ea5e9;">
+            📡 Radiosonde
+        </button>
+    </a>
 
-<!-- 🔥 NUEVOS BOTONES -->
-<button name="action" value="enable" style="background:#2563eb;">
-⚡ Autoarranque ON
-</button>
+    <button class="start" name="action" value="start">▶️ Arrancar</button>
+    <button class="stop" name="action" value="stop">⏹️ Parar</button>
+    <button class="restart" name="action" value="restart">🔄 Reiniciar</button>
 
-<button name="action" value="disable" style="background:#7c3aed;">
-❌ Autoarranque OFF
-</button>
-
-<!-- 📟 TERMINAL -->
-<button type="submit" name="view" value="<?php echo ($view=='terminal') ? 'none' : 'terminal'; ?>">
-📟 <?php echo ($view=='terminal') ? "Ocultar estado" : "Ver estado"; ?>
-</button>
-
-<!-- 📝 EDITOR -->
-<button type="submit" name="view" value="<?php echo ($view=='editor') ? 'none' : 'editor'; ?>">
-📝 <?php echo ($view=='editor') ? "Cerrar config" : "Editar config"; ?>
-</button>
-
-
-<a href="mmdvm.php">
-    <button type="button">
-        <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+    <!-- AUTOARRANQUE -->
+    <button name="action" value="enable" style="background:#2563eb;">
+        ⚡ Autoarranque ON
     </button>
-</a>
 
+    <button name="action" value="disable" style="background:#7c3aed;">
+        ❌ Autoarranque OFF
+    </button>
+
+    <!-- TERMINAL -->
+    <button type="submit" name="view" value="<?php echo ($view=='terminal') ? 'none' : 'terminal'; ?>">
+        📟 <?php echo ($view=='terminal') ? "Ocultar estado" : "Ver estado"; ?>
+    </button>
+
+    <!-- EDITOR -->
+    <button type="submit" name="view" value="<?php echo ($view=='editor') ? 'none' : 'editor'; ?>">
+        📝 <?php echo ($view=='editor') ? "Cerrar config" : "Editar config"; ?>
+    </button>
+
+    <!-- PANEL PHPPLUS -->
+    <a href="mmdvm.php" style="text-decoration:none;">
+        <button type="button">
+            <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+        </button>
+    </a>
 
 </form>
 
 <br>
 
-<!-- 📡 RADIOSONDE -->
-<a href="<?php echo (isset($_SERVER['HTTPS']) ? 'https' : 'http'); ?>://<?php echo $_SERVER['HTTP_HOST']; ?>:5000" target="_blank">
-<button type="button">📡 Radiosonde</button>
-</a>
 
 <p>
 Estado:
@@ -238,4 +241,3 @@ Estado:
 
 </body>
 </html>
-
