@@ -156,7 +156,7 @@ body {
             <div class="spacer"></div>
 
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-                🔙 PHPPLUS
+                🔙 PANEL PHPPLUS
             </a>
 
         </div>
