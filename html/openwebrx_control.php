@@ -159,7 +159,7 @@ body {
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
             <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTO</a>
 
-            <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
+                <a href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 WEB
             </a>
 
