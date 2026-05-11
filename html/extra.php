@@ -236,7 +236,7 @@
                 <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
             </h5>
             <p class="card-text text-white-50 small flex-grow-1">
-                Servidor Fusion 2X · Interfaz web en tiempo real
+                Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
             </p>
             <a href="http://rem-esp.spdns.org:8080" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
