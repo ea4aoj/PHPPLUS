@@ -148,9 +148,9 @@ body {
 
             <div class="spacer"></div>
 
-            <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-                🔙 PHPPLUS
-            </a>
+           <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
+    <i class="bi bi-house-fill me-1"></i> HOME PHPPLUS
+</a>
 
         </div>
     </div>
