@@ -196,8 +196,6 @@ setInterval(() => {
     </button>
 </a>
 
-
-
 </form>
 
 <br>
