@@ -228,6 +228,23 @@
             </div>
         </div>
 
+<!-- FUSION 2X -->
+<div class="col-12 col-sm-6 col-lg-3">
+    <div class="card bg-secondary border-0 h-100">
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title">
+                <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
+            </h5>
+            <p class="card-text text-white-50 small flex-grow-1">
+                Servidor Fusion 2X · Interfaz web en tiempo real
+            </p>
+            <a href="http://127.0.0.1:8080" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+            </a>
+        </div>
+    </div>
+</div>
+        
 <!-- MIS ENLACES PREFERIDOS -->
 <div class="col-12 col-sm-6 col-lg-3">
     <div class="card bg-secondary border-0 h-100">
