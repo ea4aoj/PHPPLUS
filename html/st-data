@@ -1,15 +1,0 @@
---2026-04-18 15:53:34--  https://associacioader.com/prueba1.php?callBM=&plus=Address=80.211.226.37%0D&bm=&callPLUS=Address=80.211.226.37%0D&frbm=RXFrequency=432200000%0D&version=PHPP-17-04-26&dstar=Reflector=XRF266
-Resolviendo associacioader.com (associacioader.com)... 31.214.178.77
-Conectando con associacioader.com (associacioader.com)[31.214.178.77]:443... conectado.
-Petición HTTP enviada, esperando respuesta... 200 OK
-Longitud: no especificado [text/html]
-Grabando a: «associacioader.com/prueba1.php?callBM=&plus=Address=80.211.226.37%0D&bm=&callPLUS=Address=80.211.226.37%0D&frbm=RXFrequency=432200000%0D&version=PHPP-17-04-26&dstar=Reflector=XRF266»
-
-     0K                                                         377K=0s
-
-2026-04-18 15:53:34 (377 KB/s) - «associacioader.com/prueba1.php?callBM=&plus=Address=80.211.226.37%0D&bm=&callPLUS=Address=80.211.226.37%0D&frbm=RXFrequency=432200000%0D&version=PHPP-17-04-26&dstar=Reflector=XRF266» guardado [3]
-
-http://B&fusion=Startup=ES-ADER&frplus=TXFrequency=432200000&YSFGateway=Startup=ES-ADER&callBM=: Nombre de equipo inválido.
-ACABADO --2026-04-18 15:53:34--
-Tiempo total de reloj: 0,3s
-Descargados: 1 ficheros, 3 en 0s (377 KB/s)
