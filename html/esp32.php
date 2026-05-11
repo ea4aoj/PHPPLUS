@@ -69,9 +69,15 @@ button{ background:var(--primary); color:white; } button:hover{ opacity:.9; } bu
             <option value="921600">921600 🚀</option>
         </select>
 
-        <a href="https://raw.githubusercontent.com/manel1954/PHPPLUS/main/esp32/firmware.zip" style="text-decoration: none; margin-left: auto;">
-            <button type="button" style="background-color: #673AB7;">📥 Descarga firmware</button>
-        </a>
+        <a href="https://raw.githubusercontent.com/ea4aoj/PHPPLUS/main/esp32/firmware.zip" style="text-decoration: none;">
+    <button type="button" style="background-color: #673AB7;">📥 Descarga firmware</button>
+</a>
+
+<a href="mmdvm.php" style="text-decoration:none; margin-left:auto;">
+    <button type="button">
+        🏠 Panel PHPPLUS
+    </button>
+</a>
     </div>
     <div id="progressContainer" class="progress-wrapper hidden">
         <div class="progress-bar"><div id="progressFill" class="progress-fill">0%</div></div>
