@@ -258,7 +258,7 @@
                 Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
             </p>
 
-            <a href="http://rem-esp.spdns.org:8073" target="_blank"
+            <a href="/openwebrx_control.php" target="_blank"
                class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
