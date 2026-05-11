@@ -23,13 +23,27 @@ if (isset($_GET['action'])) {
         $output .= runCmd("docker restart openwebrx");
     }
 
+    if ($action == "enable") {
+        $output .= runCmd("sudo systemctl enable openwebrx");
+        $output .= "\nAutostart ACTIVADO\n";
+    }
+
+    if ($action == "disable") {
+        $output .= runCmd("sudo systemctl disable openwebrx");
+        $output .= "\nAutostart DESACTIVADO\n";
+    }
+
     $output .= "\n--- FIN ---\n";
 }
 
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
+$autostart = trim(runCmd("systemctl is-enabled openwebrx 2>/dev/null"));
+$isEnabled = ($autostart == "enabled");
+
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -94,11 +108,20 @@ body {
         <div class="topbar">
 
             <span>
-                Estado:
+                Docker:
                 <?php if ($isRunning): ?>
                     <span class="status-ok">🟢 RUNNING</span>
                 <?php else: ?>
                     <span class="status-bad">🔴 STOPPED</span>
+                <?php endif; ?>
+            </span>
+
+            <span>
+                Systemd:
+                <?php if ($isEnabled): ?>
+                    <span class="status-ok">🟢 AUTOSTART ON</span>
+                <?php else: ?>
+                    <span class="status-bad">🔴 AUTOSTART OFF</span>
                 <?php endif; ?>
             </span>
 
@@ -108,14 +131,17 @@ body {
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
 
+            <a href="?action=enable" class="btn btn-primary btn-sm">⚡ ENABLE AUTOSTART</a>
+            <a href="?action=disable" class="btn btn-secondary btn-sm">🛑 DISABLE AUTOSTART</a>
+
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
 
             <div class="spacer"></div>
 
-            <a href="mmdvm.php" class="btn btn-secondary btn-sm">
-                🔙 PANEL PHPPLUS
+            <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
+                🔙 PHPPLUS
             </a>
 
         </div>
@@ -124,7 +150,7 @@ body {
 
     <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 Consola Docker</h5>
+        <h5>📟 Consola Docker / System</h5>
 
         <div class="terminal">
 <?php
@@ -133,10 +159,13 @@ if ($output == "") {
 
     echo "Sin acción ejecutada...\n\n";
 
-    echo "Docker containers:\n";
+    echo "Docker status:\n";
     echo runCmd("docker ps -a --filter name=openwebrx");
 
-    echo "\n\nÚltimos logs:\n";
+    echo "\nSystemd status:\n";
+    echo runCmd("systemctl status openwebrx --no-pager");
+
+    echo "\nÚltimos logs:\n";
     echo runCmd("docker logs --tail 20 openwebrx 2>&1");
 
 } else {
