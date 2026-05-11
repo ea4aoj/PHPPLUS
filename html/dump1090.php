@@ -1,8 +1,40 @@
 <?php
 require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
+
+$CONFIG_FILE = '/home/pi/dump1090-fa/dump1090.args';
 $action = $_GET['action'] ?? '';
 
+// ── Leer configuración ───────────────────────────────────────────────────────
+if ($action === 'config-read') {
+    header('Content-Type: application/json');
+    if (!file_exists($CONFIG_FILE)) {
+        echo json_encode(['ok'=>false, 'error'=>'Archivo de configuración no encontrado']);
+        exit;
+    }
+    echo json_encode(['ok'=>true, 'content'=>htmlspecialchars(file_get_contents($CONFIG_FILE))]);
+    exit;
+}
+
+// ── Guardar configuración ────────────────────────────────────────────────────
+if ($action === 'config-save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+    $newContent = $_POST['content'] ?? '';
+    if (preg_match('/[;|&`$()<>]/', $newContent)) {
+        echo json_encode(['ok'=>false, 'error'=>'Caracteres no permitidos']);
+        exit;
+    }
+    if (!is_writable($CONFIG_FILE)) {
+        echo json_encode(['ok'=>false, 'error'=>'Sin permisos. Ejecuta: sudo chown www-www-data '.$CONFIG_FILE]);
+        exit;
+    }
+    echo json_encode(file_put_contents($CONFIG_FILE, $newContent) !== false
+        ? ['ok'=>true, 'msg'=>'✅ Configuración guardada. Reinicia el servicio.']
+        : ['ok'=>false, 'error'=>'Error al guardar']);
+    exit;
+}
+
+// ── Iniciar servicio ─────────────────────────────────────────────────────────
 if ($action === 'dump1090-start') {
     shell_exec('sudo systemctl start dump1090-fa 2>/dev/null');
     $st = 'activating';
@@ -13,30 +45,61 @@ if ($action === 'dump1090-start') {
     }
     header('Content-Type: application/json');
     echo json_encode($st === 'active'
-        ? ['ok'=>true,  'output'=>'dump1090-fa iniciado correctamente']
-        : ['ok'=>false, 'error'=>'El servicio no arrancó (estado final: '.$st.')']);
+        ? ['ok'=>true, 'output'=>'dump1090-fa iniciado correctamente']
+        : ['ok'=>false, 'error'=>'No arrancó (estado: '.$st.')']);
     exit;
 }
 
+// ── Parar servicio ───────────────────────────────────────────────────────────
 if ($action === 'dump1090-stop') {
     shell_exec('sudo systemctl stop dump1090-fa 2>/dev/null');
     sleep(1);
     $st = trim(shell_exec('systemctl is-active dump1090-fa 2>/dev/null'));
     header('Content-Type: application/json');
     echo json_encode($st !== 'active'
-        ? ['ok'=>true,  'msg'=>'dump1090-fa detenido correctamente']
+        ? ['ok'=>true, 'msg'=>'dump1090-fa detenido correctamente']
         : ['ok'=>false, 'msg'=>'No se pudo detener (estado: '.$st.')']);
     exit;
 }
 
+// ── Estado servicio + autoarranque ───────────────────────────────────────────
 if ($action === 'dump1090-status') {
     $st  = trim(shell_exec('systemctl is-active dump1090-fa 2>/dev/null'));
     $pid = trim(shell_exec('systemctl show dump1090-fa --property=MainPID --value 2>/dev/null'));
+    $en  = trim(shell_exec('systemctl is-enabled dump1090-fa 2>/dev/null'));
     header('Content-Type: application/json');
-    echo json_encode(['active' => $st === 'active', 'status' => $st, 'pid' => $pid]);
+    echo json_encode([
+        'active'  => $st === 'active',
+        'status'  => $st,
+        'pid'     => $pid,
+        'enabled' => ($en === 'enabled')
+    ]);
     exit;
 }
 
+// ── Enable autoarranque ──────────────────────────────────────────────────────
+if ($action === 'dump1090-enable') {
+    shell_exec('sudo systemctl enable dump1090-fa 2>/dev/null');
+    sleep(1);
+    header('Content-Type: application/json');
+    echo json_encode(trim(shell_exec('systemctl is-enabled dump1090-fa 2>/dev/null')) === 'enabled'
+        ? ['ok'=>true, 'msg'=>'✅ Autostart activado']
+        : ['ok'=>false, 'error'=>'No se pudo activar']);
+    exit;
+}
+
+// ── Disable autoarranque ─────────────────────────────────────────────────────
+if ($action === 'dump1090-disable') {
+    shell_exec('sudo systemctl disable dump1090-fa 2>/dev/null');
+    sleep(1);
+    header('Content-Type: application/json');
+    echo json_encode(trim(shell_exec('systemctl is-enabled dump1090-fa 2>/dev/null')) !== 'enabled'
+        ? ['ok'=>true, 'msg'=>'✅ Autostart desactivado']
+        : ['ok'=>false, 'error'=>'No se pudo desactivar']);
+    exit;
+}
+
+// ── Log ──────────────────────────────────────────────────────────────────────
 if ($action === 'dump1090-log') {
     header('Content-Type: text/plain');
     $log = shell_exec('sudo journalctl -u dump1090-fa -n 80 --no-pager --output=short 2>/dev/null');
@@ -44,41 +107,20 @@ if ($action === 'dump1090-log') {
     exit;
 }
 
-if ($action === 'aircraft-json') {
-    header('Content-Type: application/json');
-    $paths = [
-        '/run/dump1090-fa/aircraft.json',
-        '/run/dump1090/aircraft.json',
-    ];
-    foreach ($paths as $path) {
-        if (file_exists($path)) {
-            echo file_get_contents($path);
-            exit;
-        }
-    }
-    $json = @file_get_contents('http://127.0.0.1:8080/data/aircraft.json');
-    if ($json !== false) { echo $json; exit; }
-    echo json_encode(['aircraft'=>[], 'error'=>'No se encuentra aircraft.json en /run/dump1090-fa/']);
-    exit;
-}
-
+// ── Terminal ─────────────────────────────────────────────────────────────────
 if ($action === 'terminal') {
     $cmd = trim($_POST['cmd'] ?? '');
     if (preg_match('/^\s*(vim|vi|less|more|top|htop|su)\s*/i', $cmd)) {
         header('Content-Type: application/json');
-        echo json_encode(['output' => 'Comando interactivo no soportado.']);
-        exit;
+        echo json_encode(['output'=>'Comando interactivo no soportado.']); exit;
     }
-    if (preg_match('/(rm\s+-rf|shutdown|mkfs|dd\s+if=)/i', $cmd)) {
+    if (preg_match('/(rm\s+-rf|shutdown|mkfs|dd\s+if=|nano\s+|vi\s+|vim\s+)/i', $cmd)) {
         header('Content-Type: application/json');
-        echo json_encode(['output' => '❌ Comando bloqueado por seguridad']);
-        exit;
+        echo json_encode(['output'=>'❌ Comando bloqueado por seguridad']); exit;
     }
-    $out = $cmd !== ''
-        ? (shell_exec('/usr/bin/sudo -n -u pi -H bash -c ' . escapeshellarg($cmd) . ' 2>&1') ?? '')
-        : '';
+    $out = $cmd !== '' ? (shell_exec('/usr/bin/sudo -n -u pi -H bash -c '.escapeshellarg($cmd).' 2>&1') ?? '') : '';
     header('Content-Type: application/json');
-    echo json_encode(['output' => htmlspecialchars($out)]);
+    echo json_encode(['output'=>htmlspecialchars($out)]);
     exit;
 }
 ?>
@@ -87,13 +129,13 @@ if ($action === 'terminal') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>✈ dump1090-fa · ADS-B</title>
+<title>✈ dump1090-fa · Control</title>
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
 :root {
     --bg: #0a0e14; --surface: #111720; --border: #1e2d3d;
-    --green: #00ff9f; --red: #ff4560; --cyan: #00d4ff;
-    --amber: #ffb300; --text: #a8b9cc; --text-dim: #4a5568;
+    --green: #00ff9f; --red: #ff4560; --cyan: #00d4ff; --amber: #ffb300;
+    --text: #a8b9cc; --text-dim: #4a5568;
     --font-mono: 'Share Tech Mono', monospace;
     --font-ui: 'Rajdhani', sans-serif;
     --font-orb: 'Orbitron', monospace;
@@ -111,40 +153,45 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-ui); h
 .btn-cyan:hover:not(:disabled)  { background: rgba(0,212,255,.1); }
 .btn-green:hover:not(:disabled) { background: rgba(0,255,159,.1); }
 .btn-red:hover:not(:disabled)   { background: rgba(255,69,96,.15); }
+.btn-amber:hover:not(:disabled) { background: rgba(255,179,0,.15); }
 .btn-cyan  { color: var(--cyan);  border-color: var(--cyan);  }
 .btn-green { color: var(--green); border-color: var(--green); }
 .btn-red   { color: var(--red);   border-color: var(--red);   }
+.btn-amber { color: var(--amber); border-color: var(--amber); }
 .btn-dim   { color: var(--text-dim); border-color: #1e2d3d; }
 .btn-active { background: rgba(0,212,255,.15) !important; border-color: var(--cyan) !important; color: var(--cyan) !important; }
 
-/* Toggle switch */
 .sw { position: relative; width: 56px; height: 28px; flex-shrink: 0; cursor: pointer; }
 .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
-.sw-track { position: absolute; inset: 0; border-radius: 2px; background: #1a2535; border: 2px solid #f00; transition: background .3s, border-color .3s; }
-.sw-knob  { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #f00; transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; }
-.sw input:checked ~ .sw-track { border-color: #00ff4c; }
-.sw input:checked ~ .sw-knob  { transform: translateX(28px); background: #00ff4c; box-shadow: 0 0 8px rgba(0,255,159,.6); }
+.sw-track { position: absolute; inset: 0; border-radius: 2px; background: #1a2535; border: 2px solid var(--red); transition: background .3s, border-color .3s; }
+.sw-knob  { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: var(--red); transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; }
+.sw input:checked ~ .sw-track { border-color: var(--green); }
+.sw input:checked ~ .sw-knob  { transform: translateX(28px); background: var(--green); box-shadow: 0 0 8px rgba(0,255,159,.6); }
 .sw-busy-dot { display: none; position: absolute; top: 50%; right: -20px; transform: translateY(-50%); width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--amber); border-top-color: transparent; animation: spin .7s linear infinite; }
 .sw.busy .sw-busy-dot { display: block; }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-/* Status bar */
+.auto-bar { display: flex; align-items: center; gap: .8rem; padding: .5rem 1.4rem; background: rgba(0,0,0,.2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.auto-label { font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+.auto-status { font-family: var(--font-mono); font-size: .7rem; letter-spacing: .05em; min-width: 70px; transition: color .3s; text-align: right; }
+.auto-status.on  { color: var(--green); }
+.auto-status.off { color: var(--red); }
+
 .ex-status { display: flex; align-items: center; gap: 1.2rem; padding: .45rem 1.4rem; background: rgba(0,0,0,.3); border-bottom: 1px solid var(--border); flex-shrink: 0; font-family: var(--font-mono); font-size: .72rem; flex-wrap: wrap; }
 .dot-status { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); display: inline-block; margin-right: .4rem; transition: background .4s, box-shadow .4s; }
 .dot-status.on  { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
 .dot-status.err { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+.dot-status.activating { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: pulse-amber 1s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+@keyframes pulse-amber { 0%,100%{opacity:1;box-shadow:0 0 6px var(--amber)} 50%{opacity:.6;box-shadow:0 0 2px var(--amber)} }
 .sep { color: var(--border); }
 
-/* Tabs */
 .ex-tabs { display: flex; gap: .4rem; padding: .6rem 1.4rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
 
-/* Content */
 .ex-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .tab-pane { flex: 1; display: none; flex-direction: column; overflow: hidden; }
 .tab-pane.active { display: flex; }
 
-/* Terminal */
 .xterm-out { font-family: var(--font-mono); font-size: .75rem; color: #7a9ab5; background: #060c10; padding: 1rem 1.4rem; flex: 1; overflow-y: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.55; }
 .xterm-out::-webkit-scrollbar { width: 4px; }
 .xterm-out::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -156,59 +203,33 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-ui); h
 .xt-err { color: #f85149; }
 .xt-ok  { color: var(--green); }
 
-/* Mapa */
-#dump1090MapFrame { width: 100%; height: 100%; border: none; background: #000; flex: 1; }
+.config-wrap { flex: 1; display: flex; flex-direction: column; padding: 1rem 1.4rem; overflow: hidden; }
+.config-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .8rem; }
+.config-path { font-family: var(--font-mono); font-size: .7rem; color: var(--text-dim); }
+.config-actions { display: flex; gap: .5rem; }
+.config-editor { flex: 1; background: #060c10; border: 1px solid var(--border); border-radius: 4px; padding: .8rem; font-family: var(--font-mono); font-size: .75rem; color: #c9d1d9; resize: none; outline: none; line-height: 1.6; }
+.config-editor:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,212,255,.2); }
+.config-hint { font-size: .7rem; color: var(--text-dim); margin-top: .5rem; }
 
-/* Tabla aviones */
-.ac-toolbar { display: flex; align-items: center; gap: 1rem; padding: .5rem 1.4rem; background: rgba(0,0,0,.3); border-bottom: 1px solid var(--border); flex-shrink: 0; font-family: var(--font-mono); font-size: .72rem; flex-wrap: wrap; }
-.ac-counter { color: var(--amber); }
-.ac-updated { color: var(--text-dim); margin-left: auto; }
-.ac-wrap { flex: 1; overflow-y: auto; }
-.ac-wrap::-webkit-scrollbar { width: 4px; }
-.ac-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-table.ac-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: .76rem; }
-table.ac-table thead { position: sticky; top: 0; z-index: 2; }
-table.ac-table thead tr { background: #0d1520; border-bottom: 2px solid var(--border); }
-table.ac-table thead th { padding: .5rem .8rem; text-align: left; color: var(--text-dim); letter-spacing: .1em; text-transform: uppercase; font-size: .65rem; white-space: nowrap; }
-table.ac-table thead th.r { text-align: right; }
-table.ac-table tbody tr { border-bottom: 1px solid rgba(30,45,61,.5); transition: background .15s; }
-table.ac-table tbody tr:hover { background: rgba(0,212,255,.04); }
-table.ac-table tbody tr.ac-active { background: rgba(0,255,159,.05); }
-table.ac-table tbody tr.ac-stale  { opacity: .45; }
-table.ac-table td { padding: .45rem .8rem; white-space: nowrap; vertical-align: middle; }
-table.ac-table td.r { text-align: right; }
-
-.col-hex    { color: var(--text-dim); font-size: .7rem; }
-.col-flight { color: var(--cyan); font-weight: bold; letter-spacing: .05em; }
-.col-alt    { color: var(--amber); }
-.col-spd    { color: var(--green); }
-.col-squawk { color: #d4a8ff; font-size: .7rem; }
-.col-coord  { color: #7a9ab5; }
-.col-msgs   { color: var(--text-dim); font-size: .7rem; }
-
-.rssi-bar-wrap { display: flex; align-items: center; gap: .4rem; }
-.rssi-bar { height: 6px; border-radius: 2px; background: var(--green); min-width: 2px; transition: width .3s; }
-.rssi-bar.med { background: var(--amber); }
-.rssi-bar.low { background: var(--red); }
-
-.ac-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 1.5s infinite; margin-right: .35rem; }
-.ac-empty { display: flex; align-items: center; justify-content: center; flex: 1; font-family: var(--font-mono); font-size: .8rem; color: var(--text-dim); padding: 2rem; text-align: center; }
-
-/* Launch card */
 .launch-card { margin: 2rem auto; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 2rem 2.5rem; max-width: 480px; text-align: center; }
 .launch-icon  { font-size: 3rem; margin-bottom: 1rem; }
 .launch-title { font-family: var(--font-orb); font-size: 1.1rem; color: var(--cyan); letter-spacing: .08em; margin-bottom: .6rem; }
 .launch-desc  { font-family: var(--font-mono); font-size: .75rem; color: var(--text-dim); line-height: 1.6; margin-bottom: 1.5rem; }
 .launch-params { text-align: left; background: #060c10; border: 1px solid var(--border); border-radius: 4px; padding: .8rem 1rem; margin-bottom: 1.5rem; font-family: var(--font-mono); font-size: .72rem; color: var(--amber); line-height: 1.7; }
+.launch-params a { color: var(--cyan); text-decoration: none; border-bottom: 1px dashed var(--cyan); cursor: pointer; }
+.launch-params a:hover { opacity: .85; }
+.status-badge { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .6rem; background: #060c10; border: 1px solid var(--border); border-radius: 4px; font-family: var(--font-mono); font-size: .7rem; margin: .3rem 0; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+.status-dot.on  { background: var(--green); box-shadow: 0 0 4px var(--green); }
+.status-dot.off { background: var(--red); }
+.status-dot.activating { background: var(--amber); box-shadow: 0 0 4px var(--amber); animation: pulse-amber 1s infinite; }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <header class="ex-header">
     <div>
-        <div class="ex-title">✈ dump1090-fa · ADS-B Receiver</div>
+        <div class="ex-title">✈ dump1090-fa · Control</div>
         <div class="ex-subtitle">SDR · FlightAware · dump1090-fa.service</div>
     </div>
     <div class="ex-btns">
@@ -224,38 +245,54 @@ table.ac-table td.r { text-align: right; }
     </div>
 </header>
 
-<!-- Status bar -->
+<div class="auto-bar">
+    <span class="auto-label">🔌 Autostart</span>
+    <label class="sw" id="swAuto">
+        <input type="checkbox" id="chkAuto" onchange="toggleAutoStart(this)">
+        <span class="sw-track"></span>
+        <span class="sw-knob"></span>
+        <span class="sw-busy-dot"></span>
+    </label>
+    <span class="auto-status off" id="autoStatus">OFF</span>
+</div>
+
 <div class="ex-status">
     <span><span class="dot-status" id="dotStatus"></span><span id="statusTxt">Comprobando servicio…</span></span>
     <span class="sep">|</span>
     <span style="color:var(--text-dim)">Servicio: <span id="svcStatus" style="color:var(--amber)">—</span></span>
     <span class="sep">|</span>
     <span style="color:var(--text-dim)">PID: <span id="svcPid" style="color:var(--cyan)">—</span></span>
-    <span class="sep">|</span>
-    <span style="color:var(--text-dim)">JSON: <span style="color:var(--green)">/run/dump1090-fa/aircraft.json</span></span>
 </div>
 
-<!-- Tabs -->
 <div class="ex-tabs">
     <button id="tabBtnLog" class="btn-ex btn-active" onclick="switchTab('log')">📋 Terminal</button>
-    <button id="tabBtnAc"  class="btn-ex btn-dim"    onclick="switchTab('ac')">✈ Aviones</button>
-    <button id="tabBtnMap" class="btn-ex btn-dim"    onclick="switchTab('map')">🗺 Mapa en vivo</button>
+    <button id="tabBtnMap" class="btn-ex btn-dim"    onclick="openMapPage()">✈ Mapa</button>
+    <button id="tabBtnCfg" class="btn-ex btn-dim"    onclick="switchTab('cfg')">⚙ Config</button>
 </div>
 
-<!-- Contenido -->
 <div class="ex-content">
-
-    <!-- Tab Terminal -->
     <div id="paneLog" class="tab-pane active">
         <div id="launchCard" class="launch-card">
             <div class="launch-icon">✈</div>
             <div class="launch-title">dump1090-fa · ADS-B</div>
-            <div class="launch-desc">Activa el toggle para arrancar <strong>dump1090-fa.service</strong> y recibir tráfico aéreo en tiempo real.</div>
+            <div class="launch-desc">Activa el toggle superior para arrancar el servicio con tus parámetros configurados.</div>
+            
+            <div style="margin: 1rem 0; display: flex; flex-direction: column; gap: .4rem; align-items: center;">
+                <div class="status-badge">
+                    <span class="status-dot" id="cardSvcDot"></span>
+                    <span id="cardSvcText">Servicio: —</span>
+                </div>
+                <div class="status-badge">
+                    <span class="status-dot" id="cardAutoDot"></span>
+                    <span id="cardAutoText">Autostart: —</span>
+                </div>
+            </div>
+            
             <div class="launch-params">
                 ⚙ Servicio: dump1090-fa.service<br>
                 📝 Log:     journalctl -u dump1090-fa<br>
-                📄 JSON:    /run/dump1090-fa/aircraft.json<br>
-                🌐 Mapa:    http://[IP]:8080
+                ⚙ Config:  /home/pi/dump1090-fa/dump1090.args<br>
+                🔗 <strong>Mapa:</strong> <a href="dump1090monitor.php" target="_blank" rel="noopener">dump1090monitor.php</a>
             </div>
         </div>
         <div id="terminalWrap" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
@@ -268,71 +305,94 @@ table.ac-table td.r { text-align: right; }
         </div>
     </div>
 
-    <!-- Tab Aviones -->
-    <div id="paneAc" class="tab-pane">
-        <div class="ac-toolbar">
-            <span>✈ Aeronaves: <span class="ac-counter" id="acCount">—</span></span>
-            <span class="sep">|</span>
-            <span style="color:var(--text-dim)">Con posición: <span style="color:var(--green)" id="acWithPos">—</span></span>
-            <span class="sep">|</span>
-            <span style="color:var(--text-dim)">En tierra: <span style="color:var(--amber)" id="acOnGround">—</span></span>
-            <span class="ac-updated" id="acUpdated">—</span>
-        </div>
-        <div class="ac-wrap">
-            <div class="ac-empty" id="acEmpty">Esperando datos de dump1090-fa…</div>
-            <table class="ac-table" id="acTable" style="display:none;">
-                <thead>
-                    <tr>
-                        <th style="width:22px;"></th>
-                        <th>Hex</th>
-                        <th>Vuelo</th>
-                        <th>Squawk</th>
-                        <th class="r">Alt (ft)</th>
-                        <th class="r">Vel (kt)</th>
-                        <th class="r">Rumbo</th>
-                        <th class="r">Lat</th>
-                        <th class="r">Lon</th>
-                        <th>RSSI</th>
-                        <th class="r">Msgs</th>
-                    </tr>
-                </thead>
-                <tbody id="acBody"></tbody>
-            </table>
+    <div id="paneMap" class="tab-pane" style="align-items:center;justify-content:center;text-align:center;padding:2rem;">
+        <div class="launch-card">
+            <div class="launch-icon">✈</div>
+            <div class="launch-title">Mapa de aeronaves</div>
+            <div class="launch-desc">Abre el visor de tráfico aéreo en tiempo real con dump1090.</div>
+            <button class="btn-ex btn-cyan" onclick="openMapPage()" style="font-size:.85rem;padding:.5rem 1.5rem;">
+                Abrir → dump1090monitor.php
+            </button>
+            <div class="launch-params" style="margin-top:1rem;font-size:.68rem;">
+                💡 Se abrirá en pestaña nueva para evitar conflictos de interfaz.
+            </div>
         </div>
     </div>
 
-    <!-- Tab Mapa -->
-    <div id="paneMap" class="tab-pane">
-        <iframe id="dump1090MapFrame" src=""></iframe>
+    <div id="paneCfg" class="tab-pane">
+        <div class="config-wrap">
+            <div class="config-header">
+                <span class="config-path">📄 /home/pi/dump1090-fa/dump1090.args</span>
+                <div class="config-actions">
+                    <button class="btn-ex btn-cyan" onclick="loadConfig()">⟳ Recargar</button>
+                    <button class="btn-ex btn-green" onclick="saveConfig()">💾 Guardar</button>
+                </div>
+            </div>
+            <textarea id="configEditor" class="config-editor" spellcheck="false" placeholder="Cargando configuración…"></textarea>
+            <div class="config-hint">
+                ⚠️ Edita los parámetros de lanzamiento. Los cambios requieren reiniciar el servicio para aplicar.
+            </div>
+        </div>
     </div>
-
 </div>
 
 <script>
-const mapUrl = 'http://' + window.location.hostname + ':8080';
-const jsonUrl = '?action=aircraft-json';
+const mapUrl = 'dump1090monitor.php';
 let logPollInterval = null;
-let acPollInterval  = null;
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function setStatus(state, txt) {
-    document.getElementById('dotStatus').className = 'dot-status ' + (state==='on'?'on':state==='err'?'err':'');
-    document.getElementById('statusTxt').textContent = txt;
+// 🔽 ÚNICA FUENTE DE VERDAD PARA EL ESTADO
+function updateStatusBar(d) {
+    const st = (d.status || '').toLowerCase();
+    let dotState = '', statusTxt = '', svcTxt = '', svcColor = '';
+
+    if (st === 'active') {
+        dotState = 'on'; statusTxt = 'dump1090-fa.service activo'; svcTxt = 'ACTIVO'; svcColor = 'var(--green)'; setSwitch(true);
+    } else if (st === 'inactive' || st === 'unknown' || st === 'disabled') {
+        dotState = ''; statusTxt = 'dump1090-fa.service inactivo'; svcTxt = 'DETENIDO'; svcColor = 'var(--red)'; setSwitch(false);
+    } else if (st === 'activating') {
+        dotState = 'activating'; statusTxt = 'dump1090-fa.service iniciando…'; svcTxt = 'INICIANDO…'; svcColor = 'var(--amber)';
+    } else if (st === 'failed') {
+        dotState = 'err'; statusTxt = 'dump1090-fa.service error'; svcTxt = 'ERROR'; svcColor = 'var(--red)';
+    } else {
+        dotState = ''; statusTxt = 'Estado: ' + st; svcTxt = st.toUpperCase(); svcColor = 'var(--amber)';
+    }
+
+    // Actualizar barra superior
+    document.getElementById('dotStatus').className = 'dot-status ' + dotState;
+    document.getElementById('statusTxt').textContent = statusTxt;
+    document.getElementById('svcStatus').textContent = svcTxt;
+    document.getElementById('svcStatus').style.color = svcColor;
+    document.getElementById('svcPid').textContent = (d.pid && d.pid !== '0') ? d.pid : '—';
+
+    // Sincronizar tarjeta de lanzamiento
+    const cardDot = document.getElementById('cardSvcDot');
+    const cardTxt = document.getElementById('cardSvcText');
+    cardDot.className = 'status-dot ' + dotState;
+    cardTxt.textContent = 'Servicio: ' + svcTxt;
+
+    if (d.enabled !== undefined) updateAutoState(d.enabled);
 }
+
 function setSwitch(on) {
     document.getElementById('chkDump').checked = on;
     const lbl = document.getElementById('swLabel');
     lbl.textContent = on ? 'ON' : 'OFF';
     lbl.style.color  = on ? 'var(--green)' : 'var(--text-dim)';
 }
-function updateStatusBar(d) {
-    const el = document.getElementById('svcStatus');
-    el.textContent = d.status || '—';
-    el.style.color  = d.active ? 'var(--green)' : 'var(--red)';
-    document.getElementById('svcPid').textContent = (d.pid && d.pid !== '0') ? d.pid : '—';
+
+function updateAutoState(enabled) {
+    const chk = document.getElementById('chkAuto');
+    const lbl = document.getElementById('autoStatus');
+    chk.checked = enabled;
+    lbl.textContent = enabled ? 'ON' : 'OFF';
+    lbl.className = 'auto-status ' + (enabled ? 'on' : 'off');
+    
+    document.getElementById('cardAutoDot').className = 'status-dot ' + (enabled ? 'on' : 'off');
+    document.getElementById('cardAutoText').textContent = 'Autostart: ' + (enabled ? 'ON' : 'OFF');
 }
+
 function cerrarVentana() {
     window.close();
     setTimeout(() => {
@@ -343,22 +403,40 @@ function cerrarVentana() {
     }, 300);
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-    ['log','ac','map'].forEach(t => {
-        document.getElementById('pane' + t.charAt(0).toUpperCase() + t.slice(1)).classList.remove('active');
-        document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1)).className = 'btn-ex btn-dim';
+    ['log','map','cfg'].forEach(t => {
+        const pane = document.getElementById('pane' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (pane) pane.classList.remove('active');
+        if (btn) btn.className = 'btn-ex btn-dim';
     });
     document.getElementById('pane' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
     document.getElementById('tabBtn' + tab.charAt(0).toUpperCase() + tab.slice(1)).className = 'btn-ex btn-active';
-    if (tab === 'ac') startAcPoll();
-    if (tab === 'map') {
-        const frame = document.getElementById('dump1090MapFrame');
-        if (!frame.src || frame.src === 'about:blank') frame.src = mapUrl;
-    }
+    if (tab === 'cfg') loadConfig();
 }
 
-// ── Toggle dump1090-fa.service ────────────────────────────────────────────────
+function openMapPage() { window.open(mapUrl, '_blank', 'noopener,noreferrer'); }
+
+async function toggleAutoStart(chk) {
+    const sw = document.getElementById('swAuto');
+    const target = chk.checked;
+    sw.classList.add('busy'); chk.disabled = true;
+    try {
+        const r = await fetch('?action=dump1090-' + (target ? 'enable' : 'disable'));
+        const d = await r.json();
+        if (d.ok) {
+            updateAutoState(target);
+            xtApp('<span class="xt-ok">✅ ' + esc(d.msg) + '</span>');
+        } else {
+            chk.checked = !target; updateAutoState(!target);
+            xtApp('<span class="xt-err">❌ ' + esc(d.error) + '</span>');
+        }
+    } catch(e) {
+        chk.checked = !target; updateAutoState(!target);
+        xtApp('<span class="xt-err">❌ Error de red: ' + esc(e.message) + '</span>');
+    } finally { sw.classList.remove('busy'); chk.disabled = false; }
+}
+
 async function toggleDump1090(chk) {
     const wasOn = !chk.checked;
     chk.checked = wasOn;
@@ -366,49 +444,49 @@ async function toggleDump1090(chk) {
     sw.classList.add('busy');
     document.getElementById('launchCard').style.display = 'none';
     document.getElementById('terminalWrap').style.display = 'flex';
-    xtApp('<span class="xt-out">⏳ ' + (wasOn ? 'Parando' : 'Iniciando') + ' dump1090-fa.service…</span>');
+    
+    // Feedback inmediato visual
+    const actionTxt = wasOn ? 'Deteniendo' : 'Iniciando';
+    document.getElementById('statusTxt').textContent = actionTxt + ' dump1090-fa.service…';
+    document.getElementById('dotStatus').className = wasOn ? 'dot-status' : 'dot-status activating';
+    document.getElementById('svcStatus').textContent = wasOn ? 'DETENIENDO…' : 'INICIANDO…';
+    document.getElementById('svcStatus').style.color = wasOn ? 'var(--text)' : 'var(--amber)';
+    xtApp('<span class="xt-out">⏳ ' + actionTxt + ' dump1090-fa.service…</span>');
+    
     try {
         const r = await fetch('?action=' + (wasOn ? 'dump1090-stop' : 'dump1090-start'));
         const d = await r.json();
-        if (d.ok) {
-            const isNowOn = !wasOn;
-            setSwitch(isNowOn);
-            setStatus(isNowOn ? 'on' : '', isNowOn ? 'dump1090-fa.service activo' : 'dump1090-fa.service detenido');
-            xtApp('<span class="xt-ok">✅ ' + esc(d.output || d.msg) + '</span>');
-            if (isNowOn) startLogPoll(); else { stopLogPoll(); stopAcPoll(); }
-        } else {
-            xtApp('<span class="xt-err">❌ ' + esc(d.error || d.msg) + '</span>');
-            setStatus('err', 'Error al cambiar estado');
-        }
+        if (!d.ok) xtApp('<span class="xt-err">❌ ' + esc(d.error || d.msg) + '</span>');
+        else xtApp('<span class="xt-ok">✅ ' + esc(d.output || d.msg) + '</span>');
     } catch(e) {
         xtApp('<span class="xt-err">❌ Error de red: ' + esc(e.message) + '</span>');
-        setStatus('err', 'Error de red');
     } finally {
         sw.classList.remove('busy');
-        checkServiceStatus();
+        checkServiceStatus(); // Restaura el estado REAL del sistema
     }
 }
 
-// ── Estado del servicio ───────────────────────────────────────────────────────
 async function checkServiceStatus() {
     try {
         const r = await fetch('?action=dump1090-status');
         const d = await r.json();
-        setSwitch(d.active);
-        updateStatusBar(d);
+        updateStatusBar(d); // ✅ Actualiza TODO coherentemente
+        
         if (d.active) {
-            setStatus('on', 'dump1090-fa.service activo');
             document.getElementById('launchCard').style.display = 'none';
             document.getElementById('terminalWrap').style.display = 'flex';
             if (!logPollInterval) startLogPoll();
         } else {
-            setStatus('', 'dump1090-fa.service inactivo');
-            stopLogPoll(); stopAcPoll();
+            stopLogPoll();
         }
-    } catch(e) { setStatus('err', 'Error al comprobar el servicio'); }
+    } catch(e) {
+        document.getElementById('dotStatus').className = 'dot-status err';
+        document.getElementById('statusTxt').textContent = 'Error al comprobar servicio';
+        document.getElementById('svcStatus').textContent = 'ERROR';
+        document.getElementById('svcStatus').style.color = 'var(--red)';
+    }
 }
 
-// ── Log polling ───────────────────────────────────────────────────────────────
 function startLogPoll() { stopLogPoll(); fetchDump1090Log(); logPollInterval = setInterval(fetchDump1090Log, 3000); }
 function stopLogPoll()  { clearInterval(logPollInterval); logPollInterval = null; }
 function fetchDump1090Log() {
@@ -417,98 +495,33 @@ function fetchDump1090Log() {
         .then(text => { const o=document.getElementById('xtOut'); o.textContent=text; o.scrollTop=o.scrollHeight; });
 }
 
-// ── Aircraft polling ──────────────────────────────────────────────────────────
-function startAcPoll() { if (acPollInterval) return; fetchAircraft(); acPollInterval = setInterval(fetchAircraft, 2000); }
-function stopAcPoll()  { clearInterval(acPollInterval); acPollInterval = null; }
-
-async function fetchAircraft() {
+async function loadConfig() {
+    const editor = document.getElementById('configEditor');
+    editor.value = '⏳ Cargando…'; editor.disabled = true;
     try {
-        const r = await fetch(jsonUrl + '&t=' + Date.now());
+        const r = await fetch('?action=config-read&t='+Date.now());
         const d = await r.json();
-        if (d.error) {
-            document.getElementById('acEmpty').textContent = '⚠ ' + d.error;
-            document.getElementById('acEmpty').style.display = 'flex';
-            document.getElementById('acTable').style.display = 'none';
-            return;
-        }
-        renderAircraft(d);
-    } catch(e) {
-        document.getElementById('acEmpty').textContent = '⚠ Error: ' + e.message;
-        document.getElementById('acEmpty').style.display = 'flex';
-        document.getElementById('acTable').style.display = 'none';
-    }
+        editor.value = d.ok ? d.content : '⚠ Error: ' + d.error;
+    } catch(e) { editor.value = '⚠ Error de red: ' + e.message; }
+    editor.disabled = false;
 }
 
-function rssiBar(rssi) {
-    const val = parseFloat(String(rssi||'').replace('+','')) || -20;
-    const pct = Math.max(0, Math.min(100, ((val + 20) / 19) * 100));
-    const cls = pct > 60 ? '' : pct > 30 ? ' med' : ' low';
-    return `<div class="rssi-bar-wrap"><div class="rssi-bar${cls}" style="width:${Math.round(pct*0.6)}px"></div><span style="font-size:.68rem;color:var(--text-dim)">${String(rssi||'—')}</span></div>`;
+async function saveConfig() {
+    const editor = document.getElementById('configEditor');
+    const content = editor.value;
+    editor.disabled = true;
+    try {
+        const r = await fetch('?action=config-save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'content=' + encodeURIComponent(content)
+        });
+        const d = await r.json();
+        xtApp('<span class="xt-' + (d.ok?'ok':'err') + '">' + (d.ok?'✅':'❌') + ' ' + esc(d.msg||d.error) + '</span>');
+    } catch(e) { xtApp('<span class="xt-err">❌ Error de red: ' + esc(e.message) + '</span>'); }
+    editor.disabled = false;
 }
 
-function hdgArrow(hdg) {
-    if (hdg === undefined || hdg === null || hdg === '') return '—';
-    return `<span style="display:inline-block;transform:rotate(${hdg}deg);font-size:1rem;line-height:1;">▲</span> ${Math.round(hdg)}°`;
-}
-
-function renderAircraft(data) {
-    const now      = data.now || (Date.now() / 1000);
-    const aircraft = (data.aircraft || []).sort((a,b) => (b.messages||0) - (a.messages||0));
-    const total    = aircraft.length;
-    const withPos  = aircraft.filter(a => a.lat !== undefined).length;
-    const onGround = aircraft.filter(a => a.alt_baro === 'ground' || a.altitude === 'ground').length;
-
-    document.getElementById('acCount').textContent    = total;
-    document.getElementById('acWithPos').textContent  = withPos;
-    document.getElementById('acOnGround').textContent = onGround;
-    document.getElementById('acUpdated').textContent  = 'Actualizado: ' + new Date().toLocaleTimeString('es-ES');
-
-    if (total === 0) {
-        document.getElementById('acEmpty').textContent = 'Sin aeronaves detectadas…';
-        document.getElementById('acEmpty').style.display = 'flex';
-        document.getElementById('acTable').style.display = 'none';
-        return;
-    }
-    document.getElementById('acEmpty').style.display = 'none';
-    document.getElementById('acTable').style.display = 'table';
-
-    document.getElementById('acBody').innerHTML = aircraft.map(a => {
-        const seenAgo  = now - (a.seen || 0);
-        const isActive = seenAgo < 5;
-        const isStale  = seenAgo > 30;
-        const dot      = isActive ? '<span class="ac-dot"></span>' : '';
-        const rowCls   = isActive ? 'ac-active' : isStale ? 'ac-stale' : '';
-
-        // dump1090-fa usa alt_baro en lugar de altitude
-        const altVal  = a.alt_baro ?? a.altitude;
-        const altHtml = altVal !== undefined
-            ? (altVal === 'ground'
-                ? '<span style="color:var(--green);font-size:.7rem;">TIERRA</span>'
-                : '<span class="col-alt">' + Number(altVal).toLocaleString() + '</span>')
-            : '<span style="color:var(--text-dim)">—</span>';
-
-        // dump1090-fa usa gs (ground speed) en lugar de speed
-        const spd = a.gs ?? a.speed;
-        // dump1090-fa usa track
-        const trk = a.track;
-
-        return `<tr class="${rowCls}">
-            <td style="padding-left:1rem;">${dot}</td>
-            <td class="col-hex">${esc((a.hex||'').toUpperCase())}</td>
-            <td class="col-flight">${a.flight ? esc(a.flight.trim()) : '<span style="color:var(--text-dim)">—</span>'}</td>
-            <td class="col-squawk">${a.squawk || '—'}</td>
-            <td class="r">${altHtml}</td>
-            <td class="r col-spd">${spd !== undefined ? Math.round(spd) : '—'}</td>
-            <td class="r">${hdgArrow(trk)}</td>
-            <td class="r col-coord">${a.lat !== undefined ? a.lat.toFixed(4) : '—'}</td>
-            <td class="r col-coord">${a.lon !== undefined ? a.lon.toFixed(4) : '—'}</td>
-            <td>${rssiBar(a.rssi)}</td>
-            <td class="r col-msgs">${a.messages || 0}</td>
-        </tr>`;
-    }).join('');
-}
-
-// ── Terminal interactivo ──────────────────────────────────────────────────────
 let xtHist = [], xtHidx = -1, xtCwd = '/home/pi';
 function xtPrStr() { return 'pi@raspberry:' + xtCwd.replace('/home/pi','~') + '$'; }
 function xtApp(html) { const o=document.getElementById('xtOut'); o.innerHTML+=html+'\n'; o.scrollTop=o.scrollHeight; }
@@ -547,9 +560,11 @@ document.getElementById('xtInp').addEventListener('keydown', async function(e) {
     await xtExec(cmd);
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
 checkServiceStatus();
 setInterval(checkServiceStatus, 10000);
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('paneCfg').classList.contains('active')) loadConfig();
+});
 </script>
 </body>
 </html>
