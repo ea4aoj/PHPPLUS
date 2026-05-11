@@ -6,6 +6,7 @@ function runCmd($cmd) {
 
 $output = "";
 
+/* TOGGLE AUTOSTART */
 if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
@@ -23,17 +24,23 @@ if (isset($_GET['action'])) {
         $output .= runCmd("docker restart openwebrx");
     }
 
-    if ($action == "enable") {
-        $output .= runCmd("sudo systemctl enable openwebrx");
-    }
+    if ($action == "toggle") {
 
-    if ($action == "disable") {
-        $output .= runCmd("sudo systemctl disable openwebrx");
+        $state = trim(runCmd("systemctl is-enabled openwebrx 2>/dev/null"));
+
+        if ($state == "enabled") {
+            $output .= runCmd("sudo systemctl disable openwebrx");
+            $output .= "\nAUTOSTART → DISABLED\n";
+        } else {
+            $output .= runCmd("sudo systemctl enable openwebrx");
+            $output .= "\nAUTOSTART → ENABLED\n";
+        }
     }
 
     $output .= "\n--- FIN ACCIÓN ---\n\n";
 }
 
+/* ESTADOS */
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
@@ -56,7 +63,6 @@ body {
     color:#fff;
 }
 
-/* PANEL */
 .panel {
     background:#161b22;
     padding:15px;
@@ -64,7 +70,6 @@ body {
     margin-bottom:15px;
 }
 
-/* TOP BAR */
 .topbar {
     display:flex;
     align-items:center;
@@ -77,13 +82,11 @@ body {
     font-size:18px;
 }
 
-/* BOTONES */
 .btn {
     border-radius:8px;
     font-size:0.85rem;
 }
 
-/* TERMINAL */
 .terminal {
     background:#000;
     color:#00ff66;
@@ -98,7 +101,6 @@ body {
     box-shadow: inset 0 0 10px rgba(0,255,100,0.1);
 }
 
-/* ESTADOS */
 .status-ok { color: lime; font-weight:bold; }
 .status-bad { color: red; font-weight:bold; }
 
@@ -136,18 +138,22 @@ body {
                 <?php endif; ?>
             </span>
 
-            <div class="spacer"></div>
+            <div class="ms-3"></div>
 
             <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
 
-            <a href="?action=enable" class="btn btn-primary btn-sm">⚡ ENABLE</a>
-            <a href="?action=disable" class="btn btn-secondary btn-sm">🛑 DISABLE</a>
+            <a href="?action=toggle" class="btn btn-primary btn-sm">
+                ⚙ AUTOSTART
+            </a>
 
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
+
+            <!-- 🔥 ESTE SIEMPRE A LA DERECHA -->
+            <div class="spacer"></div>
 
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 🔙 PHPPLUS
@@ -158,19 +164,25 @@ body {
 
     <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 Logs OpenWebRX (auto-scroll)</h5>
+        <h5>📟 OpenWebRX Full Logs (live view)</h5>
 
         <div id="terminal" class="terminal">
 <?php
 
-echo "===== ESTADO DOCKER =====\n";
+echo "===== DOCKER STATUS =====\n";
 echo runCmd("docker ps -a --filter name=openwebrx");
 
-echo "\n===== LOGS OPENWEBRX =====\n";
-echo runCmd("docker logs --tail 120 openwebrx 2>&1");
+echo "\n===== DOCKER INSPECT =====\n";
+echo runCmd("docker inspect openwebrx --format '{{.State.Status}} | {{.State.Health.Status}}' 2>/dev/null");
+
+echo "\n===== LIVE LOGS =====\n";
+echo runCmd("docker logs --tail 200 openwebrx 2>&1");
+
+echo "\n===== SYSTEMD STATE =====\n";
+echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
 
 if ($output != "") {
-    echo "\n===== ACCIONES =====\n";
+    echo "\n===== ACTION LOG =====\n";
     echo $output;
 }
 
@@ -180,17 +192,13 @@ if ($output != "") {
 
 </div>
 
-<!-- AUTO SCROLL SCRIPT -->
 <script>
 const terminal = document.getElementById("terminal");
-
-// baja automáticamente al cargar
 terminal.scrollTop = terminal.scrollHeight;
 
-// si el contenido cambia, sigue bajando
 setInterval(() => {
     terminal.scrollTop = terminal.scrollHeight;
-}, 1000);
+}, 800);
 </script>
 
 </body>
