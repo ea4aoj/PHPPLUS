@@ -6,7 +6,6 @@ function runCmd($cmd) {
 
 $output = "";
 
-/* TOGGLE AUTOSTART */
 if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
@@ -40,7 +39,7 @@ if (isset($_GET['action'])) {
     $output .= "\n--- FIN ACCIÓN ---\n\n";
 }
 
-/* ESTADOS */
+/* STATUS */
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
@@ -98,15 +97,12 @@ body {
     border-radius:12px;
     white-space: pre-wrap;
     border:1px solid #333;
-    box-shadow: inset 0 0 10px rgba(0,255,100,0.1);
 }
 
 .status-ok { color: lime; font-weight:bold; }
 .status-bad { color: red; font-weight:bold; }
 
-.spacer {
-    flex-grow:1;
-}
+.spacer { flex-grow:1; }
 </style>
 </head>
 
@@ -144,19 +140,16 @@ body {
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
 
-            <a href="?action=toggle" class="btn btn-primary btn-sm">
-                ⚙ AUTOSTART
-            </a>
+            <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTOSTART</a>
 
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
 
-            <!-- 🔥 ESTE SIEMPRE A LA DERECHA -->
             <div class="spacer"></div>
 
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-                🔙 PANEL PHPPLUS
+                🔙 PHPPLUS
             </a>
 
         </div>
@@ -164,7 +157,7 @@ body {
 
     <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 OpenWebRX Full Logs (live view)</h5>
+        <h5>📟 OpenWebRX Logs (manual scroll mode)</h5>
 
         <div id="terminal" class="terminal">
 <?php
@@ -178,11 +171,11 @@ echo runCmd("docker inspect openwebrx --format '{{.State.Status}} | {{.State.Hea
 echo "\n===== LIVE LOGS =====\n";
 echo runCmd("docker logs --tail 200 openwebrx 2>&1");
 
-echo "\n===== SYSTEMD STATE =====\n";
+echo "\n===== SYSTEM STATUS =====\n";
 echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
 
 if ($output != "") {
-    echo "\n===== ACTION LOG =====\n";
+    echo "\n===== ACTION =====\n";
     echo $output;
 }
 
@@ -191,15 +184,6 @@ if ($output != "") {
     </div>
 
 </div>
-
-<script>
-const terminal = document.getElementById("terminal");
-terminal.scrollTop = terminal.scrollHeight;
-
-setInterval(() => {
-    terminal.scrollTop = terminal.scrollHeight;
-}, 800);
-</script>
 
 </body>
 </html>
