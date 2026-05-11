@@ -65,7 +65,7 @@ body {
     background:#000;
     color:#00ff66;
     padding:15px;
-    height:320px;
+    height:600px;
     overflow-y:auto;
     font-family: monospace;
     font-size: 13px;
