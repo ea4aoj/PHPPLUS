@@ -238,7 +238,7 @@
             <p class="card-text text-white-50 small flex-grow-1">
                 Servidor Fusion 2X · Interfaz web en tiempo real
             </p>
-            <a href="http://127.0.0.1:8080" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="http://rem-esp.spdns.org:8080" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
