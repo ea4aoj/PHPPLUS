@@ -145,11 +145,9 @@ body {
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
-
-            <div class="spacer"></div>
-
+           
            <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-    <i class="bi bi-house-fill me-1"></i> HOME PHPPLUS
+    <i class="bi bi-house-fill me-1"></i> PANEL PHP
 </a>
 
         </div>
