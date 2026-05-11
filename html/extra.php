@@ -244,6 +244,28 @@
         </div>
     </div>
 </div>
+
+<!-- OPENWEBRX -->
+<div class="col-12 col-sm-6 col-lg-3">
+    <div class="card bg-secondary border-0 h-100">
+        <div class="card-body d-flex flex-column">
+
+            <h5 class="card-title">
+                <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
+            </h5>
+
+            <p class="card-text text-white-50 small flex-grow-1">
+                Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
+            </p>
+
+            <a href="http://rem-esp.spdns.org:8073" target="_blank"
+               class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+            </a>
+
+        </div>
+    </div>
+</div>
         
 <!-- MIS ENLACES PREFERIDOS -->
 <div class="col-12 col-sm-6 col-lg-3">
