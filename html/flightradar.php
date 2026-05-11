@@ -190,12 +190,11 @@ setInterval(() => {
 </button>
 
 
-<a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-    <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+<a href="mmdvm.php">
+    <button type="button">
+        <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+    </button>
 </a>
-
-
-
 
 
 
