@@ -6,24 +6,32 @@ function runCmd($cmd) {
 
 $output = "";
 
+/* LIMPIAR TERMINAL + ACCIONES */
 if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
-    $output .= "Ejecutando: $action\n\n";
+
+    // 🔥 LIMPIEZA SIEMPRE AL INICIO DE ACCIÓN
+    $output = "🧹 Limpiando terminal...\n\n";
 
     if ($action == "start") {
+        $output .= "▶ STARTING OpenWebRX...\n\n";
         $output .= runCmd("docker start openwebrx");
     }
 
     if ($action == "stop") {
+        $output .= "⏹ STOPPING OpenWebRX...\n\n";
         $output .= runCmd("docker stop openwebrx");
     }
 
     if ($action == "restart") {
+        $output .= "🔄 RESTARTING OpenWebRX...\n\n";
         $output .= runCmd("docker restart openwebrx");
     }
 
     if ($action == "toggle") {
+
+        $output .= "⚙ TOGGLING AUTOSTART...\n\n";
 
         $state = trim(runCmd("systemctl is-enabled openwebrx 2>/dev/null"));
 
@@ -55,6 +63,7 @@ $isEnabled = ($autostart == "enabled");
 <title>OpenWebRX Control</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
 <style>
 body {
@@ -139,42 +148,44 @@ body {
             <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
             <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
-
             <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTOSTART</a>
 
             <a href="http://localhost:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 OPEN WEB
             </a>
-           
-           <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-    <i class="bi bi-house-fill me-1"></i> PANEL PHP
-</a>
+
+            <div class="spacer"></div>
+
+            <!-- 🏠 PHPPLUS -->
+            <a href="mmdvm.php" class="btn btn-outline-light btn-sm" title="PHPPLUS Home">
+                <i class="bi bi-house-fill"></i>
+            </a>
 
         </div>
     </div>
 
     <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 OpenWebRX Logs (manual scroll mode)</h5>
+        <h5>📟 OpenWebRX Console</h5>
 
-        <div id="terminal" class="terminal">
+        <div class="terminal">
 <?php
 
-echo "===== DOCKER STATUS =====\n";
-echo runCmd("docker ps -a --filter name=openwebrx");
-
-echo "\n===== DOCKER INSPECT =====\n";
-echo runCmd("docker inspect openwebrx --format '{{.State.Status}} | {{.State.Health.Status}}' 2>/dev/null");
-
-echo "\n===== LIVE LOGS =====\n";
-echo runCmd("docker logs --tail 200 openwebrx 2>&1");
-
-echo "\n===== SYSTEM STATUS =====\n";
-echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
-
 if ($output != "") {
-    echo "\n===== ACTION =====\n";
     echo $output;
+} else {
+
+    echo "===== DOCKER STATUS =====\n";
+    echo runCmd("docker ps -a --filter name=openwebrx");
+
+    echo "\n===== DOCKER INSPECT =====\n";
+    echo runCmd("docker inspect openwebrx --format '{{.State.Status}} | {{.State.Health.Status}}' 2>/dev/null");
+
+    echo "\n===== LIVE LOGS =====\n";
+    echo runCmd("docker logs --tail 200 openwebrx 2>&1");
+
+    echo "\n===== SYSTEM STATUS =====\n";
+    echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
 }
 
 ?>
