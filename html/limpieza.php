@@ -254,8 +254,8 @@ button{
 <div class="contenedor">
 
 <div class="top">
-<h1>🧹 Limpiador del sistema</h1>
-<a class="home" href="mmdvm.php">🏠 Inicio</a>
+<h1>🧹 Limpieza del sistema</h1>
+<a class="home" href="mmdvm.php">🏠 PANEL PHPPLUS</a>
 </div>
 
 <form method="post">
