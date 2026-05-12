@@ -267,6 +267,7 @@
     </div>
 </div>
         
+ 
 <!-- MIS ENLACES PREFERIDOS -->
 <div class="col-12 col-sm-6 col-lg-3">
     <div class="card bg-secondary border-0 h-100">
@@ -278,6 +279,27 @@
                 Panel de acceso rápido a enlaces de radioafición y servicios web.
             </p>
             <a href="/mis_enlaces.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- LIMPIEZA DEL SISTEMA -->
+<div class="col-12 col-sm-6 col-lg-3">
+    <div class="card bg-secondary border-0 h-100">
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title">
+                <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
+                Limpieza del sistema
+            </h5>
+
+            <p class="card-text text-white-50 small flex-grow-1">
+                Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
+            </p>
+
+            <a href="/limpieza.php" target="_blank"
+               class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -307,4 +329,5 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
 
