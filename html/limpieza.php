@@ -1,6 +1,6 @@
 <?php
 // =========================================
-// LIMPIADOR DEL SISTEMA - ORANGE PI (DASHBOARD PRO)
+//           LIMPIADOR DEL SISTEMA
 // =========================================
 
 error_reporting(E_ALL);
@@ -25,19 +25,17 @@ function borrar($pattern) {
     $out .= consola("Escaneando: $pattern");
 
     if (!$files) {
-        $out .= consola("Sin archivos encontrados");
+        $out .= consola("Sin archivos");
         return [$deleted, $out];
     }
 
     foreach ($files as $f) {
-        $out .= consola("Encontrado: $f");
-
         if (is_file($f)) {
             if (@unlink($f)) {
-                $out .= consola("Eliminado ✔");
+                $out .= consola("✔ Eliminado: $f");
                 $deleted++;
             } else {
-                $out .= consola("ERROR permisos");
+                $out .= consola("✖ Error permisos: $f");
             }
         }
     }
@@ -45,9 +43,28 @@ function borrar($pattern) {
     return [$deleted, $out];
 }
 
-/**
- * 🔥 INFORMACIÓN DEL SISTEMA MEJORADA
- */
+function limpiar_historial() {
+
+    $out = "";
+
+    $files = [
+        '/home/pi/.bash_history',
+        '/root/.bash_history'
+    ];
+
+    foreach ($files as $f) {
+        if (file_exists($f)) {
+            if (@unlink($f)) {
+                $out .= consola("✔ Historial eliminado");
+            } else {
+                $out .= consola("✖ Error historial");
+            }
+        }
+    }
+
+    return $out;
+}
+
 function info_sistema() {
 
     $df = shell_exec("df -h / | awk 'NR==2'");
@@ -68,18 +85,21 @@ function ejecutar($opt) {
     $report = [];
     $console = "";
 
+    // MMDVM
     if (!empty($opt['mmdvm'])) {
         list($c, $log) = borrar($paths['mmdvm']);
         $report['MMDVMHost'] = $c;
         $console .= $log;
     }
 
+    // TMP
     if (!empty($opt['tmp'])) {
         list($c, $log) = borrar($paths['tmp']);
         $report['/tmp'] = $c;
         $console .= $log;
     }
 
+    // logs antiguos
     if (!empty($opt['oldlogs'])) {
         list($c1, $l1) = borrar($paths['oldlogs']);
         list($c2, $l2) = borrar($paths['oldlogs2']);
@@ -87,16 +107,32 @@ function ejecutar($opt) {
         $console .= $l1 . $l2;
     }
 
+    // journalctl optimizado
     if (!empty($opt['journal'])) {
-        exec("journalctl --vacuum-time=3d 2>&1");
+        exec("journalctl --vacuum-time=3d --vacuum-size=100M 2>&1");
         $report['journalctl'] = "OK";
-        $console .= consola("Journalctl limpiado");
+        $console .= consola("✔ Journal optimizado");
     }
 
+    // APT
     if (!empty($opt['apt'])) {
         exec("apt clean 2>&1");
         $report['APT'] = "OK";
-        $console .= consola("Cache APT limpiada");
+        $console .= consola("✔ Cache APT limpia");
+    }
+
+    // HISTORIAL TERMINAL
+    if (!empty($opt['history'])) {
+        $console .= limpiar_historial();
+        $report['historial'] = "OK";
+    }
+
+    // LIMPIEZA EXTRA SEGURA
+    if (!empty($opt['extra'])) {
+        exec("rm -rf /home/pi/.cache/* 2>&1");
+        exec("rm -rf /var/tmp/* 2>&1");
+        $report['cache'] = "OK";
+        $console .= consola("✔ Cache usuario y sistema limpiados");
     }
 
     return [$report, $console];
@@ -113,7 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'tmp' => isset($_POST['tmp']),
         'oldlogs' => isset($_POST['oldlogs']),
         'journal' => isset($_POST['journal']),
-        'apt' => isset($_POST['apt'])
+        'apt' => isset($_POST['apt']),
+        'history' => isset($_POST['history']),
+        'extra' => isset($_POST['extra'])
     ];
 
     list($report, $console) = ejecutar($opt);
@@ -124,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Limpiador del sistema</title>
+<title>Limpieza del sistema</title>
 
 <style>
 body{
@@ -179,6 +217,7 @@ button{
     color:#fff;
     font-weight:bold;
     border-radius:8px;
+    cursor:pointer;
 }
 
 /* CONSOLA */
@@ -186,13 +225,17 @@ button{
     margin-top:15px;
     background:#000;
     padding:10px;
-    height:140px;
+    height:130px;
     overflow:auto;
     font-family:monospace;
     font-size:12px;
     border-radius:8px;
 }
-.linea{color:#58a6ff; margin-bottom:2px;}
+
+.linea{
+    color:#58a6ff;
+    margin-bottom:2px;
+}
 
 /* RESULTADOS */
 .resultado{
@@ -215,10 +258,10 @@ button{
     border-radius:6px;
 }
 
-/* ===== DASHBOARD SISTEMA ===== */
+/* SISTEMA */
 .sysgrid{
     display:grid;
-    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
     gap:10px;
     margin-top:20px;
 }
@@ -238,11 +281,9 @@ button{
 
 .sysvalue{
     font-size:13px;
-    color:#e6edf3;
     white-space:pre-wrap;
 }
 
-/* colores por tipo */
 .disco{border-left:4px solid #00d4ff;}
 .ram{border-left:4px solid #00ff9d;}
 .uptime{border-left:4px solid #ffcc00;}
@@ -255,16 +296,18 @@ button{
 
 <div class="top">
 <h1>🧹 Limpieza del sistema</h1>
-<a class="home" href="mmdvm.php">🏠 PANEL PHPPLUS</a>
+<a class="home" href="mmdvm.php">🏠 Panel PHPPLUS</a>
 </div>
 
 <form method="post">
 
 <div class="opcion"><label><input type="checkbox" name="mmdvm" checked> Logs MMDVMHost</label></div>
-<div class="opcion"><label><input type="checkbox" name="tmp"> Archivos temporales (/tmp)</label></div>
+<div class="opcion"><label><input type="checkbox" name="tmp"> /tmp temporales</label></div>
 <div class="opcion"><label><input type="checkbox" name="oldlogs"> Logs antiguos</label></div>
 <div class="opcion"><label><input type="checkbox" name="journal"> Journal del sistema</label></div>
-<div class="opcion"><label><input type="checkbox" name="apt"> Caché APT</label></div>
+<div class="opcion"><label><input type="checkbox" name="apt"> Cache APT</label></div>
+<div class="opcion"><label><input type="checkbox" name="history"> Historial terminal</label></div>
+<div class="opcion"><label><input type="checkbox" name="extra"> Limpieza cache extra</label></div>
 
 <button type="submit">🚀 Ejecutar limpieza segura</button>
 
@@ -288,9 +331,6 @@ button{
 <div class="consola"><?= $console ?></div>
 <?php endif; ?>
 
-<!-- =========================
-     DASHBOARD SISTEMA MEJORADO
-========================= -->
 <div class="sysgrid">
 
 <div class="syscard disco">
@@ -299,12 +339,12 @@ button{
 </div>
 
 <div class="syscard ram">
-<h3>🧠 Memoria RAM</h3>
+<h3>🧠 RAM</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['ram']) ?></div>
 </div>
 
 <div class="syscard uptime">
-<h3>⏱️ Tiempo activo</h3>
+<h3>⏱️ Uptime</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['uptime']) ?></div>
 </div>
 
