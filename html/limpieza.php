@@ -1,6 +1,6 @@
 <?php
 // =========================================
-//           LIMPIADOR DEL SISTEMA
+//           LIMPIEZA DEL SISTEMA
 // =========================================
 
 error_reporting(E_ALL);
