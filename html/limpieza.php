@@ -85,21 +85,18 @@ function ejecutar($opt) {
     $report = [];
     $console = "";
 
-    // MMDVM
     if (!empty($opt['mmdvm'])) {
         list($c, $log) = borrar($paths['mmdvm']);
         $report['MMDVMHost'] = $c;
         $console .= $log;
     }
 
-    // TMP
     if (!empty($opt['tmp'])) {
         list($c, $log) = borrar($paths['tmp']);
         $report['/tmp'] = $c;
         $console .= $log;
     }
 
-    // logs antiguos
     if (!empty($opt['oldlogs'])) {
         list($c1, $l1) = borrar($paths['oldlogs']);
         list($c2, $l2) = borrar($paths['oldlogs2']);
@@ -107,32 +104,28 @@ function ejecutar($opt) {
         $console .= $l1 . $l2;
     }
 
-    // journalctl optimizado
     if (!empty($opt['journal'])) {
         exec("journalctl --vacuum-time=3d --vacuum-size=100M 2>&1");
         $report['journalctl'] = "OK";
         $console .= consola("✔ Journal optimizado");
     }
 
-    // APT
     if (!empty($opt['apt'])) {
         exec("apt clean 2>&1");
         $report['APT'] = "OK";
         $console .= consola("✔ Cache APT limpia");
     }
 
-    // HISTORIAL TERMINAL
     if (!empty($opt['history'])) {
         $console .= limpiar_historial();
         $report['historial'] = "OK";
     }
 
-    // LIMPIEZA EXTRA SEGURA
     if (!empty($opt['extra'])) {
         exec("rm -rf /home/pi/.cache/* 2>&1");
         exec("rm -rf /var/tmp/* 2>&1");
         $report['cache'] = "OK";
-        $console .= consola("✔ Cache usuario y sistema limpiados");
+        $console .= consola("✔ Cache sistema limpiada");
     }
 
     return [$report, $console];
@@ -165,6 +158,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Limpieza del sistema</title>
 
 <style>
+
 body{
     margin:0;
     font-family:Arial;
@@ -188,7 +182,7 @@ body{
 }
 
 h1{
-    color:#00d4ff;
+    color:#c9d1d9;
 }
 
 .home{
@@ -198,62 +192,93 @@ h1{
     border-radius:8px;
     text-decoration:none;
 }
-.home:hover{background:#30363d;}
+.home:hover{background:#2a313c;}
 
-/* OPCIONES */
-.opcion{
-    background:#21262d;
-    padding:12px;
-    margin:10px 0;
-    border-radius:8px;
+/* =========================
+   CHECKBOX HORIZONTAL PRO
+========================= */
+
+.grid-opciones{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-top:15px;
 }
 
-/* BOTON */
+.opcion{
+    background:#1c212a;
+    border:1px solid #2a313c;
+    padding:8px 12px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.opcion:hover{
+    background:#222a36;
+}
+
+.opcion input{
+    accent-color:#4c8bf5;
+    transform:scale(1.1);
+}
+
+.opcion span{
+    font-size:13px;
+    color:#c9d1d9;
+}
+
+/* BOTÓN */
 button{
     width:100%;
+    margin-top:15px;
     padding:14px;
-    background:linear-gradient(90deg,#00d4ff,#007bff);
     border:none;
-    color:#fff;
-    font-weight:bold;
     border-radius:8px;
+    background:#1f6feb;
+    color:white;
+    font-weight:bold;
     cursor:pointer;
+}
+
+button:hover{
+    background:#2f81f7;
 }
 
 /* CONSOLA */
 .consola{
     margin-top:15px;
-    background:#000;
+    background:#0b0f14;
     padding:10px;
-    height:130px;
+    height:110px;
     overflow:auto;
     font-family:monospace;
     font-size:12px;
     border-radius:8px;
+    border:1px solid #222;
 }
 
 .linea{
-    color:#58a6ff;
-    margin-bottom:2px;
+    color:#8ab4f8;
 }
 
 /* RESULTADOS */
-.resultado{
-    margin-top:15px;
-}
-
 .card{
     display:flex;
     justify-content:space-between;
-    background:#21262d;
-    padding:12px;
-    margin:8px 0;
+    background:#1c212a;
+    padding:10px;
+    margin:6px 0;
     border-radius:8px;
+    border:1px solid #2a313c;
 }
 
 .badge{
-    background:#00d4ff;
-    color:#000;
+    background:#30363d;
+    color:#fff;
     padding:3px 8px;
     border-radius:6px;
 }
@@ -267,16 +292,16 @@ button{
 }
 
 .syscard{
+    background:#161b22;
+    border:1px solid #2a313c;
     padding:15px;
     border-radius:10px;
-    background:#111827;
-    border:1px solid #222;
 }
 
 .syscard h3{
     margin:0 0 10px 0;
     font-size:14px;
-    color:#00d4ff;
+    color:#8ab4f8;
 }
 
 .sysvalue{
@@ -284,9 +309,6 @@ button{
     white-space:pre-wrap;
 }
 
-.disco{border-left:4px solid #00d4ff;}
-.ram{border-left:4px solid #00ff9d;}
-.uptime{border-left:4px solid #ffcc00;}
 </style>
 </head>
 
@@ -301,29 +323,57 @@ button{
 
 <form method="post">
 
-<div class="opcion"><label><input type="checkbox" name="mmdvm" checked> Logs MMDVMHost</label></div>
-<div class="opcion"><label><input type="checkbox" name="tmp"> /tmp temporales</label></div>
-<div class="opcion"><label><input type="checkbox" name="oldlogs"> Logs antiguos</label></div>
-<div class="opcion"><label><input type="checkbox" name="journal"> Journal del sistema</label></div>
-<div class="opcion"><label><input type="checkbox" name="apt"> Cache APT</label></div>
-<div class="opcion"><label><input type="checkbox" name="history"> Historial terminal</label></div>
-<div class="opcion"><label><input type="checkbox" name="extra"> Limpieza cache extra</label></div>
+<div class="grid-opciones">
 
-<button type="submit">🚀 Ejecutar limpieza segura</button>
+<label class="opcion">
+<input type="checkbox" name="mmdvm" checked>
+<span>MMDVM logs</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="tmp">
+<span>/tmp</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="oldlogs">
+<span>Logs antiguos</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="journal">
+<span>Journal</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="apt">
+<span>APT cache</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="history">
+<span>Historial</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="extra">
+<span>Cache sistema</span>
+</label>
+
+</div>
+
+<button type="submit">🚀 Ejecutar limpieza</button>
 
 </form>
 
 <?php if ($report): ?>
-<div class="resultado">
-<h3>Resultado</h3>
-
+<div class="mt-3">
 <?php foreach ($report as $k => $v): ?>
 <div class="card">
 <span><?= htmlspecialchars($k) ?></span>
 <span class="badge"><?= htmlspecialchars($v) ?></span>
 </div>
 <?php endforeach; ?>
-
 </div>
 <?php endif; ?>
 
@@ -333,17 +383,17 @@ button{
 
 <div class="sysgrid">
 
-<div class="syscard disco">
+<div class="syscard">
 <h3>💾 Disco</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['disco']) ?></div>
 </div>
 
-<div class="syscard ram">
+<div class="syscard">
 <h3>🧠 RAM</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['ram']) ?></div>
 </div>
 
-<div class="syscard uptime">
+<div class="syscard">
 <h3>⏱️ Uptime</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['uptime']) ?></div>
 </div>
