@@ -19,13 +19,12 @@ if (isset($_GET['action']) && $_GET['action'] === 'status') {
     exit;
 }
 
-/* ───────────────────────── TOGGLE (FIXED) ───────────────────────── */
+/* ───────────────────────── TOGGLE ───────────────────────── */
 if (isset($_GET['action']) && $_GET['action'] === 'toggle') {
     $st = trim(shell_exec("systemctl is-active $SERVICE 2>/dev/null"));
 
     if ($st === "active") {
 
-        // 🔴 STOP + DISABLE
         shell_exec("sudo systemctl stop $SERVICE 2>/dev/null");
         shell_exec("sudo systemctl disable $SERVICE 2>/dev/null");
 
@@ -33,7 +32,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle') {
 
     } else {
 
-        // 🟢 ENABLE + START (IMPORTANTE: persistente tras reboot)
         shell_exec("sudo systemctl enable $SERVICE 2>/dev/null");
         shell_exec("sudo systemctl start $SERVICE 2>/dev/null");
 
@@ -45,7 +43,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'toggle') {
     exit;
 }
 
-/* ───────────────────────── IP ───────────────────────── */
 $ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 ?>
 
@@ -57,6 +54,9 @@ $ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 <title>⚙ Fusion2X WEB · Control</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+<!-- ✅ SOLO AÑADIDO: Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
 <style>
 :root{
@@ -176,8 +176,66 @@ body{
 .on{color:var(--green)}
 .off{color:var(--red)}
 
-.big-btn{width:100%;margin-top:12px}
+/* ───────── BOTÓN FUSION ───────── */
+.fusion-btn{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
 
+    width:100%;
+    margin-top:14px;
+    padding:14px 16px;
+
+    border:1px solid var(--cyan);
+    border-radius:8px;
+
+    background:linear-gradient(135deg, rgba(0,212,255,.08), rgba(0,0,0,0));
+    text-decoration:none;
+
+    transition:.25s;
+}
+
+.fusion-btn:hover{
+    background:rgba(0,212,255,.12);
+    transform:translateY(-1px);
+    box-shadow:0 0 12px rgba(0,212,255,.15);
+}
+
+/* ICONOS MATERIAL */
+.material-symbols-outlined{
+    font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+
+    font-size:24px;
+    color:var(--cyan);
+}
+
+.fusion-icon, .fusion-signal{
+    display:flex;
+    align-items:center;
+}
+
+.fusion-text{
+    flex:1;
+    text-align:left;
+    font-family:var(--font-mono);
+}
+
+.fusion-title{
+    color:var(--cyan);
+    font-size:.75rem;
+    letter-spacing:.12em;
+}
+
+.fusion-sub{
+    font-size:.65rem;
+    color:var(--text-dim);
+    margin-top:2px;
+}
 </style>
 </head>
 
@@ -188,15 +246,15 @@ body{
 
     <div class="ex-btns">
 
-        <!-- SWITCH -->
         <label class="sw">
             <input type="checkbox" id="sw" onchange="toggleService(this)">
             <span class="sw-track"></span>
             <span class="sw-knob"></span>
         </label>
 
-        <!-- 🏠 PHPPLUS -->
-        <a class="btn-ex btn-green" href="mmdvm.php">🏠 Panel PHPPLUS</a>
+        <a class="btn-ex btn-green" href="mmdvm.php">
+            🏠 Panel PHPPLUS
+        </a>
 
     </div>
 </header>
@@ -212,10 +270,23 @@ body{
         <span id="st" class="off">DESCONOCIDO</span>
     </div>
 
-    <!-- WEB -->
-    <a class="btn-ex btn-cyan big-btn" target="_blank"
+    <!-- BOTÓN MODIFICADO -->
+    <a class="fusion-btn" target="_blank"
        href="http://<?php echo $ip; ?>:8080">
-        Fusion 2x WEB
+
+        <div class="fusion-icon">
+            <span class="material-symbols-outlined">radio</span>
+        </div>
+
+        <div class="fusion-text">
+            <div class="fusion-title">FUSION 2X WEB</div>
+            <div class="fusion-sub">Emisión / radio en tiempo real</div>
+        </div>
+
+        <div class="fusion-signal">
+            <span class="material-symbols-outlined">signal_cellular_alt</span>
+        </div>
+
     </a>
 
 </div>
