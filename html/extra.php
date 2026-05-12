@@ -238,7 +238,7 @@
             <p class="card-text text-white-50 small flex-grow-1">
                 Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
             </p>
-            <a href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8080" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="/fusion2x.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -307,3 +307,4 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
