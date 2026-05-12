@@ -6,7 +6,9 @@ function runCmd($cmd) {
 
 $output = "";
 
-/* ===================== ACCIONES ===================== */
+/* =========================
+   ACCIONES
+========================= */
 if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
@@ -15,60 +17,47 @@ if (isset($_GET['action'])) {
     $output .= "🧹 ACCIÓN: $action\n";
     $output .= "==================================================\n\n";
 
-    /* ===================== START ===================== */
     if ($action == "start") {
 
-        $output .= "▶ STARTING OpenWebRX (MANUAL ONLY)...\n\n";
+        $output .= "▶ START OpenWebRX (SAFE MODE)\n\n";
 
-        // Asegura que NO tenga bloqueo
+        // aseguramos que docker no lo reinicie solo
         $output .= runCmd("docker update --restart=no openwebrx");
 
-        // Arranque manual
+        // arrancamos contenedor
         $output .= runCmd("docker start openwebrx");
-
-        $output .= "\n✔ START COMPLETADO\n";
     }
 
-    /* ===================== STOP (BLOQUEO TOTAL) ===================== */
     if ($action == "stop") {
 
-        $output .= "⏹ STOPPING OpenWebRX (FULL LOCK - NO AUTO START)...\n\n";
+        $output .= "⏹ STOP OpenWebRX (NO AUTO RESTART)\n\n";
 
-        // 🔒 1. bloquear cualquier auto-arranque futuro
+        // quitamos cualquier auto-restart
         $output .= runCmd("docker update --restart=no openwebrx");
 
-        // 🔥 2. parar contenedor
-        $output .= runCmd("docker stop openwebrx");
-
-        // 💀 3. asegurar parada total (por si se queda colgado)
-        $output .= runCmd("docker kill openwebrx");
-
-        $output .= "\n✔ CONTAINER STOPPED AND LOCKED\n";
+        // paramos contenedor
+        $output .= runCmd("docker stop -t 10 openwebrx");
     }
 
-    /* ===================== RESTART ===================== */
     if ($action == "restart") {
 
-        $output .= "🔄 RESTARTING OpenWebRX (NO AUTO START)...\n";
+        $output .= "🔄 RESTART OpenWebRX (SAFE)\n\n";
 
         $output .= runCmd("docker update --restart=no openwebrx");
         $output .= runCmd("docker restart openwebrx");
     }
 
-    /* ===================== AUTO TOGGLE ===================== */
-    if ($action == "toggle") {
+    if ($action == "lock") {
 
-        $output .= "⚙ TOGGLING AUTO-START POLICY...\n\n";
+        $output .= "🔒 FULL LOCK (NO AUTO START EVER)\n\n";
 
-        $state = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
+        // asegura Docker sin auto restart
+        $output .= runCmd("docker update --restart=no openwebrx");
 
-        if ($state == "unless-stopped") {
-            $output .= runCmd("docker update --restart=no openwebrx");
-            $output .= "\nAUTO → DISABLED\n";
-        } else {
-            $output .= runCmd("docker update --restart=unless-stopped openwebrx");
-            $output .= "\nAUTO → ENABLED\n";
-        }
+        // stop duro
+        $output .= runCmd("docker stop -t 10 openwebrx");
+
+        $output .= "\n✔ LOCK APPLIED (systemd already disabled)\n";
     }
 
     $output .= "\n==================================================\n";
@@ -76,11 +65,13 @@ if (isset($_GET['action'])) {
     $output .= "==================================================\n\n";
 }
 
-/* ===================== STATUS ===================== */
+/* =========================
+   ESTADO
+========================= */
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
-/* estado real de restart policy */
+/* restart policy */
 $autostart = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
 $isEnabled = ($autostart == "unless-stopped");
 
@@ -93,7 +84,6 @@ $isEnabled = ($autostart == "unless-stopped");
 <title>OpenWebRX Control</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
 <style>
 body {
@@ -110,42 +100,34 @@ body {
 
 .topbar {
     display:flex;
+    gap:10px;
     align-items:center;
-    gap:8px;
-    flex-wrap: nowrap;
-    overflow-x:auto;
+    flex-wrap:wrap;
 }
 
 .title {
-    font-weight:bold;
     font-size:18px;
-    white-space:nowrap;
+    font-weight:bold;
 }
 
 .btn {
-    border-radius:8px;
-    font-size:0.75rem;
-    padding:4px 8px;
-    white-space:nowrap;
+    font-size:0.8rem;
 }
 
 .terminal {
     background:#000;
     color:#00ff66;
     padding:15px;
-    height:75vh;
+    height:70vh;
     overflow-y:auto;
     font-family: monospace;
     font-size: 13px;
-    border-radius:12px;
+    border-radius:10px;
     white-space: pre-wrap;
-    border:1px solid #333;
 }
 
 .status-ok { color: lime; font-weight:bold; }
 .status-bad { color: red; font-weight:bold; }
-
-.spacer { flex-grow:1; }
 </style>
 </head>
 
@@ -156,7 +138,7 @@ body {
     <div class="panel">
         <div class="topbar">
 
-            <div class="title">📡 OpenWebRX Control Panel</div>
+            <div class="title">📡 OpenWebRX CONTROL (SAFE MODE)</div>
 
             <span>
                 Docker:
@@ -168,36 +150,20 @@ body {
             </span>
 
             <span>
-                Auto:
-                <?php if ($isEnabled): ?>
-                    <span class="status-ok">🟢 ENABLED</span>
-                <?php else: ?>
-                    <span class="status-bad">🔴 DISABLED</span>
-                <?php endif; ?>
+                Restart:
+                <b><?= htmlspecialchars($autostart) ?></b>
             </span>
 
-            <div class="ms-2"></div>
-
-            <a href="?action=start" class="btn btn-success btn-sm">▶ START</a>
-            <a href="?action=stop" class="btn btn-danger btn-sm">⏹ STOP</a>
-            <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
-            <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTO</a>
-
-            <a href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8073" target="_blank" class="btn btn-info btn-sm">
-                🌐 WEB
-            </a>
-
-            <div class="spacer"></div>
-
-            <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
-                <i class="bi bi-house-fill me-1"></i> PANEL PHPPLUS
-            </a>
+            <a class="btn btn-success" href="?action=start">▶ START</a>
+            <a class="btn btn-danger" href="?action=stop">⏹ STOP</a>
+            <a class="btn btn-warning" href="?action=restart">🔄 RESTART</a>
+            <a class="btn btn-dark" href="?action=lock">🔒 LOCK</a>
 
         </div>
     </div>
 
     <div class="panel">
-        <h5>📟 OpenWebRX Console</h5>
+        <h5>📟 STATUS</h5>
 
         <div class="terminal">
 <?php
@@ -210,13 +176,10 @@ echo "\n================ DOCKER STATUS ================\n";
 echo runCmd("docker ps -a --filter name=openwebrx");
 
 echo "\n================ CONTAINER INFO ================\n";
-echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null");
+echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Restart: {{.HostConfig.RestartPolicy.Name}}' 2>/dev/null");
 
-echo "\n================ LOGS (LAST 200) ================\n";
-echo runCmd("docker logs --tail 200 openwebrx 2>&1");
-
-echo "\n================ RESTART POLICY ================\n";
-echo runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx");
+echo "\n================ LOGS ================\n";
+echo runCmd("docker logs --tail 80 openwebrx 2>&1");
 
 ?>
         </div>
