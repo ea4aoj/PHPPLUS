@@ -1,7 +1,6 @@
 <?php
 // =========================================
-// ORANGE PI CLEANER - DARK UI (PHP)
-// FIXED + DEBUG MODE + ROBUST FILE DELETION
+// LIMPIADOR DEL SISTEMA - ORANGE PI (DASHBOARD PRO)
 // =========================================
 
 error_reporting(E_ALL);
@@ -10,78 +9,114 @@ ini_set('display_errors', 1);
 $paths = [
     'mmdvm' => '/home/pi/MMDVMHost/*.log',
     'tmp'   => '/tmp/*',
-    'varlog' => '/var/log/*.log',
-    'varlog1' => '/var/log/*.1',
-    'gziplogs' => '/var/log/*.gz'
+    'oldlogs' => '/var/log/*.gz',
+    'oldlogs2' => '/var/log/*.1'
 ];
 
-function borrar_archivos($pattern) {
+function consola($msg) {
+    return "<div class='linea'>" . htmlspecialchars($msg) . "</div>";
+}
+
+function borrar($pattern) {
     $files = glob($pattern);
     $deleted = 0;
+    $out = "";
 
-    echo "<pre>DEBUG pattern: $pattern\n";
+    $out .= consola("Escaneando: $pattern");
 
     if (!$files) {
-        echo "No files found\n</pre>";
-        return 0;
+        $out .= consola("Sin archivos encontrados");
+        return [$deleted, $out];
     }
 
-    foreach ($files as $file) {
-        echo "Found: $file\n";
+    foreach ($files as $f) {
+        $out .= consola("Encontrado: $f");
 
-        if (is_file($file)) {
-            // más robusto que unlink en algunos casos
-            if (@unlink($file)) {
-                echo "Deleted: $file\n";
+        if (is_file($f)) {
+            if (@unlink($f)) {
+                $out .= consola("Eliminado ✔");
                 $deleted++;
             } else {
-                echo "FAILED deleting: $file (permission?)\n";
+                $out .= consola("ERROR permisos");
             }
         }
     }
 
-    echo "</pre>";
-
-    return $deleted;
+    return [$deleted, $out];
 }
 
-function ejecutar_limpieza($options) {
+/**
+ * 🔥 INFORMACIÓN DEL SISTEMA MEJORADA
+ */
+function info_sistema() {
+
+    $df = shell_exec("df -h / | awk 'NR==2'");
+    $uptime = shell_exec("uptime -p");
+    $mem = shell_exec("free -m | awk 'NR==2{printf \"Usado: %sMB / Total: %sMB\", $3,$2}'");
+
+    return [
+        'disco' => trim($df),
+        'uptime' => trim($uptime),
+        'ram' => trim($mem)
+    ];
+}
+
+function ejecutar($opt) {
+
     global $paths;
+
     $report = [];
+    $console = "";
 
-    if (!empty($options['mmdvm'])) {
-        $report['MMDVMHost logs'] = borrar_archivos($paths['mmdvm']);
+    if (!empty($opt['mmdvm'])) {
+        list($c, $log) = borrar($paths['mmdvm']);
+        $report['MMDVMHost'] = $c;
+        $console .= $log;
     }
 
-    if (!empty($options['tmp'])) {
-        $report['/tmp'] = borrar_archivos($paths['tmp']);
+    if (!empty($opt['tmp'])) {
+        list($c, $log) = borrar($paths['tmp']);
+        $report['/tmp'] = $c;
+        $console .= $log;
     }
 
-    if (!empty($options['system_logs'])) {
-        $report['System logs'] = borrar_archivos($paths['varlog'])
-            + borrar_archivos($paths['varlog1'])
-            + borrar_archivos($paths['gziplogs']);
+    if (!empty($opt['oldlogs'])) {
+        list($c1, $l1) = borrar($paths['oldlogs']);
+        list($c2, $l2) = borrar($paths['oldlogs2']);
+        $report['logs antiguos'] = $c1 + $c2;
+        $console .= $l1 . $l2;
     }
 
-    if (!empty($options['journal'])) {
-        exec("journalctl --vacuum-time=3d 2>&1", $out);
-        $report['Journalctl'] = implode("\n", $out);
+    if (!empty($opt['journal'])) {
+        exec("journalctl --vacuum-time=3d 2>&1");
+        $report['journalctl'] = "OK";
+        $console .= consola("Journalctl limpiado");
     }
 
-    return $report;
+    if (!empty($opt['apt'])) {
+        exec("apt clean 2>&1");
+        $report['APT'] = "OK";
+        $console .= consola("Cache APT limpiada");
+    }
+
+    return [$report, $console];
 }
 
 $report = null;
+$console = "";
+$sys = info_sistema();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $options = [
+
+    $opt = [
         'mmdvm' => isset($_POST['mmdvm']),
         'tmp' => isset($_POST['tmp']),
-        'system_logs' => isset($_POST['system_logs']),
-        'journal' => isset($_POST['journal'])
+        'oldlogs' => isset($_POST['oldlogs']),
+        'journal' => isset($_POST['journal']),
+        'apt' => isset($_POST['apt'])
     ];
 
-    $report = ejecutar_limpieza($options);
+    list($report, $console) = ejecutar($opt);
 }
 ?>
 
@@ -89,50 +124,193 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Orange Pi Cleaner</title>
+<title>Limpiador del sistema</title>
+
 <style>
-    body { margin:0; font-family:Arial; background:#0f1115; color:#e6e6e6; }
-    .container { max-width:700px; margin:50px auto; background:#1a1d23; padding:20px; border-radius:12px; }
-    h1 { text-align:center; color:#00d4ff; }
-    .option { background:#262a33; padding:12px; margin:10px 0; border-radius:8px; }
-    input { transform:scale(1.2); }
-    button { width:100%; padding:15px; background:#00d4ff; border:none; color:#000; font-weight:bold; border-radius:8px; }
-    pre { background:#000; padding:10px; color:#00ff9d; overflow:auto; }
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0d1117;
+    color:#e6edf3;
+}
+
+.contenedor{
+    max-width:900px;
+    margin:30px auto;
+    background:#161b22;
+    padding:20px;
+    border-radius:12px;
+}
+
+/* HEADER */
+.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+h1{
+    color:#00d4ff;
+}
+
+.home{
+    background:#21262d;
+    color:#fff;
+    padding:8px 12px;
+    border-radius:8px;
+    text-decoration:none;
+}
+.home:hover{background:#30363d;}
+
+/* OPCIONES */
+.opcion{
+    background:#21262d;
+    padding:12px;
+    margin:10px 0;
+    border-radius:8px;
+}
+
+/* BOTON */
+button{
+    width:100%;
+    padding:14px;
+    background:linear-gradient(90deg,#00d4ff,#007bff);
+    border:none;
+    color:#fff;
+    font-weight:bold;
+    border-radius:8px;
+}
+
+/* CONSOLA */
+.consola{
+    margin-top:15px;
+    background:#000;
+    padding:10px;
+    height:140px;
+    overflow:auto;
+    font-family:monospace;
+    font-size:12px;
+    border-radius:8px;
+}
+.linea{color:#58a6ff; margin-bottom:2px;}
+
+/* RESULTADOS */
+.resultado{
+    margin-top:15px;
+}
+
+.card{
+    display:flex;
+    justify-content:space-between;
+    background:#21262d;
+    padding:12px;
+    margin:8px 0;
+    border-radius:8px;
+}
+
+.badge{
+    background:#00d4ff;
+    color:#000;
+    padding:3px 8px;
+    border-radius:6px;
+}
+
+/* ===== DASHBOARD SISTEMA ===== */
+.sysgrid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap:10px;
+    margin-top:20px;
+}
+
+.syscard{
+    padding:15px;
+    border-radius:10px;
+    background:#111827;
+    border:1px solid #222;
+}
+
+.syscard h3{
+    margin:0 0 10px 0;
+    font-size:14px;
+    color:#00d4ff;
+}
+
+.sysvalue{
+    font-size:13px;
+    color:#e6edf3;
+    white-space:pre-wrap;
+}
+
+/* colores por tipo */
+.disco{border-left:4px solid #00d4ff;}
+.ram{border-left:4px solid #00ff9d;}
+.uptime{border-left:4px solid #ffcc00;}
 </style>
 </head>
+
 <body>
 
-<div class="container">
-<h1>🧹 Orange Pi Cleaner </h1>
+<div class="contenedor">
+
+<div class="top">
+<h1>🧹 Limpiador del sistema</h1>
+<a class="home" href="mmdvm.php">🏠 Inicio</a>
+</div>
 
 <form method="post">
 
-<div class="option">
-<label><input type="checkbox" name="mmdvm" checked> MMDVMHost logs</label>
-</div>
+<div class="opcion"><label><input type="checkbox" name="mmdvm" checked> Logs MMDVMHost</label></div>
+<div class="opcion"><label><input type="checkbox" name="tmp"> Archivos temporales (/tmp)</label></div>
+<div class="opcion"><label><input type="checkbox" name="oldlogs"> Logs antiguos</label></div>
+<div class="opcion"><label><input type="checkbox" name="journal"> Journal del sistema</label></div>
+<div class="opcion"><label><input type="checkbox" name="apt"> Caché APT</label></div>
 
-<div class="option">
-<label><input type="checkbox" name="tmp"> /tmp</label>
-</div>
+<button type="submit">🚀 Ejecutar limpieza segura</button>
 
-<div class="option">
-<label><input type="checkbox" name="system_logs"> /var/log</label>
-</div>
-
-<div class="option">
-<label><input type="checkbox" name="journal"> journalctl</label>
-</div>
-
-<button type="submit">🚀 Ejecutar limpieza</button>
 </form>
 
 <?php if ($report): ?>
-    <h3>Resultado:</h3>
-    <pre><?php print_r($report); ?></pre>
+<div class="resultado">
+<h3>Resultado</h3>
+
+<?php foreach ($report as $k => $v): ?>
+<div class="card">
+<span><?= htmlspecialchars($k) ?></span>
+<span class="badge"><?= htmlspecialchars($v) ?></span>
+</div>
+<?php endforeach; ?>
+
+</div>
 <?php endif; ?>
+
+<?php if ($console): ?>
+<div class="consola"><?= $console ?></div>
+<?php endif; ?>
+
+<!-- =========================
+     DASHBOARD SISTEMA MEJORADO
+========================= -->
+<div class="sysgrid">
+
+<div class="syscard disco">
+<h3>💾 Disco</h3>
+<div class="sysvalue"><?= htmlspecialchars($sys['disco']) ?></div>
+</div>
+
+<div class="syscard ram">
+<h3>🧠 Memoria RAM</h3>
+<div class="sysvalue"><?= htmlspecialchars($sys['ram']) ?></div>
+</div>
+
+<div class="syscard uptime">
+<h3>⏱️ Tiempo activo</h3>
+<div class="sysvalue"><?= htmlspecialchars($sys['uptime']) ?></div>
+</div>
+
+</div>
 
 </div>
 
 </body>
 </html>
-
