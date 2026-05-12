@@ -18,7 +18,7 @@ class BluetoothManager {
         $this->btctlBin     = trim(shell_exec('which bluetoothctl 2>/dev/null')) ?: '/usr/bin/bluetoothctl';
         
         if (!is_writable(dirname($this->scriptPath))) {
-            throw new RuntimeException("Directorio no escribible. Ejecuta: sudo chown -R www-www-data " . dirname($this->scriptPath));
+            throw new RuntimeException("Directorio no escribible. Ejecuta: sudo chown -R www-data " . dirname($this->scriptPath));
         }
     }
 
