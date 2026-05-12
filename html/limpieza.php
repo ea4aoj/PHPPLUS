@@ -1,14 +1,15 @@
 <?php
 // =========================================
 // ORANGE PI CLEANER - DARK UI (PHP)
-// =========================================
-// Ejecutar en navegador o CLI (recomendado web con apache/nginx)
-// IMPORTANTE: requiere permisos adecuados para borrar logs del sistema
+// FIXED + DEBUG MODE + ROBUST FILE DELETION
 // =========================================
 
-// CONFIGURACIÓN
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 $paths = [
-    'mmdvm' => '/home/pi/MMDVMHosts/*.log',
+    // FIX: corregido nombre probable (MMDVMHost vs MMDVMHosts)
+    'mmdvm' => '/home/pi/MMDVMHost/*.log',
     'tmp'   => '/tmp/*',
     'varlog' => '/var/log/*.log',
     'varlog1' => '/var/log/*.1',
@@ -19,15 +20,28 @@ function borrar_archivos($pattern) {
     $files = glob($pattern);
     $deleted = 0;
 
-    if (!$files) return 0;
+    echo "<pre>DEBUG pattern: $pattern\n";
+
+    if (!$files) {
+        echo "No files found\n</pre>";
+        return 0;
+    }
 
     foreach ($files as $file) {
+        echo "Found: $file\n";
+
         if (is_file($file)) {
+            // más robusto que unlink en algunos casos
             if (@unlink($file)) {
+                echo "Deleted: $file\n";
                 $deleted++;
+            } else {
+                echo "FAILED deleting: $file (permission?)\n";
             }
         }
     }
+
+    echo "</pre>";
 
     return $deleted;
 }
@@ -37,7 +51,7 @@ function ejecutar_limpieza($options) {
     $report = [];
 
     if (!empty($options['mmdvm'])) {
-        $report['MMDVMHosts logs'] = borrar_archivos($paths['mmdvm']);
+        $report['MMDVMHost logs'] = borrar_archivos($paths['mmdvm']);
     }
 
     if (!empty($options['tmp'])) {
@@ -51,8 +65,8 @@ function ejecutar_limpieza($options) {
     }
 
     if (!empty($options['journal'])) {
-        exec("journalctl --vacuum-time=3d");
-        $report['Journalctl'] = 'limpiado (3 días)';
+        exec("journalctl --vacuum-time=3d 2>&1", $out);
+        $report['Journalctl'] = implode("\n", $out);
     }
 
     return $report;
@@ -78,104 +92,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8">
 <title>Orange Pi Cleaner</title>
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #0f1115;
-        color: #e6e6e6;
-    }
-
-    .container {
-        max-width: 700px;
-        margin: 50px auto;
-        background: #1a1d23;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.6);
-    }
-
-    h1 {
-        text-align: center;
-        color: #00d4ff;
-    }
-
-    .option {
-        background: #262a33;
-        padding: 12px;
-        margin: 10px 0;
-        border-radius: 8px;
-    }
-
-    label {
-        cursor: pointer;
-    }
-
-    input[type=checkbox] {
-        transform: scale(1.3);
-        margin-right: 10px;
-    }
-
-    button {
-        width: 100%;
-        padding: 15px;
-        background: linear-gradient(90deg, #00d4ff, #007bff);
-        border: none;
-        color: white;
-        font-size: 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        margin-top: 15px;
-    }
-
-    button:hover {
-        opacity: 0.9;
-    }
-
-    .report {
-        margin-top: 20px;
-        background: #11141a;
-        padding: 15px;
-        border-radius: 8px;
-    }
-
-    .ok {
-        color: #00ff9d;
-    }
+    body { margin:0; font-family:Arial; background:#0f1115; color:#e6e6e6; }
+    .container { max-width:700px; margin:50px auto; background:#1a1d23; padding:20px; border-radius:12px; }
+    h1 { text-align:center; color:#00d4ff; }
+    .option { background:#262a33; padding:12px; margin:10px 0; border-radius:8px; }
+    input { transform:scale(1.2); }
+    button { width:100%; padding:15px; background:#00d4ff; border:none; color:#000; font-weight:bold; border-radius:8px; }
+    pre { background:#000; padding:10px; color:#00ff9d; overflow:auto; }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🧹 Orange Pi Cleaner</h1>
+<h1>🧹 Orange Pi Cleaner (FIXED)</h1>
 
-    <form method="post">
+<form method="post">
 
-        <div class="option">
-            <label><input type="checkbox" name="mmdvm" checked> Limpiar logs MMDVMHosts</label>
-        </div>
+<div class="option">
+<label><input type="checkbox" name="mmdvm" checked> MMDVMHost logs</label>
+</div>
 
-        <div class="option">
-            <label><input type="checkbox" name="tmp"> Limpiar /tmp</label>
-        </div>
+<div class="option">
+<label><input type="checkbox" name="tmp"> /tmp</label>
+</div>
 
-        <div class="option">
-            <label><input type="checkbox" name="system_logs"> Limpiar logs del sistema (/var/log)</label>
-        </div>
+<div class="option">
+<label><input type="checkbox" name="system_logs"> /var/log</label>
+</div>
 
-        <div class="option">
-            <label><input type="checkbox" name="journal"> Limpiar journalctl (3 días)</label>
-        </div>
+<div class="option">
+<label><input type="checkbox" name="journal"> journalctl</label>
+</div>
 
-        <button type="submit">🚀 Ejecutar limpieza</button>
-    </form>
+<button type="submit">🚀 Ejecutar limpieza</button>
+</form>
 
 <?php if ($report): ?>
-    <div class="report">
-        <h3>Resultado:</h3>
-        <?php foreach ($report as $k => $v): ?>
-            <p class="ok"><?= htmlspecialchars($k) ?> → <?= htmlspecialchars($v) ?></p>
-        <?php endforeach; ?>
-    </div>
+    <h3>Resultado:</h3>
+    <pre><?php print_r($report); ?></pre>
 <?php endif; ?>
 
 </div>
