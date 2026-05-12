@@ -32,15 +32,15 @@ if (isset($_GET['action'])) {
 
     if ($action == "toggle") {
 
-        $output .= "⚙ TOGGLING AUTOSTART...\n\n";
+        $output .= "⚙ TOGGLING AUTOSTART (DOCKER)...\n\n";
 
-        $state = trim(runCmd("systemctl is-enabled openwebrx 2>/dev/null"));
+        $state = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
 
-        if ($state == "enabled") {
-            $output .= runCmd("sudo systemctl disable openwebrx");
+        if ($state == "unless-stopped") {
+            $output .= runCmd("docker update --restart=no openwebrx");
             $output .= "\nAUTOSTART → DISABLED\n";
         } else {
-            $output .= runCmd("sudo systemctl enable openwebrx");
+            $output .= runCmd("docker update --restart=unless-stopped openwebrx");
             $output .= "\nAUTOSTART → ENABLED\n";
         }
     }
@@ -54,8 +54,9 @@ if (isset($_GET['action'])) {
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
-$autostart = trim(runCmd("systemctl is-enabled openwebrx 2>/dev/null"));
-$isEnabled = ($autostart == "enabled");
+/* AUTOSTART REAL (DOCKER) */
+$autostart = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
+$isEnabled = ($autostart == "unless-stopped");
 
 ?>
 
@@ -81,7 +82,6 @@ body {
     margin-bottom:15px;
 }
 
-/* TOP BAR */
 .topbar {
     display:flex;
     align-items:center;
@@ -96,7 +96,6 @@ body {
     white-space:nowrap;
 }
 
-/* BOTONES PEQUEÑOS */
 .btn {
     border-radius:8px;
     font-size:0.75rem;
@@ -128,7 +127,6 @@ body {
 
 <div class="container py-4">
 
-    <!-- HEADER -->
     <div class="panel">
         <div class="topbar">
 
@@ -159,13 +157,12 @@ body {
             <a href="?action=restart" class="btn btn-warning btn-sm">🔄 RESTART</a>
             <a href="?action=toggle" class="btn btn-primary btn-sm">⚙ AUTO</a>
 
-                <a href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8073" target="_blank" class="btn btn-info btn-sm">
+            <a href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8073" target="_blank" class="btn btn-info btn-sm">
                 🌐 WEB
             </a>
 
             <div class="spacer"></div>
 
-            <!-- HOME PHPPLUS -->
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-house-fill me-1"></i> PANEL PHPPLUS
             </a>
@@ -173,33 +170,27 @@ body {
         </div>
     </div>
 
-    <!-- TERMINAL -->
     <div class="panel">
         <h5>📟 OpenWebRX Console (LIVE STATUS)</h5>
 
         <div class="terminal">
 <?php
 
-/* ===== BLOQUE 1: ACCIÓN ===== */
 if ($output != "") {
     echo $output;
 }
 
-/* ===== BLOQUE 2: ESTADO REAL SIEMPRE ===== */
 echo "\n================ DOCKER STATUS ================\n";
 echo runCmd("docker ps -a --filter name=openwebrx");
 
-/* ===== BLOQUE 3: INSPECT ===== */
 echo "\n================ CONTAINER INFO ================\n";
 echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null");
 
-/* ===== BLOQUE 4: LOGS REALES ===== */
 echo "\n================ LIVE LOGS (LAST 200) ================\n";
 echo runCmd("docker logs --tail 200 openwebrx 2>&1");
 
-/* ===== BLOQUE 5: SISTEMA ===== */
-echo "\n================ SYSTEM STATUS ================\n";
-echo runCmd("systemctl status openwebrx --no-pager 2>/dev/null");
+echo "\n================ DOCKER RESTART POLICY ================\n";
+echo runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx");
 
 ?>
         </div>
