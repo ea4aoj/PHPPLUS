@@ -8,7 +8,6 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $paths = [
-    // FIX: corregido nombre probable (MMDVMHost vs MMDVMHosts)
     'mmdvm' => '/home/pi/MMDVMHost/*.log',
     'tmp'   => '/tmp/*',
     'varlog' => '/var/log/*.log',
@@ -104,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <div class="container">
-<h1>🧹 Orange Pi Cleaner (FIXED)</h1>
+<h1>🧹 Orange Pi Cleaner </h1>
 
 <form method="post">
 
