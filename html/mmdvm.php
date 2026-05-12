@@ -728,8 +728,8 @@ button.btn-header { font-family: var(--font-mono); }
 </div>
 <button class="btn-header cyan" onclick="xtTtydOpen()">⌨ Terminal</button>
 <a href="extra.php" class="btn-header amber">☰ Menu Extra</a>
-<button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Pi</button>
-</div>
+<!--<button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Pi</button>
+</div>-->
 </header>
 <main class="ctrl-body">
 <div class="station-card" style="justify-content:space-between;">
