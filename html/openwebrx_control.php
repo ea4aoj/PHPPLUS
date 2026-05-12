@@ -19,45 +19,30 @@ if (isset($_GET['action'])) {
 
     if ($action == "start") {
 
-        $output .= "▶ START OpenWebRX (SAFE MODE)\n\n";
-
-        // aseguramos que docker no lo reinicie solo
+        $output .= "▶ START OpenWebRX\n\n";
         $output .= runCmd("docker update --restart=no openwebrx");
-
-        // arrancamos contenedor
         $output .= runCmd("docker start openwebrx");
     }
 
     if ($action == "stop") {
 
         $output .= "⏹ STOP OpenWebRX (NO AUTO RESTART)\n\n";
-
-        // quitamos cualquier auto-restart
         $output .= runCmd("docker update --restart=no openwebrx");
-
-        // paramos contenedor
         $output .= runCmd("docker stop -t 10 openwebrx");
     }
 
     if ($action == "restart") {
 
-        $output .= "🔄 RESTART OpenWebRX (SAFE)\n\n";
-
+        $output .= "🔄 RESTART OpenWebRX\n\n";
         $output .= runCmd("docker update --restart=no openwebrx");
         $output .= runCmd("docker restart openwebrx");
     }
 
     if ($action == "lock") {
 
-        $output .= "🔒 FULL LOCK (NO AUTO START EVER)\n\n";
-
-        // asegura Docker sin auto restart
+        $output .= "🔒 FULL LOCK (STOP + NO AUTO START)\n\n";
         $output .= runCmd("docker update --restart=no openwebrx");
-
-        // stop duro
         $output .= runCmd("docker stop -t 10 openwebrx");
-
-        $output .= "\n✔ LOCK APPLIED (systemd already disabled)\n";
     }
 
     $output .= "\n==================================================\n";
@@ -66,14 +51,12 @@ if (isset($_GET['action'])) {
 }
 
 /* =========================
-   ESTADO
+   STATUS
 ========================= */
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
-/* restart policy */
 $autostart = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
-$isEnabled = ($autostart == "unless-stopped");
 
 ?>
 
@@ -100,18 +83,18 @@ body {
 
 .topbar {
     display:flex;
-    gap:10px;
     align-items:center;
+    gap:8px;
     flex-wrap:wrap;
 }
 
 .title {
-    font-size:18px;
     font-weight:bold;
+    font-size:18px;
 }
 
 .btn {
-    font-size:0.8rem;
+    font-size:0.75rem;
 }
 
 .terminal {
@@ -135,10 +118,11 @@ body {
 
 <div class="container py-4">
 
+    <!-- PANEL SUPERIOR -->
     <div class="panel">
         <div class="topbar">
 
-            <div class="title">📡 OpenWebRX CONTROL (SAFE MODE)</div>
+            <div class="title">📡 OpenWebRX CONTROL</div>
 
             <span>
                 Docker:
@@ -150,20 +134,35 @@ body {
             </span>
 
             <span>
-                Restart:
-                <b><?= htmlspecialchars($autostart) ?></b>
+                Restart: <b><?= htmlspecialchars($autostart) ?></b>
             </span>
 
+            <div style="flex:1"></div>
+
+            <!-- BOTONES CONTROL -->
             <a class="btn btn-success" href="?action=start">▶ START</a>
             <a class="btn btn-danger" href="?action=stop">⏹ STOP</a>
             <a class="btn btn-warning" href="?action=restart">🔄 RESTART</a>
             <a class="btn btn-dark" href="?action=lock">🔒 LOCK</a>
 
+            <!-- ACCESO WEB -->
+            <a class="btn btn-info" target="_blank"
+               href="http://<?= $_SERVER['SERVER_ADDR'] ?>:8073">
+               🌐 OPENWEBRX
+            </a>
+
+            <!-- TU PANEL ORIGINAL -->
+            <a class="btn btn-outline-light"
+               href="mmdvm.php">
+               🏠 PANEL PHPPLUS
+            </a>
+
         </div>
     </div>
 
+    <!-- TERMINAL -->
     <div class="panel">
-        <h5>📟 STATUS</h5>
+        <h5>📟 STATUS / LOGS</h5>
 
         <div class="terminal">
 <?php
@@ -178,8 +177,8 @@ echo runCmd("docker ps -a --filter name=openwebrx");
 echo "\n================ CONTAINER INFO ================\n";
 echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Restart: {{.HostConfig.RestartPolicy.Name}}' 2>/dev/null");
 
-echo "\n================ LOGS ================\n";
-echo runCmd("docker logs --tail 80 openwebrx 2>&1");
+echo "\n================ LOGS (LAST 100) ================\n";
+echo runCmd("docker logs --tail 100 openwebrx 2>&1");
 
 ?>
         </div>
