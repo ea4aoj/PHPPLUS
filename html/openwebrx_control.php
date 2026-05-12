@@ -6,7 +6,7 @@ function runCmd($cmd) {
 
 $output = "";
 
-/* ACCIONES */
+/* ===================== ACCIONES ===================== */
 if (isset($_GET['action'])) {
 
     $action = $_GET['action'];
@@ -18,35 +18,38 @@ if (isset($_GET['action'])) {
     /* ===================== START ===================== */
     if ($action == "start") {
 
-        $output .= "▶ STARTING OpenWebRX...\n";
+        $output .= "▶ STARTING OpenWebRX (MANUAL ONLY)...\n\n";
 
-        // si quieres mantenerlo sin autostart
+        // Asegura que NO tenga bloqueo
         $output .= runCmd("docker update --restart=no openwebrx");
 
+        // Arranque manual
         $output .= runCmd("docker start openwebrx");
+
+        $output .= "\n✔ START COMPLETADO\n";
     }
 
-    /* ===================== STOP (IMPORTANTE) ===================== */
+    /* ===================== STOP (BLOQUEO TOTAL) ===================== */
     if ($action == "stop") {
 
-        $output .= "⏹ STOPPING OpenWebRX (FULL STOP, NO AUTO RESTART)...\n\n";
+        $output .= "⏹ STOPPING OpenWebRX (FULL LOCK - NO AUTO START)...\n\n";
 
-        // 🔒 CLAVE: evita que Docker lo levante solo
+        // 🔒 1. bloquear cualquier auto-arranque futuro
         $output .= runCmd("docker update --restart=no openwebrx");
 
-        // parar limpio
+        // 🔥 2. parar contenedor
         $output .= runCmd("docker stop openwebrx");
 
-        // por si está “colgado”
+        // 💀 3. asegurar parada total (por si se queda colgado)
         $output .= runCmd("docker kill openwebrx");
 
-        $output .= "\n✔ CONTAINER STOPPED AND AUTO-RESTART DISABLED\n";
+        $output .= "\n✔ CONTAINER STOPPED AND LOCKED\n";
     }
 
     /* ===================== RESTART ===================== */
     if ($action == "restart") {
 
-        $output .= "🔄 RESTARTING OpenWebRX...\n";
+        $output .= "🔄 RESTARTING OpenWebRX (NO AUTO START)...\n";
 
         $output .= runCmd("docker update --restart=no openwebrx");
         $output .= runCmd("docker restart openwebrx");
@@ -55,16 +58,16 @@ if (isset($_GET['action'])) {
     /* ===================== AUTO TOGGLE ===================== */
     if ($action == "toggle") {
 
-        $output .= "⚙ TOGGLING DOCKER AUTOSTART POLICY...\n\n";
+        $output .= "⚙ TOGGLING AUTO-START POLICY...\n\n";
 
         $state = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
 
         if ($state == "unless-stopped") {
             $output .= runCmd("docker update --restart=no openwebrx");
-            $output .= "\nAUTOSTART → DISABLED\n";
+            $output .= "\nAUTO → DISABLED\n";
         } else {
             $output .= runCmd("docker update --restart=unless-stopped openwebrx");
-            $output .= "\nAUTOSTART → ENABLED\n";
+            $output .= "\nAUTO → ENABLED\n";
         }
     }
 
@@ -73,11 +76,11 @@ if (isset($_GET['action'])) {
     $output .= "==================================================\n\n";
 }
 
-/* STATUS */
+/* ===================== STATUS ===================== */
 $status = trim(runCmd("docker ps -q -f name=openwebrx"));
 $isRunning = ($status != "");
 
-/* RESTART POLICY REAL */
+/* estado real de restart policy */
 $autostart = trim(runCmd("docker inspect -f '{{.HostConfig.RestartPolicy.Name}}' openwebrx"));
 $isEnabled = ($autostart == "unless-stopped");
 
@@ -165,7 +168,7 @@ body {
             </span>
 
             <span>
-                Autostart:
+                Auto:
                 <?php if ($isEnabled): ?>
                     <span class="status-ok">🟢 ENABLED</span>
                 <?php else: ?>
@@ -194,7 +197,7 @@ body {
     </div>
 
     <div class="panel">
-        <h5>📟 OpenWebRX Console (LIVE STATUS)</h5>
+        <h5>📟 OpenWebRX Console</h5>
 
         <div class="terminal">
 <?php
@@ -209,7 +212,7 @@ echo runCmd("docker ps -a --filter name=openwebrx");
 echo "\n================ CONTAINER INFO ================\n";
 echo runCmd("docker inspect openwebrx --format 'Estado: {{.State.Status}} | Health: {{.State.Health.Status}}' 2>/dev/null");
 
-echo "\n================ LIVE LOGS (LAST 200) ================\n";
+echo "\n================ LOGS (LAST 200) ================\n";
 echo runCmd("docker logs --tail 200 openwebrx 2>&1");
 
 echo "\n================ RESTART POLICY ================\n";
