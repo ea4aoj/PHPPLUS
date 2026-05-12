@@ -55,7 +55,6 @@ $ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 
-<!-- ✅ SOLO AÑADIDO: Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 
 <style>
@@ -99,7 +98,11 @@ body{
     letter-spacing:.08em;
 }
 
-.ex-btns{display:flex;gap:.6rem;align-items:center}
+.ex-btns{
+    display:flex;
+    gap:.6rem;
+    align-items:center
+}
 
 /* BOTONES */
 .btn-ex{
@@ -116,24 +119,50 @@ body{
     display:inline-block;
 }
 
-.btn-cyan{color:var(--cyan);border-color:var(--cyan)}
-.btn-green{color:var(--green);border-color:var(--green)}
-.btn-red{color:var(--red);border-color:var(--red)}
+.btn-cyan{
+    color:var(--cyan);
+    border-color:var(--cyan)
+}
 
-.btn-cyan:hover{background:rgba(0,212,255,.1)}
-.btn-green:hover{background:rgba(0,255,159,.1)}
-.btn-red:hover{background:rgba(255,69,96,.1)}
+/* ✅ MODIFICADO SOLO ESTE BOTÓN */
+.btn-green{
+    color:#ffffff;
+    border-color:#ffffff;
+}
+
+.btn-red{
+    color:var(--red);
+    border-color:var(--red)
+}
+
+.btn-cyan:hover{
+    background:rgba(0,212,255,.1)
+}
+
+/* ✅ HOVER NUEVO BLANCO */
+.btn-green:hover{
+    background:rgba(255,255,255,.08)
+}
+
+.btn-red:hover{
+    background:rgba(255,69,96,.1)
+}
 
 /* SWITCH */
 .sw{
     position:relative;
-    width:56px;height:28px;
+    width:56px;
+    height:28px;
     cursor:pointer;
 }
-.sw input{display:none}
+
+.sw input{
+    display:none
+}
 
 .sw-track{
-    position:absolute;inset:0;
+    position:absolute;
+    inset:0;
     border:2px solid var(--red);
     border-radius:2px;
     background:#1a2535;
@@ -142,8 +171,10 @@ body{
 
 .sw-knob{
     position:absolute;
-    top:3px;left:3px;
-    width:20px;height:20px;
+    top:3px;
+    left:3px;
+    width:20px;
+    height:20px;
     background:var(--red);
     transition:.3s;
 }
@@ -173,8 +204,13 @@ body{
     font-family:var(--font-mono);
 }
 
-.on{color:var(--green)}
-.off{color:var(--red)}
+.on{
+    color:var(--green)
+}
+
+.off{
+    color:var(--red)
+}
 
 /* ───────── BOTÓN FUSION ───────── */
 .fusion-btn{
@@ -190,9 +226,13 @@ body{
     border:1px solid var(--cyan);
     border-radius:8px;
 
-    background:linear-gradient(135deg, rgba(0,212,255,.08), rgba(0,0,0,0));
-    text-decoration:none;
+    background:linear-gradient(
+        135deg,
+        rgba(0,212,255,.08),
+        rgba(0,0,0,0)
+    );
 
+    text-decoration:none;
     transition:.25s;
 }
 
@@ -214,7 +254,8 @@ body{
     color:var(--cyan);
 }
 
-.fusion-icon, .fusion-signal{
+.fusion-icon,
+.fusion-signal{
     display:flex;
     align-items:center;
 }
@@ -270,7 +311,6 @@ body{
         <span id="st" class="off">DESCONOCIDO</span>
     </div>
 
-    <!-- BOTÓN MODIFICADO -->
     <a class="fusion-btn" target="_blank"
        href="http://<?php echo $ip; ?>:8080">
 
