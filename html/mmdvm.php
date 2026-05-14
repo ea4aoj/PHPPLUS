@@ -1021,7 +1021,7 @@ button.btn-header { font-family: var(--font-mono); }
 
 <script>
 let refreshTimer=null,txTimer=null,vuTimer=null,ysfTimer=null,mmdvmYsfTimer=null,ysfTxTimer=null,ysfVuTimer=null,dstarTimer=null;
-let running=false,ysfRunning=false,mmdvmYsfRunning=false,dstarRunning=false,currentlyActive=false,ysfCurrentlyActive=false;
+let running=false,ysfRunning=false,mmdvmYsfRunning=false,dstarRunning=false,currentlyActive=false,ysfCurrentlyActive=false,dmrLastActiveTs=0;
 let dmrLastActiveTs=0,ysfLastActiveTs=0;
 const DMR_IDLE_TIMEOUT=12000,YSF_IDLE_TIMEOUT=12000;
 
@@ -1090,7 +1090,7 @@ function showYSFActive(d){ysfCurrentlyActive=true;animateVU(true,'ysf');document
 function renderLastHeard(list,activeCall){const body=document.getElementById('lhBody');if(!list||list.length===0){body.innerHTML='<div class="lh-empty">Sin actividad reciente</div>';return;}body.innerHTML=list.map(r=>{const isActive=activeCall&&r.callsign===activeCall;const srcCls=r.source==='RF'?'rf':'net',srcLbl=r.source==='RF'?'RF':'NET';const dot=isActive?'<span class="lh-tx-dot"></span>':'';const flag=getFlagByCall(r.callsign);return`<div class="lh-row${isActive?' lh-active':''}"><div class="lh-call-wrap">${dot}<span class="lh-call">${flag} ${esc(r.callsign)}</span></div><span class="lh-name">${esc(r.name||'—')}</span><span class="lh-tg">${esc(r.tg||'—')}</span><span class="lh-time">${esc(r.time||'—')}</span><span class="lh-src ${srcCls}">${srcLbl}</span></div>`;}).join('');}
 function renderYSFLastHeard(list,activeCall){const body=document.getElementById('ysfLhBody');if(!list||list.length===0){body.innerHTML='<div class="lh-empty">Sin actividad C4FM</div>';return;}body.innerHTML=list.map(r=>{const isActive=activeCall&&r.callsign===activeCall;const srcCls=r.source==='RF'?'rf':'net',srcLbl=r.source==='RF'?'RF':'NET';const dot=isActive?'<span class="lh-tx-dot-ysf"></span>':'';const flag=getFlagByCall(r.callsign);return`<div class="lh-row-ysf${isActive?' lh-active':''}"><div class="lh-call-wrap">${dot}<span class="lh-call-ysf">${flag} ${esc(r.callsign)}</span></div><span class="lh-name">${esc(r.name||'—')}</span><span class="lh-time">${esc(r.time||'—')}</span><span class="lh-src ${srcCls}">${srcLbl}</span></div>`;}).join('');}
 
-async function fetchTransmission(){try{const r=await fetch('?action=transmission');const d=await r.json();if(d.active){showActive(d);}else{showIdle();}renderLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){}}
+async function fetchTransmission(){try{const r=await fetch('?action=transmission');const d=await r.json();if(d.active){dmrLastActiveTs=Date.now();showActive(d);}else if(currentlyActive&&(Date.now()-dmrLastActiveTs)>DMR_IDLE_TIMEOUT){showIdle();}renderLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){if(currentlyActive&&(Date.now()-dmrLastActiveTs)>DMR_IDLE_TIMEOUT)showIdle();}}
 async function fetchYSFTransmission(){try{const r=await fetch('?action=ysf-transmission');const d=await r.json();if(d.active){ysfLastActiveTs=Date.now();showYSFActive(d);}else{if(ysfCurrentlyActive)showYSFIdle();}renderYSFLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){if(ysfCurrentlyActive&&(Date.now()-ysfLastActiveTs)>YSF_IDLE_TIMEOUT)showYSFIdle();}}
 
 async function checkStatus(){try{const r=await fetch('?action=status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';setDot('dot-gateway',gw?'active':'off');setDot('dot-mmdvm',mmd?'active':'off');setDot('dot-mosquitto',gw?'active':'off');running=gw||mmd;setDMRToggle(running);if(running)startRefresh();}catch(e){}}
@@ -1299,3 +1299,5 @@ document.getElementById('xtInp').addEventListener('keydown',async function(e){
 </script>
 </body>
 </html>
+
+
