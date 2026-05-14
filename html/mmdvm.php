@@ -413,25 +413,47 @@ if ($action === 'transmission') {
 }
 
 if ($action === 'dstar-transmission') {
+    $stateFile = '/tmp/dstar_tx_state.json';
     $log = shell_exec("sudo journalctl -u mmdvmdstar -n 300 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log ?? ''));
-    $active = false; $callsign = ''; $source = ''; $name = '';
-    foreach ($lines as $line) {
-        if (preg_match('/D-Star.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) { $active = false; break; }
-        if (preg_match('/D-Star.*received (RF|network).*from\s+([A-Z0-9\/]+)/i', $line, $m)) { $active = true; $source = strtoupper($m[1]); $callsign = strtoupper(trim($m[2])); break; }
-        if (preg_match('/received (RF|network) header from\s+([A-Z0-9\/]+)/i', $line, $m)) { $active = true; $source = strtoupper($m[1]); $callsign = strtoupper(trim($m[2])); break; }
+
+    $state = ['active'=>false,'callsign'=>'','name'=>'','source'=>''];
+    if (file_exists($stateFile)) {
+        $saved = json_decode(file_get_contents($stateFile), true);
+        if (is_array($saved)) $state = $saved;
     }
-    if ($callsign) { $info = lookupCall(preg_replace('/\/.*$/', '', $callsign)); $name = $info['name']; }
+
+    foreach ($lines as $line) {
+        if (preg_match('/D-Star.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
+            $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
+        }
+        if (preg_match('/D-Star.*received (RF|network).*from\s+([A-Z0-9\/]+)/i', $line, $m)) {
+            $cs = strtoupper(trim($m[2])); $inf = lookupCall(preg_replace('/\/.*$/', '', $cs));
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'source'=>strtoupper($m[1])];
+            file_put_contents($stateFile, json_encode($state)); break;
+        }
+        if (preg_match('/received (RF|network) header from\s+([A-Z0-9\/]+)/i', $line, $m)) {
+            $cs = strtoupper(trim($m[2])); $inf = lookupCall(preg_replace('/\/.*$/', '', $cs));
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'source'=>strtoupper($m[1])];
+            file_put_contents($stateFile, json_encode($state)); break;
+        }
+    }
+
     $lastHeard = []; $seen = [];
     foreach ($lines as $line) {
-        $cs = ''; $src = ''; $time = '';
-        if (preg_match('/(\d{2}:\d{2}:\d{2}).*D-Star.*received (RF|network).*from\s+([A-Z0-9\/]+)/i', $line, $m)) { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
-        elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*received (RF|network) header from\s+([A-Z0-9\/]+)/i', $line, $m)) { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
-        if ($cs && !in_array($cs, $seen)) { $inf = lookupCall(preg_replace('/\/.*$/','',$cs)); $lastHeard[] = ['callsign'=>$cs,'name'=>$inf['name'],'source'=>$src,'time'=>$time]; $seen[] = $cs; if (count($lastHeard) >= 5) break; }
+        $cs=''; $src=''; $time='';
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*D-Star.*received (RF|network).*from\s+([A-Z0-9\/]+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
+        elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*received (RF|network) header from\s+([A-Z0-9\/]+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
+        if ($cs && !in_array($cs, $seen)) {
+            $inf = lookupCall(preg_replace('/\/.*$/', '', $cs));
+            $lastHeard[] = ['callsign'=>$cs,'name'=>$inf['name'],'source'=>$src,'time'=>$time];
+            $seen[] = $cs; if (count($lastHeard) >= 5) break;
+        }
     }
-    header('Content-Type: application/json');
-    echo json_encode(['active'=>$active,'callsign'=>$callsign,'name'=>$name,'source'=>$source,'lastHeard'=>$lastHeard]);
-    exit;
+    $state['lastHeard'] = $lastHeard;
+    header('Content-Type: application/json'); echo json_encode($state); exit;
 }
 
 if ($action === 'dstar-status') {
@@ -450,26 +472,51 @@ if ($action === 'dstar-logs')  {
 }
 
 if ($action === 'ysf-transmission') {
+    $stateFile = '/tmp/ysf_tx_state.json';
     $log = shell_exec("sudo journalctl -u mmdvmysf -n 300 --no-pager --output=short 2>/dev/null");
-    if(empty(trim($log)))$log=shell_exec("sudo journalctl -u ysfgateway -n 300 --no-pager --output=short 2>/dev/null");
-    $lines=array_reverse(explode("\n",$log));
-    $active=false;$callsign='';$name='';$dest='';$source='';
-    foreach ($lines as $line) {
-        if(preg_match('/YSF.*(end of|lost RF|lost net|watchdog|timeout|no reply|voice end|fin)/i',$line)){$active=false;break;}
-        if(preg_match('/YSF.*voice (end|fin|stop)/i',$line)){$active=false;break;}
-        if(preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*received (RF|network) voice.*from\s+(\S+)/i',$line,$m)){$active=true;$source=strtoupper($m[2]);$callsign=strtoupper(trim($m[3]));break;}
-        if(preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*?(RF|network).*?from\s+(\S+)\s+to\s+(\S+)/i',$line,$m)){$active=true;$source=strtoupper($m[2]);$callsign=strtoupper(trim($m[3]));$dest=trim($m[4]);break;}
+    if (empty(trim($log))) $log = shell_exec("sudo journalctl -u ysfgateway -n 300 --no-pager --output=short 2>/dev/null");
+    $lines = array_reverse(explode("\n", $log));
+
+    $state = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>''];
+    if (file_exists($stateFile)) {
+        $saved = json_decode(file_get_contents($stateFile), true);
+        if (is_array($saved)) $state = $saved;
     }
-    if($callsign){$info=lookupCall($callsign);$name=$info['name'];}
-    $lastHeard=[];$seen=[];
+
     foreach ($lines as $line) {
-        $cs='';$src='';$time='';$dst='';
-        if(preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*received (RF|network) voice.*from\s+(\S+)/i',$line,$m)){$time=$m[1];$src=strtoupper($m[2]);$cs=strtoupper(trim($m[3]));}
-        elseif(preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*?(RF|network).*?from\s+(\S+)\s+to\s+(\S+)/i',$line,$m)){$time=$m[1];$src=strtoupper($m[2]);$cs=strtoupper(trim($m[3]));$dst=trim($m[4]);}
-        if($cs&&!in_array($cs,$seen)){$inf=lookupCall($cs);$lastHeard[]=['callsign'=>$cs,'name'=>$inf['name'],'dest'=>$dst,'source'=>$src,'time'=>$time];$seen[]=$cs;if(count($lastHeard)>=5)break;}
+        if (preg_match('/YSF.*(end of|lost RF|lost net|watchdog|timeout|no reply|voice end|fin)/i', $line)) {
+            $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
+        }
+        if (preg_match('/YSF.*voice (end|fin|stop)/i', $line)) {
+            $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
+        }
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*received (RF|network) voice.*from\s+(\S+)/i', $line, $m)) {
+            $cs = strtoupper(trim($m[3])); $inf = lookupCall($cs);
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'dest'=>'','source'=>strtoupper($m[2])];
+            file_put_contents($stateFile, json_encode($state)); break;
+        }
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*?(RF|network).*?from\s+(\S+)\s+to\s+(\S+)/i', $line, $m)) {
+            $cs = strtoupper(trim($m[3])); $inf = lookupCall($cs);
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'dest'=>trim($m[4]),'source'=>strtoupper($m[2])];
+            file_put_contents($stateFile, json_encode($state)); break;
+        }
     }
-    header('Content-Type: application/json');
-    echo json_encode(['active'=>$active,'callsign'=>$callsign,'name'=>$name,'dest'=>$dest,'source'=>$source,'lastHeard'=>$lastHeard]); exit;
+
+    $lastHeard = []; $seen = [];
+    foreach ($lines as $line) {
+        $cs=''; $src=''; $time=''; $dst='';
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*received (RF|network) voice.*from\s+(\S+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
+        elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*YSF.*?(RF|network).*?from\s+(\S+)\s+to\s+(\S+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); $dst=trim($m[4]); }
+        if ($cs && !in_array($cs, $seen)) {
+            $inf = lookupCall($cs);
+            $lastHeard[] = ['callsign'=>$cs,'name'=>$inf['name'],'dest'=>$dst,'source'=>$src,'time'=>$time];
+            $seen[] = $cs; if (count($lastHeard) >= 5) break;
+        }
+    }
+    $state['lastHeard'] = $lastHeard;
+    header('Content-Type: application/json'); echo json_encode($state); exit;
 }
 
 // ── NXDN ──────────────────────────────────────────────────────────────────────
@@ -507,37 +554,47 @@ if ($action === 'nxdn-logs') {
     exit;
 }
 if ($action === 'nxdn-transmission') {
+    $stateFile = '/tmp/nxdn_tx_state.json';
     $log = shell_exec("sudo journalctl -u mmdvmnxdn -n 300 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log ?? ''));
-    $active = false; $callsign = ''; $source = ''; $name = ''; $tg = '';
+
+    $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>''];
+    if (file_exists($stateFile)) {
+        $saved = json_decode(file_get_contents($stateFile), true);
+        if (is_array($saved)) $state = $saved;
+    }
+
     foreach ($lines as $line) {
-        if (preg_match('/NXDN.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) { $active = false; break; }
+        if (preg_match('/NXDN.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
+            $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
+        }
         if (preg_match('/NXDN.*received (RF|network).*from\s+([A-Z0-9]+).*to\s+(\d+)/i', $line, $m)) {
-            $active = true; $source = strtoupper($m[1]); $callsign = strtoupper(trim($m[2])); $tg = $m[3]; break;
+            $cs = strtoupper(trim($m[2])); $inf = lookupCall($cs);
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'tg'=>$m[3],'source'=>strtoupper($m[1])];
+            file_put_contents($stateFile, json_encode($state)); break;
         }
         if (preg_match('/NXDN.*received (RF|network).*from\s+([A-Z0-9]+)/i', $line, $m)) {
-            $active = true; $source = strtoupper($m[1]); $callsign = strtoupper(trim($m[2])); break;
+            $cs = strtoupper(trim($m[2])); $inf = lookupCall($cs);
+            $state = ['active'=>true,'callsign'=>$cs,'name'=>$inf['name'],'tg'=>'','source'=>strtoupper($m[1])];
+            file_put_contents($stateFile, json_encode($state)); break;
         }
     }
-    if ($callsign) { $info = lookupCall($callsign); $name = $info['name']; }
+
     $lastHeard = []; $seen = [];
     foreach ($lines as $line) {
-        $cs = ''; $src = ''; $time = ''; $tgr = '';
-        if (preg_match('/(\d{2}:\d{2}:\d{2}).*NXDN.*received (RF|network).*from\s+([A-Z0-9]+).*to\s+(\d+)/i', $line, $m)) {
-            $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); $tgr=$m[4];
-        } elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*NXDN.*received (RF|network).*from\s+([A-Z0-9]+)/i', $line, $m)) {
-            $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3]));
-        }
+        $cs=''; $src=''; $time=''; $tgr='';
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*NXDN.*received (RF|network).*from\s+([A-Z0-9]+).*to\s+(\d+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); $tgr=$m[4]; }
+        elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*NXDN.*received (RF|network).*from\s+([A-Z0-9]+)/i', $line, $m))
+            { $time=$m[1]; $src=strtoupper($m[2]); $cs=strtoupper(trim($m[3])); }
         if ($cs && !in_array($cs, $seen)) {
             $inf = lookupCall($cs);
             $lastHeard[] = ['callsign'=>$cs,'name'=>$inf['name'],'tg'=>$tgr,'source'=>$src,'time'=>$time];
-            $seen[] = $cs;
-            if (count($lastHeard) >= 5) break;
+            $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
-    header('Content-Type: application/json');
-    echo json_encode(['active'=>$active,'callsign'=>$callsign,'name'=>$name,'tg'=>$tg,'source'=>$source,'lastHeard'=>$lastHeard]);
-    exit;
+    $state['lastHeard'] = $lastHeard;
+    header('Content-Type: application/json'); echo json_encode($state); exit;
 }
 ?>
 <!DOCTYPE html>
