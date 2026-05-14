@@ -46,7 +46,7 @@ button{ background:var(--primary); color:white; } button:hover{ opacity:.9; } bu
 </head>
 <body>
 <header>
-    <h1>Programador WEB-ESP32 by @REM</h1>
+    <h1>Programador WEB-ESP32 PHPPLUS</h1>
     <div class="env-info">
         <span class="badge badge-success">IP: <?php echo $server_ip; ?></span>
         <span class="badge <?php echo $is_https ? 'badge-success' : 'badge-warning'; ?>">Protocolo: <?php echo $protocol; ?></span>
