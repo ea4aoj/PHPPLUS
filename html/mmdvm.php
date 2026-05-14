@@ -296,125 +296,62 @@ function lookupCall($callsign) {
     return ['dmrid'=>'','name'=>''];
 }
 
+// ── DMR ──────────────────────────────────────────────────────────────────────
 if ($action === 'transmission') {
-
     $stateFile = '/tmp/mmdvm_tx_state.json';
-
-    $log = shell_exec("sudo journalctl -u mmdvmhost -n 300 --no-pager --output=short 2>/dev/null");
-
+    $lhFile    = '/tmp/mmdvm_lastheard.json';
+    $log   = shell_exec("sudo journalctl -u mmdvmhost -n 500 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log));
 
-    // Estado por defecto
-    $state = [
-        'active' => false,
-        'callsign' => '',
-        'name' => '',
-        'dmrid' => '',
-        'tg' => '',
-        'slot' => '',
-        'source' => ''
-    ];
-
-    // Cargar estado anterior
+    $state = ['active'=>false,'callsign'=>'','name'=>'','dmrid'=>'','tg'=>'','slot'=>'','source'=>''];
     if (file_exists($stateFile)) {
-
         $saved = json_decode(file_get_contents($stateFile), true);
-
-        if (is_array($saved)) {
-            $state = $saved;
-        }
+        if (is_array($saved)) $state = $saved;
     }
-
     foreach ($lines as $line) {
-
-        // =========================
-        // INICIO TRANSMISIÓN
-        // =========================
-
         if (preg_match('/DMR Slot (\d), received (RF|network) voice header from (\S+) to TG (\d+)/i', $line, $m)) {
-
             $callsign = strtoupper(rtrim($m[3], ','));
-
             $info = lookupCall($callsign);
-
-            $state = [
-                'active' => true,
-                'callsign' => $callsign,
-                'name' => $info['name'],
-                'dmrid' => $info['dmrid'],
-                'tg' => $m[4],
-                'slot' => $m[1],
-                'source' => strtoupper($m[2])
-            ];
-
-            // Guardar estado
+            $state = ['active'=>true,'callsign'=>$callsign,'name'=>$info['name'],'dmrid'=>$info['dmrid'],'tg'=>$m[4],'slot'=>$m[1],'source'=>strtoupper($m[2])];
             file_put_contents($stateFile, json_encode($state));
-
             break;
         }
-
-        // =========================
-        // FIN TRANSMISIÓN
-        // =========================
-
         if (preg_match('/DMR Slot \d.*end of voice/i', $line)) {
-
             $state['active'] = false;
-
             file_put_contents($stateFile, json_encode($state));
-
             break;
         }
     }
 
-    // =========================
-    // LAST HEARD
-    // =========================
-
-    $lastHeard = [];
-    $seen = [];
-
+    $lastHeard = []; $seen = [];
     foreach ($lines as $line) {
-
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR Slot (\d), received (RF|network) voice header from (\S+) to TG (\d+)/i', $line, $m)) {
-
             $cs = strtoupper(rtrim($m[4], ','));
-
             if (!in_array($cs, $seen)) {
-
                 $inf = lookupCall($cs);
-
-                $lastHeard[] = [
-                    'callsign' => $cs,
-                    'name' => $inf['name'],
-                    'dmrid' => $inf['dmrid'],
-                    'tg' => $m[5],
-                    'slot' => $m[2],
-                    'source' => strtoupper($m[3]),
-                    'time' => $m[1]
-                ];
-
+                $lastHeard[] = ['callsign'=>$cs,'name'=>$inf['name'],'dmrid'=>$inf['dmrid'],'tg'=>$m[5],'slot'=>$m[2],'source'=>strtoupper($m[3]),'time'=>$m[1]];
                 $seen[] = $cs;
-
-                if (count($lastHeard) >= 5) {
-                    break;
-                }
+                if (count($lastHeard) >= 5) break;
             }
         }
     }
+    if (!empty($lastHeard)) {
+        file_put_contents($lhFile, json_encode($lastHeard));
+    } elseif (file_exists($lhFile)) {
+        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
+    }
 
     $state['lastHeard'] = $lastHeard;
-
     header('Content-Type: application/json');
-
     echo json_encode($state);
-
     exit;
 }
 
+// ── DSTAR ──────────────────────────────────────────────────────────────────────
 if ($action === 'dstar-transmission') {
     $stateFile = '/tmp/dstar_tx_state.json';
-    $log = shell_exec("sudo journalctl -u mmdvmdstar -n 300 --no-pager --output=short 2>/dev/null");
+    $lhFile    = '/tmp/dstar_lastheard.json';
+    $log   = shell_exec("sudo journalctl -u mmdvmdstar -n 500 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log ?? ''));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','source'=>''];
@@ -422,7 +359,6 @@ if ($action === 'dstar-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
-
     foreach ($lines as $line) {
         if (preg_match('/D-Star.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -452,6 +388,12 @@ if ($action === 'dstar-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+    if (!empty($lastHeard)) {
+        file_put_contents($lhFile, json_encode($lastHeard));
+    } elseif (file_exists($lhFile)) {
+        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
+    }
+
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
@@ -471,10 +413,12 @@ if ($action === 'dstar-logs')  {
     header('Content-Type: application/json'); echo json_encode(['gateway'=>htmlspecialchars($gw??''),'mmdvm'=>htmlspecialchars($mmd??'')]); exit;
 }
 
+// ── YSF ──────────────────────────────────────────────────────────────────────
 if ($action === 'ysf-transmission') {
     $stateFile = '/tmp/ysf_tx_state.json';
-    $log = shell_exec("sudo journalctl -u mmdvmysf -n 300 --no-pager --output=short 2>/dev/null");
-    if (empty(trim($log))) $log = shell_exec("sudo journalctl -u ysfgateway -n 300 --no-pager --output=short 2>/dev/null");
+    $lhFile    = '/tmp/ysf_lastheard.json';
+    $log = shell_exec("sudo journalctl -u mmdvmysf -n 500 --no-pager --output=short 2>/dev/null");
+    if (empty(trim($log))) $log = shell_exec("sudo journalctl -u ysfgateway -n 500 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>''];
@@ -482,7 +426,6 @@ if ($action === 'ysf-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
-
     foreach ($lines as $line) {
         if (preg_match('/YSF.*(end of|lost RF|lost net|watchdog|timeout|no reply|voice end|fin)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -515,6 +458,12 @@ if ($action === 'ysf-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+    if (!empty($lastHeard)) {
+        file_put_contents($lhFile, json_encode($lastHeard));
+    } elseif (file_exists($lhFile)) {
+        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
+    }
+
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
@@ -553,9 +502,11 @@ if ($action === 'nxdn-logs') {
     echo json_encode(['gateway'=>htmlspecialchars($gw??''),'mmdvm'=>htmlspecialchars($mmd??'')]);
     exit;
 }
+
 if ($action === 'nxdn-transmission') {
     $stateFile = '/tmp/nxdn_tx_state.json';
-    $log = shell_exec("sudo journalctl -u mmdvmnxdn -n 300 --no-pager --output=short 2>/dev/null");
+    $lhFile    = '/tmp/nxdn_lastheard.json';
+    $log   = shell_exec("sudo journalctl -u mmdvmnxdn -n 500 --no-pager --output=short 2>/dev/null");
     $lines = array_reverse(explode("\n", $log ?? ''));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>''];
@@ -563,7 +514,6 @@ if ($action === 'nxdn-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
-
     foreach ($lines as $line) {
         if (preg_match('/NXDN.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -593,6 +543,12 @@ if ($action === 'nxdn-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+    if (!empty($lastHeard)) {
+        file_put_contents($lhFile, json_encode($lastHeard));
+    } elseif (file_exists($lhFile)) {
+        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
+    }
+
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
