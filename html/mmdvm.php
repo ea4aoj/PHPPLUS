@@ -806,7 +806,7 @@ button.btn-header { font-family: var(--font-mono); }
 <body>
 <header class="ctrl-header">
 <div class="ctrl-header-top">
-<img src="Logo_ea3eiz.png" alt="EA3EIZ" style="height:40px;width:auto;">
+<img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:40px;width:auto;">
 <h1>SISTEMA WEB DE CONTROL Y MONITORIZACIÓN PARA RADIOAFICIONADOS PHPPlus</h1>
 </div>
 <div class="ctrl-header-btns">
