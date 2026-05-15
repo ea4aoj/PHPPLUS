@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === '') {
 body { background:var(--bg); color:var(--text); font-family:var(--font-mono); min-height:100vh; display:flex; align-items:center; justify-content:center; }
 .login-box { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:2.5rem 2.5rem 2rem; width:100%; max-width:400px; box-shadow:0 0 40px rgba(0,212,255,.06); }
 .login-logo { display:flex; justify-content:center; margin-bottom:1.5rem; }
-.login-logo img { height:85px; width:auto; }
+.login-logo img { height:100px; width:auto; }
 .login-title { font-family:var(--font-orb); font-size:1rem; font-weight:700; color:#e2eaf5; text-align:center; letter-spacing:.1em; text-transform:uppercase; margin-bottom:.4rem; }
 .login-sub { font-size:.72rem; color:var(--text-dim); text-align:center; letter-spacing:.1em; text-transform:uppercase; margin-bottom:2rem; }
 label { font-size:.75rem; color:var(--text-dim); letter-spacing:.1em; text-transform:uppercase; display:block; margin-bottom:.5rem; }
