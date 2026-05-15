@@ -52,7 +52,7 @@
 <nav class="navbar navbar-expand-md navbar-granate">
     <div class="container">
         <a class="navbar-brand" href="#">
-          <img src="Logo_ea3eiz.png" alt="Logo">
+          <img src="Logo_REM-ESP_EA4RCR.png" alt="Logo">
         </a>
 
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
