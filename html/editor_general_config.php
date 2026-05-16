@@ -266,7 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_config'])) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editor General · Panel ADER</title>
+<title>Editor General</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -347,13 +347,20 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
 </head>
 <body>
 
+
+
+
+
 <div class="page-header">
-    <div class="page-header-inner">
-        <a href="mmdvm.php" class="btn-back"><i class="bi bi-arrow-left"></i> Panel ADER</a>
-        <div>
-            <h1><i class="bi bi-sliders"></i> &nbsp;EDITOR GENERAL</h1>
-            <span class="badge-subtitle">MMDVMHost · YSF · D-STAR · NXDN</span>
+    <div class="page-header-inner" style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;">
+        
+    <div style="display:flex; align-items:center; gap:16px;">
+            <h1><i class="bi bi-sliders"></i> 🍊&nbsp;EDITOR GENERAL</h1>
+            <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
+                <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
+            </a>
         </div>
+        <span class="badge-subtitle">MMDVMHost · YSF · D-STAR · NXDN</span>
     </div>
 </div>
 
