@@ -314,7 +314,7 @@
                 Restaurar imagen de fábrica
             </h5>
             <p class="card-text text-white-50 small flex-grow-1">
-                Genera el ZIP de fábrica y restaura todos los ficheros de configuración al estado base.
+                Restaura la imagen con todos los parámetros de fábrica.
             </p>
             <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark"
                     onclick="confirmarFabrica()">
