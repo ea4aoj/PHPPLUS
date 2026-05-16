@@ -305,6 +305,24 @@
         </div>
     </div>
 </div>
+<!-- RESTAURAR IMAGEN DE FÁBRICA -->
+<div class="col-12 col-sm-6 col-lg-3">
+    <div class="card bg-secondary border-0 h-100">
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title">
+                <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
+                Restaurar imagen de fábrica
+            </h5>
+            <p class="card-text text-white-50 small flex-grow-1">
+                Genera el ZIP de fábrica y restaura todos los ficheros de configuración al estado base.
+            </p>
+            <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark"
+                    onclick="confirmarFabrica()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+            </button>
+        </div>
+    </div>
+</div>
 
         <!-- EDITOR GENERAL
         <div class="col-12 col-sm-6 col-lg-3">
@@ -326,7 +344,94 @@
     </div>
 </div>
 
+<!-- ── MODAL CONFIRMACIÓN ─────────────────────────────────────────────────── -->
+<div class="modal fade" id="modalConfirm" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border border-warning">
+            <div class="modal-header border-warning">
+                <h5 class="modal-title text-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>¿Restaurar imagen de fábrica?
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-white-50 small">
+                Se ejecutarán en orden:<br>
+                <code class="text-warning">1. crear_fabrica.sh</code><br>
+                <code class="text-warning">2. restaurar_de_fabrica.sh</code><br><br>
+                Los ficheros de configuración actuales serán sobreescritos. ¿Continuar?
+            </div>
+            <div class="modal-footer border-warning">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-warning btn-sm fw-bold text-dark" onclick="ejecutarFabrica()">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Sí, restaurar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── MODAL RESULTADO ────────────────────────────────────────────────────── -->
+<div class="modal fade" id="modalResultado" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content bg-dark border" id="modalResultadoBorder">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalResultadoTitulo"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="fabrica-output"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmarFabrica() {
+    new bootstrap.Modal(document.getElementById('modalConfirm')).show();
+}
+
+function ejecutarFabrica() {
+    bootstrap.Modal.getInstance(document.getElementById('modalConfirm')).hide();
+
+    const output   = document.getElementById('fabrica-output');
+    const titulo   = document.getElementById('modalResultadoTitulo');
+    const border   = document.getElementById('modalResultadoBorder');
+
+    output.textContent = '⏳ Ejecutando scripts, espera...';
+    titulo.innerHTML   = '<i class="bi bi-hourglass-split me-2"></i>Procesando...';
+    titulo.className   = 'modal-title text-warning';
+    border.className   = 'modal-content bg-dark border border-warning';
+
+    new bootstrap.Modal(document.getElementById('modalResultado')).show();
+
+    const fd = new FormData();
+    fd.append('accion', 'restaurar_fabrica');
+
+    fetch(window.location.pathname, { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            output.textContent = data.output;
+            if (data.ok) {
+                titulo.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>Restauración completada';
+                titulo.className = 'modal-title text-success';
+                border.className = 'modal-content bg-dark border border-success';
+            } else {
+                titulo.innerHTML = '<i class="bi bi-x-circle-fill me-2"></i>Error en la restauración';
+                titulo.className = 'modal-title text-danger';
+                border.className = 'modal-content bg-dark border border-danger';
+            }
+        })
+        .catch(err => {
+            output.textContent = 'Error de comunicación: ' + err;
+            titulo.innerHTML   = '<i class="bi bi-x-circle-fill me-2"></i>Error';
+            titulo.className   = 'modal-title text-danger';
+            border.className   = 'modal-content bg-dark border border-danger';
+        });
+}
+</script>
 </body>
 </html>
-
