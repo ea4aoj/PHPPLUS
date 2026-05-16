@@ -272,7 +272,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         </div>
 
 <!-- FUSION 2X -->
-<!-- <div class="col-12 col-sm-6 col-lg-3">
+<div class="col-12 col-sm-6 col-lg-3">
     <div class="card bg-secondary border-0 h-100">
         <div class="card-body d-flex flex-column">
             <h5 class="card-title">
@@ -286,7 +286,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             </a>
         </div>
     </div>
-</div> -->
+</div>
 
 <!-- OPENWEBRX -->
 <div class="col-12 col-sm-6 col-lg-3">
