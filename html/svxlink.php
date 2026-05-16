@@ -135,7 +135,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);height:10
             <span class="sw-busy-dot"></span>
         </label>
         <span id="svcLabel" style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;min-width:2rem;">OFF</span>
-        <button class="btn-ex btn-red" onclick="cerrarVentana()">✖ Cerrar</button>
+        <!-- <button class="btn-ex btn-red" onclick="cerrarVentana()">✖ Cerrar</button> -->
+        <button class="btn-ex btn-red" onclick="window.location.href='mmdvm.php'">✖ Cerrar</button>
     </div>
 </header>
 
@@ -327,23 +328,23 @@ function updateAutoState(enabled) {
     document.getElementById('cardAutoText').textContent = 'Autostart: ' + (enabled ? 'ON' : 'OFF');
 }
 
-function cerrarVentana() {
-    document.body.innerHTML = `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;
-            background:#0a0e14;color:#a8b9cc;font-family:'Share Tech Mono',monospace;text-align:center;padding:20px;">
-            <div style="font-size:5rem;font-weight:900;color:#00d4ff;margin-bottom:10px;" id="countdownNum">5</div>
-            <div style="font-size:1.2rem;margin-bottom:30px;color:#7a9ab5;">Cerrando panel de control...</div>
-            <button onclick="window.close()" style="padding:12px 24px;background:#ff4560;color:white;border:none;
-                border-radius:4px;cursor:pointer;font-family:inherit;font-size:1rem;">Cerrar ahora</button>
-        </div>`;
-    let count = 5;
-    const iv = setInterval(() => {
-        count--;
-        const el = document.getElementById('countdownNum');
-        if (el) el.textContent = count;
-        if (count <= 0) { clearInterval(iv); window.close(); }
-    }, 1000);
-}
+// function cerrarVentana() {
+//     document.body.innerHTML = `
+//         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;
+//             background:#0a0e14;color:#a8b9cc;font-family:'Share Tech Mono',monospace;text-align:center;padding:20px;">
+//             <div style="font-size:5rem;font-weight:900;color:#00d4ff;margin-bottom:10px;" id="countdownNum">5</div>
+//             <div style="font-size:1.2rem;margin-bottom:30px;color:#7a9ab5;">Cerrando panel de control...</div>
+//             <button onclick="window.close()" style="padding:12px 24px;background:#ff4560;color:white;border:none;
+//                 border-radius:4px;cursor:pointer;font-family:inherit;font-size:1rem;">Cerrar ahora</button>
+//         </div>`;
+//     let count = 5;
+//     const iv = setInterval(() => {
+//         count--;
+//         const el = document.getElementById('countdownNum');
+//         if (el) el.textContent = count;
+//         if (count <= 0) { clearInterval(iv); window.close(); }
+//     }, 1000);
+// }
 
 async function toggleService(chk) {
     const wasOn = !chk.checked;
