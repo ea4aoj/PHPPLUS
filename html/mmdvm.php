@@ -156,12 +156,22 @@ if ($action === 'station-info') {
 }
 
 if ($action === 'sysinfo') {
-    $s1 = file('/proc/stat'); $cpu1 = preg_split('/\s+/', trim($s1[0])); usleep(300000);
-    $s2 = file('/proc/stat'); $cpu2 = preg_split('/\s+/', trim($s2[0]));
+    $cacheFile = '/tmp/mmdvm_cpu_prev.json';
+    $s2 = file('/proc/stat');
+    $cpu2 = preg_split('/\s+/', trim($s2[0]));
+    if (file_exists($cacheFile)) {
+        $cpu1 = json_decode(file_get_contents($cacheFile), true);
+    } else {
+        $cpu1 = $cpu2;
+    }
+    file_put_contents($cacheFile, json_encode($cpu2));
     $idle1 = $cpu1[4]; $total1 = array_sum(array_slice($cpu1, 1));
     $idle2 = $cpu2[4]; $total2 = array_sum(array_slice($cpu2, 1));
     $dTotal = $total2 - $total1; $dIdle = $idle2 - $idle1;
-    $cpu = $dTotal > 0 ? round(100 * ($dTotal - $dIdle) / $dTotal, 1) : 0;
+    $onlineCores = intval(trim(shell_exec('nproc 2>/dev/null'))) ?: 1;
+    $totalCores  = intval(trim(shell_exec('nproc --all 2>/dev/null'))) ?: $onlineCores;
+    $rawCpu = $dTotal > 0 ? (100 * ($dTotal - $dIdle) / $dTotal) : 0;
+    $cpu = round($rawCpu * $onlineCores / $totalCores, 1);
     $memRaw = file('/proc/meminfo'); $mem = [];
     foreach ($memRaw as $line) { if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) $mem[$m[1]] = intval($m[2]); }
     $ramTotal = round($mem['MemTotal'] / 1048576, 2);
@@ -1307,7 +1317,7 @@ function startMMDVMYSFLogs(){fetchMMDVMYSFLogs();mmdvmYsfTimer=setInterval(fetch
 function stopMMDVMYSFLogs(){clearInterval(mmdvmYsfTimer);mmdvmYsfTimer=null;}
 function startYSFTransmissionPoll(){fetchYSFTransmission();ysfTxTimer=setInterval(fetchYSFTransmission,4000);}
 async function fetchSysInfo(){try{const r=await fetch('?action=sysinfo');const d=await r.json();const cpuEl=document.getElementById('siCpu');cpuEl.textContent=d.cpu+' %';cpuEl.style.color=d.cpu>80?'var(--red)':d.cpu>50?'var(--amber)':'var(--green)';const tempEl=document.getElementById('siTemp');tempEl.textContent=d.temp||'—';const t=parseFloat(d.temp);tempEl.style.color=t>75?'var(--red)':t>60?'var(--amber)':'var(--green)';document.getElementById('siRam').textContent=d.ramUsed+' GB / '+d.ramTotal+' GB';document.getElementById('siRamFree').textContent=d.ramFree+' GB';document.getElementById('siDisk').textContent=d.diskUsed+' GB / '+d.diskTotal+' GB';document.getElementById('siDiskFree').textContent=d.diskFree+' GB';}catch(e){}}
-fetchSysInfo();setInterval(fetchSysInfo,8000);
+fetchSysInfo();setInterval(fetchSysInfo,2000);
 
 async function feditOpen(path){
     const msg=document.getElementById('feditMsg');
