@@ -156,35 +156,75 @@ if ($action === 'station-info') {
 }
 
 if ($action === 'sysinfo') {
+
     $cacheFile = '/tmp/mmdvm_cpu_prev.json';
+
     $s2 = file('/proc/stat');
     $cpu2 = preg_split('/\s+/', trim($s2[0]));
+
     if (file_exists($cacheFile)) {
         $cpu1 = json_decode(file_get_contents($cacheFile), true);
     } else {
         $cpu1 = $cpu2;
     }
+
     file_put_contents($cacheFile, json_encode($cpu2));
-    $idle1 = $cpu1[4]; $total1 = array_sum(array_slice($cpu1, 1));
-    $idle2 = $cpu2[4]; $total2 = array_sum(array_slice($cpu2, 1));
-    $dTotal = $total2 - $total1; $dIdle = $idle2 - $idle1;
-    $onlineCores = intval(trim(shell_exec('nproc 2>/dev/null'))) ?: 1;
-    $totalCores  = intval(trim(shell_exec('nproc --all 2>/dev/null'))) ?: $onlineCores;
-    $rawCpu = $dTotal > 0 ? (100 * ($dTotal - $dIdle) / $dTotal) : 0;
-    $cpu = round($rawCpu * $onlineCores / $totalCores, 1);
-    $memRaw = file('/proc/meminfo'); $mem = [];
-    foreach ($memRaw as $line) { if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) $mem[$m[1]] = intval($m[2]); }
+
+    $idle1  = $cpu1[4];
+    $total1 = array_sum(array_slice($cpu1, 1));
+
+    $idle2  = $cpu2[4];
+    $total2 = array_sum(array_slice($cpu2, 1));
+
+    $dTotal = $total2 - $total1;
+    $dIdle  = $idle2 - $idle1;
+
+    // CPU REAL (SIN CORES)
+    $cpu = $dTotal > 0
+        ? round(100 * ($dTotal - $dIdle) / $dTotal, 1)
+        : 0;
+
+    // RAM
+    $memRaw = file('/proc/meminfo');
+    $mem = [];
+
+    foreach ($memRaw as $line) {
+        if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) {
+            $mem[$m[1]] = (int)$m[2];
+        }
+    }
+
     $ramTotal = round($mem['MemTotal'] / 1048576, 2);
     $ramFree  = round(($mem['MemAvailable'] ?? $mem['MemFree']) / 1048576, 2);
     $ramUsed  = round($ramTotal - $ramFree, 2);
+
+    // DISK
     $diskTotal = round(disk_total_space('/') / 1073741824, 1);
     $diskFree  = round(disk_free_space('/') / 1073741824, 1);
     $diskUsed  = round($diskTotal - $diskFree, 1);
+
+    // TEMP
     $temp = '';
-    if (file_exists('/sys/class/thermal/thermal_zone0/temp'))
-        $temp = round(intval(trim(file_get_contents('/sys/class/thermal/thermal_zone0/temp'))) / 1000, 1) . ' °C';
+    if (file_exists('/sys/class/thermal/thermal_zone0/temp')) {
+        $temp = round(
+            file_get_contents('/sys/class/thermal/thermal_zone0/temp') / 1000,
+            1
+        ) . ' °C';
+    }
+
     header('Content-Type: application/json');
-    echo json_encode(['cpu'=>$cpu,'ramTotal'=>$ramTotal,'ramUsed'=>$ramUsed,'ramFree'=>$ramFree,'diskTotal'=>$diskTotal,'diskUsed'=>$diskUsed,'diskFree'=>$diskFree,'temp'=>$temp]);
+
+    echo json_encode([
+        'cpu'       => $cpu,
+        'ramTotal'  => $ramTotal,
+        'ramUsed'   => $ramUsed,
+        'ramFree'   => $ramFree,
+        'diskTotal' => $diskTotal,
+        'diskUsed'  => $diskUsed,
+        'diskFree'  => $diskFree,
+        'temp'      => $temp
+    ]);
+
     exit;
 }
 
@@ -1420,3 +1460,4 @@ document.getElementById('xtInp').addEventListener('keydown',async function(e){
 </script>
 </body>
 </html>
+
