@@ -159,41 +159,66 @@ if ($action === 'sysinfo') {
 
     $cacheFile = '/tmp/mmdvm_cpu_prev.json';
 
-    $s2 = file('/proc/stat');
-    $cpu2 = preg_split('/\s+/', trim($s2[0]));
-
-    if (file_exists($cacheFile)) {
-        $cpu1 = json_decode(file_get_contents($cacheFile), true);
-    } else {
-        $cpu1 = $cpu2;
+    // Función para parsear líneas de /proc/stat
+    function parseCpuLine($line) {
+        $parts = preg_split('/\s+/', trim($line));
+        array_shift($parts); // Remover etiqueta 'cpu' o 'cpu0'
+        $values = array_map('intval', $parts);
+        return [
+            'total' => array_sum($values),
+            'idle'  => ($values[3] ?? 0) + ($values[4] ?? 0) // idle + iowait
+        ];
     }
 
-    file_put_contents($cacheFile, json_encode($cpu2));
+    // Leer todas las líneas de CPU del kernel
+    $statLines = file('/proc/stat');
+    $cpuData = [];
+    $prevData = file_exists($cacheFile) ? json_decode(file_get_contents($cacheFile), true) : [];
 
-    $idle1  = $cpu1[4];
-    $total1 = array_sum(array_slice($cpu1, 1));
+    foreach ($statLines as $line) {
+        if (preg_match('/^cpu\d*\s+/', $line)) {
+            $label = preg_split('/\s+/', trim($line))[0]; // cpu, cpu0, cpu1...
+            $curr = parseCpuLine($line);
+            
+            if (isset($prevData[$label])) {
+                $prev = $prevData[$label];
+                $dTotal = $curr['total'] - $prev['total'];
+                $dIdle  = $curr['idle'] - $prev['idle'];
+                $usage = $dTotal > 0 ? round(100 * ($dTotal - $dIdle) / $dTotal, 1) : 0;
+            } else {
+                $usage = 0; // Primer ciclo: sin dato previo
+            }
+            
+            $cpuData[$label] = [
+                'usage' => $usage,
+                'curr'  => $curr // Guardar para próxima iteración
+            ];
+        }
+    }
 
-    $idle2  = $cpu2[4];
-    $total2 = array_sum(array_slice($cpu2, 1));
+    // Actualizar cache con valores actuales
+    $cacheContent = [];
+    foreach ($cpuData as $label => $data) {
+        $cacheContent[$label] = $data['curr'];
+    }
+    file_put_contents($cacheFile, json_encode($cacheContent));
 
-    $dTotal = $total2 - $total1;
-    $dIdle  = $idle2 - $idle1;
+    // Extraer resultados
+    $cpuCores = [];
+    foreach (['cpu0','cpu1','cpu2','cpu3'] as $core) {
+        if (isset($cpuData[$core])) {
+            $cpuCores[] = $cpuData[$core]['usage'];
+        }
+    }
+    $cpuOverall = $cpuData['cpu']['usage'] ?? 0; // Línea "cpu" = promedio del kernel
 
-    // CPU REAL (SIN CORES)
-    $cpu = $dTotal > 0
-        ? round(100 * ($dTotal - $dIdle) / $dTotal, 1)
-        : 0;
-
-    // RAM
-    $memRaw = file('/proc/meminfo');
+    // RAM (optimizado)
     $mem = [];
-
-    foreach ($memRaw as $line) {
+    foreach (file('/proc/meminfo') as $line) {
         if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) {
             $mem[$m[1]] = (int)$m[2];
         }
     }
-
     $ramTotal = round($mem['MemTotal'] / 1048576, 2);
     $ramFree  = round(($mem['MemAvailable'] ?? $mem['MemFree']) / 1048576, 2);
     $ramUsed  = round($ramTotal - $ramFree, 2);
@@ -203,26 +228,32 @@ if ($action === 'sysinfo') {
     $diskFree  = round(disk_free_space('/') / 1073741824, 1);
     $diskUsed  = round($diskTotal - $diskFree, 1);
 
-    // TEMP
+    // TEMP (con fallback para Allwinner H6)
     $temp = '';
-    if (file_exists('/sys/class/thermal/thermal_zone0/temp')) {
-        $temp = round(
-            file_get_contents('/sys/class/thermal/thermal_zone0/temp') / 1000,
-            1
-        ) . ' °C';
+    $tempPaths = [
+        '/sys/class/thermal/thermal_zone0/temp',
+        '/sys/class/hwmon/hwmon0/temp1_input',
+        '/sys/class/hwmon/hwmon1/temp1_input'
+    ];
+    foreach ($tempPaths as $path) {
+        if (file_exists($path)) {
+            $val = (int)file_get_contents($path);
+            $temp = round($val / ($val > 1000 ? 1000 : 1), 1) . ' °C';
+            break;
+        }
     }
 
     header('Content-Type: application/json');
-
     echo json_encode([
-        'cpu'       => $cpu,
-        'ramTotal'  => $ramTotal,
-        'ramUsed'   => $ramUsed,
-        'ramFree'   => $ramFree,
-        'diskTotal' => $diskTotal,
-        'diskUsed'  => $diskUsed,
-        'diskFree'  => $diskFree,
-        'temp'      => $temp
+        'cpu'        => $cpuOverall,      // Uso general (todos los núcleos)
+        'cpuCores'   => $cpuCores,        // Array [cpu0%, cpu1%, cpu2%, cpu3%]
+        'ramTotal'   => $ramTotal,
+        'ramUsed'    => $ramUsed,
+        'ramFree'    => $ramFree,
+        'diskTotal'  => $diskTotal,
+        'diskUsed'   => $diskUsed,
+        'diskFree'   => $diskFree,
+        'temp'       => $temp
     ]);
 
     exit;
