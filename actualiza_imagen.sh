@@ -2,6 +2,7 @@
                         export LANG=es_ES.UTF-8
                         export LC_ALL=es_ES.UTF-8
                         export LANGUAGE=es_ES:es
+                        
                         #sed -i '4cExec=sh -c '\''cd /home/pi/A108;sudo sh actualizar.sh'\''' /home/pi/.config/autostart/actualizar.desktop
                         git config --global --add safe.directory /home/pi/PHPPLUS
                         cd /home/pi/PHPPLUS                                             
