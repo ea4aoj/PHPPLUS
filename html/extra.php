@@ -355,10 +355,10 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <div class="card-body d-flex flex-column">
             <h5 class="card-title">
                 <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
-                Restaurar imagen de fábrica
+                Restaurar de fábrica
             </h5>
             <p class="card-text text-white-50 small flex-grow-1">
-                Genera el ZIP de fábrica y restaura todos los ficheros de configuración al estado base.
+                Restaura la imagen y borra todos los parámetros de usuario dejándola como cuando la descargas.
             </p>
             <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark"
                     onclick="confirmarFabrica()">
