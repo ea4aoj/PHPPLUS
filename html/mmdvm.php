@@ -901,7 +901,7 @@ button.btn-header { font-family: var(--font-mono); }
 <header class="ctrl-header">
 <div class="ctrl-header-top">
 <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:40px;width:auto;">
-<h1>SISTEMA WEB DE CONTROL Y MONITORIZACIÓN PARA RADIOAFICIONADOS PHPPlus</h1>
+<h1>SISTEMA DE CONTROL Y MONITORIZACIÓN PARA RADIOAFICIONADOS PHPPlus</h1>
 </div>
 <div class="ctrl-header-btns">
 <a href="editor_general_config.php" class="btn-header red"> 📄 editor general </a>
