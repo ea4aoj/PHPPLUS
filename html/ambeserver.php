@@ -15,7 +15,7 @@ $cronCmd = "@reboot sleep 10 && cd $baseDir && nohup $binary "
     . "-s \$(grep '^velocidad=' $iniFile | cut -d= -f2) "
     . "-i \$(grep '^puerto=' $iniFile | cut -d= -f2) "
     . "-p \$(grep '^puertonet=' $iniFile | cut -d= -f2) "
-    . ">> $logFile 2>&1 &";
+    . ">> $logFile 2>&1 & ; echo \$(pgrep -f AMBEserver | head -n1) > $pidFile";
 
 /* =========================================================
    FUNCIONES
@@ -50,23 +50,13 @@ function getAutoStatus()
 
 function isRunning($pidFile)
 {
-    if (!file_exists($pidFile)) {
-        return false;
-    }
-
     $pid = trim(@file_get_contents($pidFile));
-    if (!$pid) {
-        return false;
+
+    if ($pid && trim(shell_exec("ps -p $pid -o pid= 2>/dev/null"))) {
+        return true;
     }
 
-    $running = trim(shell_exec("ps -p $pid -o pid= 2>/dev/null"));
-
-    if (!$running) {
-        @unlink($pidFile);
-        return false;
-    }
-
-    return true;
+    return trim(shell_exec("pgrep -x AMBEserver 2>/dev/null")) !== '';
 }
 
 /* =========================================================
