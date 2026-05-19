@@ -406,7 +406,7 @@ if ($action === 'transmission') {
 
     $lastHeard = []; $seen = [];
     foreach ($lines as $line) {
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR Slot (\d), received (RF|network) voice header from (\S+) to TG (\d+)/i', $line, $m)) {
+        if (preg_match('/^[A-Z][a-z]{2}\s+\d+\s+(\d{2}:\d{2}:\d{2}).*DMR Slot (\d), received (RF|network) voice header from (\S+) to TG (\d+)/i', $line, $m)) {
             $cs = strtoupper(rtrim($m[4], ','));
             if (!in_array($cs, $seen)) {
                 $inf = lookupCall($cs);
