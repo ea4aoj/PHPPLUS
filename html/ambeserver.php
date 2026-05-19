@@ -60,6 +60,7 @@ function isRunning($pidFile)
     }
 
     $running = trim(shell_exec("ps -p $pid -o pid= 2>/dev/null"));
+
     if (!$running) {
         @unlink($pidFile);
         return false;
