@@ -1,6 +1,6 @@
 <?php
 /**
- * cambiar_contrasenas.php
+ * changepassword.php
  * Interfaz web segura para cambiar contraseñas de pi y root.
  * Requiere: PHP 7.4+, servidor web con permisos sudo controlados.
  */
