@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="header">
         <h1>🔐 Gestión de Contraseñas</h1>
-        <a href="mmdvm.php" class="btn-home">🏠 Inicio</a>
+        <a href="mmdvm.php" class="btn-home">🏠 Panel PHPPLUS</a>
     </div>
 
     <div class="container">
