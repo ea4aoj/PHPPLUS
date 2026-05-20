@@ -163,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h1>🔐 Gestión de Contraseñas</h1>
             <!-- 🔹 Nota de contraseña por defecto debajo del título -->
             <small class="default-pass-note">
-                Contraseña por defecto: <strong>orangepi</strong>
+                Contraseña por defecto: <strong>orangepi (Estas claves son independientes de la clave login)</strong>
             </small>
         </div>
         
