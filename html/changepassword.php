@@ -1,196 +1,189 @@
 <?php
-$message = "";
+/**
+ * cambiar_contrasenas.php
+ * Interfaz web segura para cambiar contraseñas de pi y root.
+ * Requiere: PHP 7.4+, servidor web con permisos sudo controlados.
+ */
+header('Content-Type: text/html; charset=UTF-8');
+ini_set('display_errors', 0); // No mostrar errores crudos en producción
 
-function changePasswordExpect($user, $old, $new) {
+$msg = '';
+$msgType = ''; // success, error, warning
 
-    $old = escapeshellarg($old);
-    $new = escapeshellarg($new);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Sanitización básica
+    $user       = trim($_POST['user'] ?? '');
+    $current    = $_POST['current_pass'] ?? '';
+    $new        = $_POST['new_pass'] ?? '';
+    $confirm    = $_POST['confirm_pass'] ?? '';
 
-    $script = <<<EOF
-spawn passwd $user
-expect "Current*password"
-send $old\r
-expect "New*password"
-send $new\r
-expect "Retype*new*password"
-send $new\r
-expect eof
-EOF;
-
-    $file = tempnam(sys_get_temp_dir(), "exp");
-    file_put_contents($file, $script);
-
-    $cmd = "expect $file 2>&1";
-    $out = shell_exec($cmd);
-
-    unlink($file);
-
-    return $out;
-}
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
-    $old_pi   = $_POST["old_pi"] ?? "";
-    $new_pi   = $_POST["new_pi"] ?? "";
-    $rep_pi   = $_POST["rep_pi"] ?? "";
-
-    $old_root = $_POST["old_root"] ?? "";
-    $new_root = $_POST["new_root"] ?? "";
-    $rep_root = $_POST["rep_root"] ?? "";
-
-    if ($new_pi !== $rep_pi || $new_root !== $rep_root) {
-        $message = "<div class='error'>Las nuevas contraseñas no coinciden.</div>";
+    // Validaciones iniciales
+    if (!in_array($user, ['pi', 'root'])) {
+        $msg = 'Usuario no reconocido.';
+        $msgType = 'error';
+    } elseif ($new !== $confirm) {
+        $msg = 'Las contraseñas nuevas no coinciden. Por favor, revísalas.';
+        $msgType = 'error';
+    } elseif (strlen($new) < 6) {
+        $msg = 'La nueva contraseña debe tener al menos 6 caracteres.';
+        $msgType = 'error';
     } else {
+        // Verificar contraseña actual (usa su sin TTY)
+        $checkCmd = 'echo ' . escapeshellarg($current) . ' | su -c "exit 0" ' . escapeshellarg($user) . ' 2>/dev/null && echo "OK"';
+        $checkRes = trim(shell_exec($checkCmd));
 
-        $out1 = changePasswordExpect("pi", $old_pi, $new_pi);
-        $out2 = changePasswordExpect("root", $old_root, $new_root);
+        if ($checkRes !== 'OK') {
+            $msg = 'La contraseña actual es incorrecta. Inténtalo de nuevo.';
+            $msgType = 'error';
+        } else {
+            // Cambio de contraseña (chpasswd es el método estándar y seguro para scripts)
+            // Nota: passwd interactivo requiere TTY, chpasswd es equivalente y 100% compatible
+            $changeCmd = 'echo ' . escapeshellarg("$user:$new") . ' | sudo chpasswd';
+            $output = [];
+            $return = 0;
+            exec($changeCmd . ' 2>&1', $output, $return);
 
-        $message = "<div class='success'>Proceso ejecutado. Revisa si hubo errores.</div>";
+            if ($return === 0) {
+                $msg = '✅ ¡Operación exitosa! La contraseña de <strong>' . htmlspecialchars($user) . '</strong> ha sido actualizada correctamente.';
+                $msgType = 'success';
+            } else {
+                $msg = '❌ Error al aplicar el cambio: ' . htmlspecialchars(implode(' ', $output));
+                $msgType = 'error';
+            }
+        }
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OrangePi Security</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cambio de Contraseñas</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --card: #151515;
+            --text: #ff9800;
+            --text-light: #ffb74d;
+            --border: #2a2a2a;
+            --input-bg: #1e1e1e;
+            --success: #4caf50;
+            --error: #ef5350;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
+        
+        .header { width: 100%; max-width: 960px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: 0.5px; }
+        .btn-home { background: var(--card); color: var(--text); padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px; text-decoration: none; transition: all 0.2s; }
+        .btn-home:hover { background: var(--text); color: var(--bg); transform: translateY(-1px); }
 
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial;
-}
+        .container { display: flex; gap: 2rem; width: 100%; max-width: 960px; flex-wrap: wrap; }
+        .card { flex: 1; min-width: 300px; background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+        .card h2 { margin-bottom: 1.2rem; color: var(--text-light); text-align: center; font-weight: 500; }
 
-body{
-    background:#0f1117;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-    color:white;
-    padding:20px;
-}
+        .form-group { margin-bottom: 1rem; position: relative; }
+        label { display: block; margin-bottom: 0.4rem; font-size: 0.85rem; color: var(--text-light); }
+        input[type="password"], input[type="text"] { width: 100%; padding: 0.65rem 2.5rem 0.65rem 0.8rem; background: var(--input-bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; font-size: 0.95rem; transition: border 0.2s; }
+        input:focus { outline: none; border-color: var(--text); box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2); }
+        
+        .toggle-pass { position: absolute; right: 12px; top: 34px; cursor: pointer; color: var(--text-light); font-size: 1.1rem; user-select: none; opacity: 0.8; transition: opacity 0.2s; }
+        .toggle-pass:hover { opacity: 1; }
 
-.card{
-    width:450px;
-    background:#1a1d26;
-    padding:30px;
-    border-radius:20px;
-    box-shadow:0 0 30px rgba(0,0,0,0.5);
-}
+        button[type="submit"] { width: 100%; padding: 0.75rem; background: var(--text); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-top: 0.5rem; }
+        button[type="submit"]:hover { background: var(--text-light); transform: translateY(-1px); }
+        button[type="submit"]:active { transform: translateY(0); }
 
-.topbar{
-    margin-bottom:15px;
-}
+        .msg { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-size: 0.95rem; display: none; width: 100%; max-width: 960px; }
+        .msg.show { display: block; animation: fadeIn 0.3s ease; }
+        .success { background: rgba(76, 175, 80, 0.15); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(239, 83, 80, 0.15); color: #ef9a9a; border: 1px solid rgba(239, 83, 80, 0.3); }
 
-.back-btn{
-    background:#10131a;
-    color:#ff8c00;
-    padding:10px 14px;
-    border-radius:10px;
-    text-decoration:none;
-    border:1px solid #2d3340;
-}
-
-h1{
-    text-align:center;
-    color:#ff8c00;
-    margin:15px 0 20px;
-}
-
-label{
-    font-size:13px;
-    color:#ccc;
-    display:block;
-    margin-top:12px;
-}
-
-input{
-    width:100%;
-    padding:12px;
-    margin-top:6px;
-    border-radius:10px;
-    border:1px solid #2d3340;
-    background:#10131a;
-    color:white;
-}
-
-button{
-    width:100%;
-    margin-top:20px;
-    padding:14px;
-    border:none;
-    border-radius:12px;
-    background:linear-gradient(135deg,#ff8c00,#ff5e00);
-    color:white;
-    font-weight:bold;
-}
-
-.error{
-    background:#351212;
-    color:#ff9d9d;
-    padding:10px;
-    border-radius:10px;
-    margin-bottom:10px;
-}
-
-.success{
-    background:#12351f;
-    color:#7dffab;
-    padding:10px;
-    border-radius:10px;
-    margin-bottom:10px;
-}
-</style>
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 720px) { .container { flex-direction: column; } }
+    </style>
 </head>
-
 <body>
+    <div class="header">
+        <h1>🔐 Gestión de Contraseñas</h1>
+        <a href="mmdvm.php" class="btn-home">🏠 Inicio</a>
+    </div>
 
-<div class="card">
+    <div class="container">
+        <!-- USUARIO PI -->
+        <div class="card">
+            <h2>👤 Usuario: pi</h2>
+            <form method="POST" onsubmit="return validateForm('pi')">
+                <input type="hidden" name="user" value="pi">
+                <div class="form-group">
+                    <label>Contraseña actual:</label>
+                    <input type="password" name="current_pass" id="pi_current" required autocomplete="off">
+                    <span class="toggle-pass" onclick="togglePass('pi_current')">👁️</span>
+                </div>
+                <div class="form-group">
+                    <label>Nueva contraseña:</label>
+                    <input type="password" name="new_pass" id="pi_new" required autocomplete="new-password">
+                    <span class="toggle-pass" onclick="togglePass('pi_new')">👁️</span>
+                </div>
+                <div class="form-group">
+                    <label>Confirmar nueva contraseña:</label>
+                    <input type="password" name="confirm_pass" id="pi_confirm" required autocomplete="new-password">
+                    <span class="toggle-pass" onclick="togglePass('pi_confirm')">👁️</span>
+                </div>
+                <button type="submit">Cambiar Contraseña pi</button>
+            </form>
+        </div>
 
-<div class="topbar">
-    <a class="back-btn" href="mmdvm.php">← Volver</a>
-</div>
+        <!-- USUARIO ROOT -->
+        <div class="card">
+            <h2>🛡️ Usuario: root</h2>
+            <form method="POST" onsubmit="return validateForm('root')">
+                <input type="hidden" name="user" value="root">
+                <div class="form-group">
+                    <label>Contraseña actual:</label>
+                    <input type="password" name="current_pass" id="root_current" required autocomplete="off">
+                    <span class="toggle-pass" onclick="togglePass('root_current')">👁️</span>
+                </div>
+                <div class="form-group">
+                    <label>Nueva contraseña:</label>
+                    <input type="password" name="new_pass" id="root_new" required autocomplete="new-password">
+                    <span class="toggle-pass" onclick="togglePass('root_new')">👁️</span>
+                </div>
+                <div class="form-group">
+                    <label>Confirmar nueva contraseña:</label>
+                    <input type="password" name="confirm_pass" id="root_confirm" required autocomplete="new-password">
+                    <span class="toggle-pass" onclick="togglePass('root_confirm')">👁️</span>
+                </div>
+                <button type="submit">Cambiar Contraseña root</button>
+            </form>
+        </div>
+    </div>
 
-<h1>OrangePi Security</h1>
+    <?php if ($msg): ?>
+        <div class="msg <?= $msgType ?> show"><?= $msg ?></div>
+    <?php endif; ?>
 
-<?= $message ?>
+    <script>
+        function togglePass(id) {
+            const input = document.getElementById(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
 
-<form method="POST">
-
-<h3>Usuario PI</h3>
-
-<label>Contraseña actual</label>
-<input type="password" name="old_pi" required>
-
-<label>Nueva contraseña</label>
-<input type="password" name="new_pi" required>
-
-<label>Repetir nueva contraseña</label>
-<input type="password" name="rep_pi" required>
-
-<hr style="margin:15px 0; border:1px solid #2d3340">
-
-<h3>ROOT</h3>
-
-<label>Contraseña actual</label>
-<input type="password" name="old_root" required>
-
-<label>Nueva contraseña</label>
-<input type="password" name="new_root" required>
-
-<label>Repetir nueva contraseña</label>
-<input type="password" name="rep_root" required>
-
-<button type="submit">Actualizar contraseñas</button>
-
-</form>
-
-</div>
-
+        function validateForm(user) {
+            const newP = document.getElementById(user + '_new').value;
+            const confP = document.getElementById(user + '_confirm').value;
+            
+            if (newP !== confP) {
+                alert('⚠️ Las contraseñas nuevas no coinciden. Por favor, revísalas.');
+                return false;
+            }
+            if (newP.length < 6) {
+                alert('⚠️ La contraseña debe tener al menos 6 caracteres.');
+                return false;
+            }
+            return true;
+        }
+    </script>
 </body>
 </html>
