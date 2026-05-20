@@ -1,18 +1,26 @@
 #!/bin/bash
-                        export LANG=es_ES.UTF-8
-                        export LC_ALL=es_ES.UTF-8
-                        export LANGUAGE=es_ES:es
-                        
-                        #sed -i '4cExec=sh -c '\''cd /home/pi/A108;sudo sh actualizar.sh'\''' /home/pi/.config/autostart/actualizar.desktop
-                        git config --global --add safe.directory /home/pi/PHPPLUS
-                        cd /home/pi/PHPPLUS                                             
-                        git pull --force                      
-                        sudo rm -R /home/pi/A108
-                        mkdir /home/pi/A108                                                
-                        cp -R /home/pi/PHPPLUS/* /home/pi/A108
-                        cp -R /home/pi/PHPPLUS/html/ /var/www/
-                        sleep 6                                             
-                        sudo chmod 777 -R /home/pi/A108   
-                        sudo chmod 777 -R /var/www/html 
-                         
-                         
+
+export LANG=es_ES.UTF-8
+export LC_ALL=es_ES.UTF-8
+export LANGUAGE=es_ES:es
+
+git config --global --add safe.directory /home/pi/PHPPLUS
+cd /home/pi/PHPPLUS                                             
+git pull --force
+
+# Guardar password.json ANTES de tocar nada
+cp /var/www/html/password.json /tmp/password_backup.json
+
+sudo rm -R /home/pi/A108
+mkdir /home/pi/A108                                                
+cp -R /home/pi/PHPPLUS/* /home/pi/A108
+sudo rm -R /home/pi/A108/html
+cp -R /home/pi/PHPPLUS/html/ /var/www/
+
+# Restaurar password.json real (sobreescribe el del github)
+cp /tmp/password_backup.json /var/www/html/password.json
+
+sleep 5                                             
+sudo chmod 777 -R /home/pi/A108   
+sudo chmod 777 -R /var/www/html
+
