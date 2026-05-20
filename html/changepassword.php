@@ -37,7 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msgType = 'error';
         } else {
             // Cambio de contraseña (chpasswd es el método estándar y seguro para scripts)
-            // Nota: passwd interactivo requiere TTY, chpasswd es equivalente y 100% compatible
             $changeCmd = 'echo ' . escapeshellarg("$user:$new") . ' | sudo chpasswd';
             $output = [];
             $return = 0;
@@ -74,10 +73,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
         body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 2rem; }
         
-        .header { width: 100%; max-width: 960px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        h1 { font-size: 1.6rem; font-weight: 600; letter-spacing: 0.5px; }
-        .btn-home { background: var(--card); color: var(--text); padding: 0.5rem 1rem; border: 1px solid var(--border); border-radius: 8px; text-decoration: none; transition: all 0.2s; }
-        .btn-home:hover { background: var(--text); color: var(--bg); transform: translateY(-1px); }
+        /* Header: título a la izquierda, botón a la derecha */
+        .header { 
+            width: 100%; 
+            max-width: 960px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 1.5rem; 
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        h1 { 
+            font-size: 1.6rem; 
+            font-weight: 600; 
+            letter-spacing: 0.5px; 
+            margin: 0; 
+        }
+        
+        /* Nota de contraseña por defecto - pequeña y discreta */
+        .default-pass-note {
+            font-size: 0.7rem;
+            color: var(--text);
+            opacity: 0.85;
+            font-style: italic;
+        }
+        .default-pass-note strong {
+            font-weight: 600;
+            opacity: 1;
+        }
+        
+        .btn-home { 
+            background: var(--card); 
+            color: var(--text); 
+            padding: 0.5rem 1rem; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            text-decoration: none; 
+            transition: all 0.2s; 
+            white-space: nowrap;
+        }
+        .btn-home:hover { 
+            background: var(--text); 
+            color: var(--bg); 
+            transform: translateY(-1px); 
+        }
 
         .container { display: flex; gap: 2rem; width: 100%; max-width: 960px; flex-wrap: wrap; }
         .card { flex: 1; min-width: 300px; background: var(--card); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
@@ -101,12 +148,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .error { background: rgba(239, 83, 80, 0.15); color: #ef9a9a; border: 1px solid rgba(239, 83, 80, 0.3); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 720px) { .container { flex-direction: column; } }
+        @media (max-width: 720px) { 
+            .container { flex-direction: column; } 
+            .header { flex-direction: column; align-items: flex-start; }
+            .header-left { width: 100%; }
+            .btn-home { align-self: flex-end; }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🔐 Gestión de Contraseñas</h1>
+        <!-- Lado izquierdo: Título + nota -->
+        <div class="header-left">
+            <h1>🔐 Gestión de Contraseñas</h1>
+            <!-- 🔹 Nota de contraseña por defecto debajo del título -->
+            <small class="default-pass-note">
+                Contraseña por defecto: <strong>orangepi</strong>
+            </small>
+        </div>
+        
+        <!-- Lado derecho: Botón Panel PHPPLUS -->
         <a href="mmdvm.php" class="btn-home">🏠 Panel PHPPLUS</a>
     </div>
 
