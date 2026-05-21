@@ -605,7 +605,7 @@ $host = hostnameServer();
     <!-- ===== TOPBAR ===== -->
     <div class="topbar">
         <div>
-            <div class="title">Analisis del sistema</div>
+            <div class="title">Anñalisis del sistema</div>
             <div class="subtitle">Panel inteligente PHPHPLUS</div>
         </div>
         <a href="mmdvm.php" class="home-btn">
