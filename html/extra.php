@@ -349,6 +349,23 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
     </div>
 </div>
 
+<!-- ANALISIS.PHP -->
+<div class="col-12 col-sm-6 col-lg-3">
+    <div class="card bg-secondary border-0 h-100">
+        <div class="card-body d-flex flex-column">
+            <h5 class="card-title">
+                <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>ANALISIS.PHP
+            </h5>
+            <p class="card-text text-white-50 small flex-grow-1">
+                Panel de monitoreo · CPU/RAM/Disco · Control de servicios systemd con interruptores
+            </p>
+            <a href="/analisis.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+            </a>
+        </div>
+    </div>
+</div>
+
 <!-- SEGURIDAD / CAMBIO DE CONTRASEÑAS -->
 <div class="col-12 col-sm-6 col-lg-3">
     <div class="card bg-secondary border-0 h-100">
@@ -496,4 +513,3 @@ function ejecutarFabrica() {
 </script>
 </body>
 </html>
-
