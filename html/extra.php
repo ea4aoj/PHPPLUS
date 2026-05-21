@@ -354,7 +354,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
     <div class="card bg-secondary border-0 h-100">
         <div class="card-body d-flex flex-column">
             <h5 class="card-title">
-                <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>ANALISIS.PHP
+                <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Analisis Servicios
             </h5>
             <p class="card-text text-white-50 small flex-grow-1">
                 Panel de monitoreo · CPU/RAM/Disco · Control de servicios systemd con interruptores
