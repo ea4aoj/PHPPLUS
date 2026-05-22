@@ -918,7 +918,7 @@ button.btn-header { font-family: var(--font-mono); }
 <a href="?action=backup-configs" class="btn-header amber"> 💾 Hacer copia de seguridad </a>
 <button onclick="openRestore()" class="btn-header cyan"> 📂 Restaurar copia de seguridad </button>
 <div class="dropdown-wrap" id="dropActualizaciones">
-  <button class="btn-header cyan">⬇ Actualizaciones ▾</button>
+  <button class="btn-header green">⬇ Actualizaciones ▾</button>
   <div class="dropdown-menu-custom">
     <button class="dropdown-item-custom" onclick="runUpdate('imagen')">🖼 Actualizar Imagen</button>
     <button class="dropdown-item-custom" onclick="runUpdate('ids')">📋 Actualizar IDs</button>
