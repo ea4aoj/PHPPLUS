@@ -7,10 +7,9 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $paths = [
-    'mmdvm' => '/home/pi/MMDVMHost/*.log',
-    'tmp'   => '/tmp/*',
+    'mmdvm'   => '/home/pi/MMDVMHost/*.log',
     'oldlogs' => '/var/log/*.gz',
-    'oldlogs2' => '/var/log/*.1'
+    'oldlogs2'=> '/var/log/*.1'
 ];
 
 function consola($msg) {
@@ -18,6 +17,7 @@ function consola($msg) {
 }
 
 function borrar($pattern) {
+
     $files = glob($pattern);
     $deleted = 0;
     $out = "";
@@ -30,7 +30,9 @@ function borrar($pattern) {
     }
 
     foreach ($files as $f) {
+
         if (is_file($f)) {
+
             if (@unlink($f)) {
                 $out .= consola("✔ Eliminado: $f");
                 $deleted++;
@@ -43,6 +45,19 @@ function borrar($pattern) {
     return [$deleted, $out];
 }
 
+function ejecutar_comando($cmd) {
+
+    $output = [];
+    $return = 0;
+
+    exec($cmd . " 2>&1", $output, $return);
+
+    return [
+        'ok' => ($return === 0),
+        'out' => implode("\n", $output)
+    ];
+}
+
 function limpiar_historial() {
 
     $out = "";
@@ -53,11 +68,17 @@ function limpiar_historial() {
     ];
 
     foreach ($files as $f) {
+
         if (file_exists($f)) {
-            if (@unlink($f)) {
-                $out .= consola("✔ Historial eliminado");
+
+            // Vaciar archivo en vez de borrarlo
+            if (@file_put_contents($f, "")) {
+
+                $out .= consola("✔ Historial limpiado: $f");
+
             } else {
-                $out .= consola("✖ Error historial");
+
+                $out .= consola("✖ Sin permisos: $f");
             }
         }
     }
@@ -68,13 +89,20 @@ function limpiar_historial() {
 function info_sistema() {
 
     $df = shell_exec("df -h / | awk 'NR==2'");
+    $inode = shell_exec("df -i / | awk 'NR==2'");
     $uptime = shell_exec("uptime -p");
-    $mem = shell_exec("free -m | awk 'NR==2{printf \"Usado: %sMB / Total: %sMB\", $3,$2}'");
+
+    $mem = shell_exec(
+        "free -m | awk 'NR==2{
+        printf \"Usado: %sMB / Total: %sMB\", \$3,\$2
+        }'"
+    );
 
     return [
-        'disco' => trim($df),
+        'disco'  => trim($df),
+        'inode'  => trim($inode),
         'uptime' => trim($uptime),
-        'ram' => trim($mem)
+        'ram'    => trim($mem)
     ];
 }
 
@@ -85,47 +113,118 @@ function ejecutar($opt) {
     $report = [];
     $console = "";
 
+    // =========================================
+    // MMDVM LOGS
+    // =========================================
+
     if (!empty($opt['mmdvm'])) {
+
         list($c, $log) = borrar($paths['mmdvm']);
+
         $report['MMDVMHost'] = $c;
         $console .= $log;
     }
 
+    // =========================================
+    // TMP SEGURO
+    // =========================================
+
     if (!empty($opt['tmp'])) {
-        list($c, $log) = borrar($paths['tmp']);
-        $report['/tmp'] = $c;
-        $console .= $log;
+
+        $cmd = "find /tmp -type f -mtime +2 -delete";
+
+        $r = ejecutar_comando($cmd);
+
+        if ($r['ok']) {
+
+            $report['/tmp'] = "OK";
+            $console .= consola("✔ Limpieza segura /tmp completada");
+
+        } else {
+
+            $report['/tmp'] = "ERROR";
+            $console .= consola("✖ Error limpiando /tmp");
+        }
     }
 
+    // =========================================
+    // LOGS ANTIGUOS
+    // =========================================
+
     if (!empty($opt['oldlogs'])) {
+
         list($c1, $l1) = borrar($paths['oldlogs']);
         list($c2, $l2) = borrar($paths['oldlogs2']);
+
         $report['logs antiguos'] = $c1 + $c2;
+
         $console .= $l1 . $l2;
     }
 
+    // =========================================
+    // JOURNALCTL
+    // =========================================
+
     if (!empty($opt['journal'])) {
-        exec("journalctl --vacuum-time=3d --vacuum-size=100M 2>&1");
-        $report['journalctl'] = "OK";
-        $console .= consola("✔ Journal optimizado");
+
+        $cmd = "journalctl --vacuum-time=3d --vacuum-size=100M";
+
+        $r = ejecutar_comando($cmd);
+
+        if ($r['ok']) {
+
+            $report['journalctl'] = "OK";
+            $console .= consola("✔ Journal optimizado");
+
+        } else {
+
+            $report['journalctl'] = "ERROR";
+            $console .= consola("✖ Error journalctl");
+        }
     }
+
+    // =========================================
+    // APT
+    // =========================================
 
     if (!empty($opt['apt'])) {
-        exec("apt clean 2>&1");
+
+        ejecutar_comando("apt clean");
+        ejecutar_comando("apt autoclean");
+        ejecutar_comando("apt autoremove -y");
+
         $report['APT'] = "OK";
+
         $console .= consola("✔ Cache APT limpia");
+        $console .= consola("✔ Paquetes innecesarios eliminados");
     }
 
+    // =========================================
+    // HISTORIAL
+    // =========================================
+
     if (!empty($opt['history'])) {
+
         $console .= limpiar_historial();
+
         $report['historial'] = "OK";
     }
 
+    // =========================================
+    // CACHE SISTEMA SEGURA
+    // =========================================
+
     if (!empty($opt['extra'])) {
-        exec("rm -rf /home/pi/.cache/* 2>&1");
-        exec("rm -rf /var/tmp/* 2>&1");
+
+        ejecutar_comando("rm -rf /home/pi/.cache/*");
+
+        // SOLO ARCHIVOS ANTIGUOS
+        ejecutar_comando("find /var/tmp -type f -mtime +7 -delete");
+
         $report['cache'] = "OK";
-        $console .= consola("✔ Cache sistema limpiada");
+
+        $console .= consola("✔ Cache usuario limpiada");
+        $console .= consola("✔ /var/tmp limpiado de forma segura");
     }
 
     return [$report, $console];
@@ -133,21 +232,24 @@ function ejecutar($opt) {
 
 $report = null;
 $console = "";
+
 $sys = info_sistema();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $opt = [
-        'mmdvm' => isset($_POST['mmdvm']),
-        'tmp' => isset($_POST['tmp']),
+        'mmdvm'   => isset($_POST['mmdvm']),
+        'tmp'     => isset($_POST['tmp']),
         'oldlogs' => isset($_POST['oldlogs']),
         'journal' => isset($_POST['journal']),
-        'apt' => isset($_POST['apt']),
+        'apt'     => isset($_POST['apt']),
         'history' => isset($_POST['history']),
-        'extra' => isset($_POST['extra'])
+        'extra'   => isset($_POST['extra'])
     ];
 
     list($report, $console) = ejecutar($opt);
+
+    $sys = info_sistema();
 }
 ?>
 
@@ -167,7 +269,7 @@ body{
 }
 
 .contenedor{
-    max-width:900px;
+    max-width:950px;
     margin:30px auto;
     background:#161b22;
     padding:20px;
@@ -332,7 +434,7 @@ button:hover{
 
 <label class="opcion">
 <input type="checkbox" name="tmp">
-<span>/tmp</span>
+<span>/tmp seguro</span>
 </label>
 
 <label class="opcion">
@@ -367,18 +469,28 @@ button:hover{
 </form>
 
 <?php if ($report): ?>
+
 <div class="mt-3">
+
 <?php foreach ($report as $k => $v): ?>
+
 <div class="card">
 <span><?= htmlspecialchars($k) ?></span>
 <span class="badge"><?= htmlspecialchars($v) ?></span>
 </div>
+
 <?php endforeach; ?>
+
 </div>
+
 <?php endif; ?>
 
 <?php if ($console): ?>
-<div class="consola"><?= $console ?></div>
+
+<div class="consola">
+<?= $console ?>
+</div>
+
 <?php endif; ?>
 
 <div class="sysgrid">
@@ -386,6 +498,11 @@ button:hover{
 <div class="syscard">
 <h3>💾 Disco</h3>
 <div class="sysvalue"><?= htmlspecialchars($sys['disco']) ?></div>
+</div>
+
+<div class="syscard">
+<h3>🧩 Inodos</h3>
+<div class="sysvalue"><?= htmlspecialchars($sys['inode']) ?></div>
 </div>
 
 <div class="syscard">
