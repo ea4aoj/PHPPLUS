@@ -94,7 +94,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 <!-- HEADER -->
 <nav class="navbar navbar-expand-md navbar-granate">
     <div class="container">
-        <a class="navbar-brand" href="http://rem-esp.es">
+        <a class="navbar-brand" target="_blank" href="http://rem-esp.es">
           <img src="Logo_REM-ESP_EA4RCR.png" alt="Logo">
         </a>
 
@@ -128,7 +128,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Lanzador configurador Dump1090
                     </p>
-                    <a href="/dump1090.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/dump1090.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -145,7 +145,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Seguimiento de aeronaves en tiempo real
                     </p>
-                    <a href="/dump1090monitor.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/dump1090monitor.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -162,7 +162,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Servidor AMBE · Control de voz digital DMR
                     </p>
-                    <a href="/ambeserver.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/ambeserver.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -179,7 +179,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Feeder Radarbox · Tracking ADS-B global.
                     </p>
-                    <a href="/radarbox.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/radarbox.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -196,7 +196,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Feeder FR24 · Seguimiento de vuelos en tiempo real.
                     </p>
-                    <a href="/flightradar.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/flightradar.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -213,7 +213,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Seguimiento de sondas meteorológicas en tiempo real.
                     </p>
-                    <a href="/auto_rx.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/auto_rx.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -230,7 +230,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Control de repetidor · EchoLink · Configuración y logs
                     </p>
-                    <a href="/svxlink.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/svxlink.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -247,7 +247,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Gestión de dispositivos Bluetooth
                     </p>
-                    <a href="/bluetooth.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/bluetooth.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -264,7 +264,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                     <p class="card-text text-white-50 small flex-grow-1">
                         Grabador de Firmware para módulos ESP32 vía WebSerial
                     </p>
-                    <a href="/esp32.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                    <a href="/esp32.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -281,7 +281,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             <p class="card-text text-white-50 small flex-grow-1">
                 Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
             </p>
-            <a href="/fusion2x.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="/fusion2x.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -301,7 +301,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                 Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
             </p>
 
-            <a href="/openwebrx_control.php" target="_blank"
+            <a href="/openwebrx_control.php"
                class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
@@ -321,7 +321,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             <p class="card-text text-white-50 small flex-grow-1">
                 Panel de acceso rápido a enlaces de radioafición y servicios web.
             </p>
-            <a href="/mis_enlaces.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="/mis_enlaces.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -341,7 +341,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
                 Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
             </p>
 
-            <a href="/limpieza.php" target="_blank"
+            <a href="/limpieza.php"
                class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
@@ -359,7 +359,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             <p class="card-text text-white-50 small flex-grow-1">
                 Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
             </p>
-            <a href="/analisis.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="/analisis.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -376,7 +376,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             <p class="card-text text-white-50 small flex-grow-1">
                 Cambio de contraseñas · Gestión segura de usuarios pi y root
             </p>
-            <a href="/changepassword.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+            <a href="/changepassword.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                 <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
             </a>
         </div>
@@ -401,24 +401,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         </div>
     </div>
 </div>
-
-        <!-- EDITOR GENERAL
-        <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-sliders me-2" style="color:#00e5ff;"></i>EDITOR GENERAL
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Configuración global · Callsign · Id · Frecuencias · Posición · URL
-                    </p>
-                    <a href="/editor_general_config.php" target="_blank" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
-                </div>
-            </div>
-        </div> -->
-
+        
     </div>
 </div>
 
