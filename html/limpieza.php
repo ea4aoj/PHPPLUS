@@ -1,7 +1,7 @@
 <?php
 // =========================================
 //           LIMPIEZA DEL SISTEMA
-//        BLEACHBIT LIGHT EDITION
+//              LIGHT EDITION
 // =========================================
 
 error_reporting(E_ALL);
@@ -93,9 +93,9 @@ function info_sistema() {
     ];
 }
 
-// =========================================
-// BLEACHBIT LIGHT ENGINE
-// =========================================
+// ==================
+// ENGINE
+// ==================
 
 function ejecutar($opt) {
 
@@ -357,7 +357,7 @@ button:hover{
 <div class="contenedor">
 
 <div class="top">
-<h1>🧹 Limpieza del sistema (BleachBit Light)</h1>
+<h1>🧹 Limpieza del sistema</h1>
 <a class="home" href="mmdvm.php">🏠 Panel PHPPLUS</a>
 </div>
 
