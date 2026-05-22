@@ -663,6 +663,8 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-ui); f
 .btn-header.amber:hover { background: rgba(255,179,0,.1); }
 .btn-header.red { color: var(--red); border: 1px solid var(--red); }
 .btn-header.red:hover { background: rgba(255,69,96,.15); }
+.btn-header.green { color: var(--green); border: 1px solid var(--green); }
+.btn-header.green:hover { background: rgba(34,197,94,.1); }
 button.btn-header { font-family: var(--font-mono); }
 .ctrl-body { padding: 2rem; max-width: 1400px; margin: 0 auto; }
 .station-card { background: linear-gradient(135deg,#111720 60%,#0d1e2a 100%); border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 2rem; display: flex; align-items: center; gap: 2.0rem; margin-bottom: 1.8rem; flex-wrap: wrap; position: relative; overflow: hidden; }
@@ -910,7 +912,7 @@ button.btn-header { font-family: var(--font-mono); }
 <h1>SISTEMA DE CONTROL Y MONITORIZACIÓN PARA RADIOAFICIONADOS PHPPlus</h1>
 </div>
 <div class="ctrl-header-btns">
-<a href="editor_general_config.php" class="btn-header red"> 📄 editor general </a>
+<a href="editor_general_config.php" class="btn-header green"> 📄 editor general </a>
 <a href="?action=backup-configs" class="btn-header amber"> 💾 Hacer copia de seguridad </a>
 <button onclick="openRestore()" class="btn-header cyan"> 📂 Restaurar copia de seguridad </button>
 <div class="dropdown-wrap" id="dropActualizaciones">
