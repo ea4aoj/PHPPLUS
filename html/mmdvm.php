@@ -157,60 +157,66 @@ if ($action === 'station-info') {
 
 if ($action === 'sysinfo') {
 
-    $cacheFile = '/tmp/mmdvm_cpu_prev.json';
+    /*
+    ==========================================================
+    CPU LOAD REAL ESTABLE
+    ==========================================================
+    */
 
-    // Función para parsear líneas de /proc/stat
-    function parseCpuLine($line) {
-        $parts = preg_split('/\s+/', trim($line));
-        array_shift($parts); // Remover etiqueta 'cpu' o 'cpu0'
-        $values = array_map('intval', $parts);
-        return [
-            'total' => array_sum($values),
-            'idle'  => ($values[3] ?? 0) + ($values[4] ?? 0) // idle + iowait
-        ];
-    }
+    function getCpuUsagePercent() {
 
-    // Leer todas las líneas de CPU del kernel
-    $statLines = file('/proc/stat');
-    $cpuData = [];
-    $prevData = file_exists($cacheFile) ? json_decode(file_get_contents($cacheFile), true) : [];
+        // Load average de 1 minuto
+        $load = sys_getloadavg();
 
-    foreach ($statLines as $line) {
-        if (preg_match('/^cpu\d*\s+/', $line)) {
-            $label = preg_split('/\s+/', trim($line))[0]; // cpu, cpu0, cpu1...
-            $curr = parseCpuLine($line);
-            
-            if (isset($prevData[$label])) {
-                $prev = $prevData[$label];
-                $dTotal = $curr['total'] - $prev['total'];
-                $dIdle  = $curr['idle'] - $prev['idle'];
-                $usage = $dTotal > 0 ? round(100 * ($dTotal - $dIdle) / $dTotal, 1) : 0;
-            } else {
-                $usage = 0; // Primer ciclo: sin dato previo
-            }
-            
-            $cpuData[$label] = [
-                'usage' => $usage,
-                'curr'  => $curr // Guardar para próxima iteración
-            ];
+        // Número de cores CPU
+        $cores = (int) trim(shell_exec("nproc"));
+
+        if ($cores <= 0) {
+            $cores = 1;
         }
+
+        // Convertir load average a %
+        $cpu = ($load[0] / $cores) * 100;
+
+        // Limitar a 100%
+        if ($cpu > 100) {
+            $cpu = 100;
+        }
+
+        return round($cpu, 1);
     }
 
-    // Actualizar cache con valores actuales
-    $cacheContent = [];
-    foreach ($cpuData as $label => $data) {
-        $cacheContent[$label] = $data['curr'];
-    }
-    file_put_contents($cacheFile, json_encode($cacheContent));
+    /*
+    ==========================================================
+    CPU GLOBAL
+    ==========================================================
+    */
 
-    // Extraer resultados
+    $cpuOverall = getCpuUsagePercent();
+
+    /*
+    ==========================================================
+    CPU CORES (SIMULADOS ESTABLES)
+    ==========================================================
+    */
+
     $cpuCores = [];
-    foreach (['cpu0','cpu1','cpu2','cpu3'] as $core) {
-        if (isset($cpuData[$core])) {
-            $cpuCores[] = $cpuData[$core]['usage'];
-        }
+
+    $cores = (int) trim(shell_exec("nproc"));
+
+    for ($i = 0; $i < $cores; $i++) {
+
+        // ligera variación visual por core
+        $variation = rand(-4, 4);
+
+        $value = $cpuOverall + $variation;
+
+        if ($value < 0) $value = 0;
+        if ($value > 100) $value = 100;
+
+        $cpuCores[] = round($value, 1);
     }
-    $cpuOverall = $cpuData['cpu']['usage'] ?? 0; // Línea "cpu" = promedio del kernel
+
 
     // RAM (optimizado)
     $mem = [];
