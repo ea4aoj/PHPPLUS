@@ -345,7 +345,7 @@ button:hover{
 }
 
 .sysvalue{
-    font-size:13px;
+    font-size:11px;
     white-space:pre-wrap;
 }
 
