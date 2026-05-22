@@ -1,15 +1,16 @@
 <?php
 // =========================================
 //           LIMPIEZA DEL SISTEMA
+//        BLEACHBIT LIGHT EDITION
 // =========================================
 
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $paths = [
-    'mmdvm'   => '/home/pi/MMDVMHost/*.log',
-    'oldlogs' => '/var/log/*.gz',
-    'oldlogs2'=> '/var/log/*.1'
+    'mmdvm' => '/home/pi/MMDVMHost/*.log',
+    'logs'  => '/var/log/*.gz',
+    'logs2' => '/var/log/*.1'
 ];
 
 function consola($msg) {
@@ -62,24 +63,14 @@ function limpiar_historial() {
 
     $out = "";
 
-    $files = [
-        '/home/pi/.bash_history',
-        '/root/.bash_history'
-    ];
+    $file = '/home/pi/.bash_history';
 
-    foreach ($files as $f) {
+    if (file_exists($file)) {
 
-        if (file_exists($f)) {
-
-            // Vaciar archivo en vez de borrarlo
-            if (@file_put_contents($f, "")) {
-
-                $out .= consola("✔ Historial limpiado: $f");
-
-            } else {
-
-                $out .= consola("✖ Sin permisos: $f");
-            }
+        if (@file_put_contents($file, "")) {
+            $out .= consola("✔ Historial limpiado");
+        } else {
+            $out .= consola("✖ Sin permisos historial");
         }
     }
 
@@ -92,11 +83,7 @@ function info_sistema() {
     $inode = shell_exec("df -i / | awk 'NR==2'");
     $uptime = shell_exec("uptime -p");
 
-    $mem = shell_exec(
-        "free -m | awk 'NR==2{
-        printf \"Usado: %sMB / Total: %sMB\", \$3,\$2
-        }'"
-    );
+    $mem = shell_exec("free -m | awk 'NR==2{printf \"Usado: %sMB / Total: %sMB\", $3,$2}'");
 
     return [
         'disco'  => trim($df),
@@ -106,6 +93,10 @@ function info_sistema() {
     ];
 }
 
+// =========================================
+// BLEACHBIT LIGHT ENGINE
+// =========================================
+
 function ejecutar($opt) {
 
     global $paths;
@@ -113,80 +104,32 @@ function ejecutar($opt) {
     $report = [];
     $console = "";
 
-    // =========================================
+    // =========================
     // MMDVM LOGS
-    // =========================================
-
+    // =========================
     if (!empty($opt['mmdvm'])) {
 
         list($c, $log) = borrar($paths['mmdvm']);
 
-        $report['MMDVMHost'] = $c;
+        $report['MMDVM'] = $c;
         $console .= $log;
     }
 
-    // =========================================
-    // TMP SEGURO
-    // =========================================
+    // =========================
+    // LOGS SISTEMA
+    // =========================
+    if (!empty($opt['logs'])) {
 
-    if (!empty($opt['tmp'])) {
+        list($c1, $l1) = borrar($paths['logs']);
+        list($c2, $l2) = borrar($paths['logs2']);
 
-        $cmd = "find /tmp -type f -mtime +2 -delete";
-
-        $r = ejecutar_comando($cmd);
-
-        if ($r['ok']) {
-
-            $report['/tmp'] = "OK";
-            $console .= consola("✔ Limpieza segura /tmp completada");
-
-        } else {
-
-            $report['/tmp'] = "ERROR";
-            $console .= consola("✖ Error limpiando /tmp");
-        }
-    }
-
-    // =========================================
-    // LOGS ANTIGUOS
-    // =========================================
-
-    if (!empty($opt['oldlogs'])) {
-
-        list($c1, $l1) = borrar($paths['oldlogs']);
-        list($c2, $l2) = borrar($paths['oldlogs2']);
-
-        $report['logs antiguos'] = $c1 + $c2;
-
+        $report['Logs'] = $c1 + $c2;
         $console .= $l1 . $l2;
     }
 
-    // =========================================
-    // JOURNALCTL
-    // =========================================
-
-    if (!empty($opt['journal'])) {
-
-        $cmd = "journalctl --vacuum-time=3d --vacuum-size=100M";
-
-        $r = ejecutar_comando($cmd);
-
-        if ($r['ok']) {
-
-            $report['journalctl'] = "OK";
-            $console .= consola("✔ Journal optimizado");
-
-        } else {
-
-            $report['journalctl'] = "ERROR";
-            $console .= consola("✖ Error journalctl");
-        }
-    }
-
-    // =========================================
-    // APT
-    // =========================================
-
+    // =========================
+    // APT CLEAN (SEGURO)
+    // =========================
     if (!empty($opt['apt'])) {
 
         ejecutar_comando("apt clean");
@@ -194,37 +137,42 @@ function ejecutar($opt) {
         ejecutar_comando("apt autoremove -y");
 
         $report['APT'] = "OK";
-
-        $console .= consola("✔ Cache APT limpia");
-        $console .= consola("✔ Paquetes innecesarios eliminados");
+        $console .= consola("✔ APT limpiado");
     }
 
-    // =========================================
-    // HISTORIAL
-    // =========================================
+    // =========================
+    // JOURNALCTL
+    // =========================
+    if (!empty($opt['journal'])) {
 
-    if (!empty($opt['history'])) {
+        ejecutar_comando("journalctl --vacuum-time=3d");
+        ejecutar_comando("journalctl --vacuum-size=100M");
 
-        $console .= limpiar_historial();
-
-        $report['historial'] = "OK";
+        $report['Journal'] = "OK";
+        $console .= consola("✔ Journal limpiado");
     }
 
-    // =========================================
-    // CACHE SISTEMA SEGURA
-    // =========================================
-
-    if (!empty($opt['extra'])) {
+    // =========================
+    // CACHE USUARIO
+    // =========================
+    if (!empty($opt['cache'])) {
 
         ejecutar_comando("rm -rf /home/pi/.cache/*");
 
-        // SOLO ARCHIVOS ANTIGUOS
-        ejecutar_comando("find /var/tmp -type f -mtime +7 -delete");
-
-        $report['cache'] = "OK";
-
+        $report['Cache'] = "OK";
         $console .= consola("✔ Cache usuario limpiada");
-        $console .= consola("✔ /var/tmp limpiado de forma segura");
+    }
+
+    // =========================
+    // THUMBNAILS
+    // =========================
+    if (!empty($opt['thumb'])) {
+
+        ejecutar_comando("rm -rf /home/pi/.thumbnails/*");
+        ejecutar_comando("rm -rf /home/pi/.cache/thumbnails/*");
+
+        $report['Thumbnails'] = "OK";
+        $console .= consola("✔ Thumbnails limpiados");
     }
 
     return [$report, $console];
@@ -232,19 +180,17 @@ function ejecutar($opt) {
 
 $report = null;
 $console = "";
-
 $sys = info_sistema();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $opt = [
         'mmdvm'   => isset($_POST['mmdvm']),
-        'tmp'     => isset($_POST['tmp']),
-        'oldlogs' => isset($_POST['oldlogs']),
-        'journal' => isset($_POST['journal']),
+        'logs'    => isset($_POST['logs']),
         'apt'     => isset($_POST['apt']),
-        'history' => isset($_POST['history']),
-        'extra'   => isset($_POST['extra'])
+        'journal' => isset($_POST['journal']),
+        'cache'   => isset($_POST['cache']),
+        'thumb'   => isset($_POST['thumb'])
     ];
 
     list($report, $console) = ejecutar($opt);
@@ -269,7 +215,7 @@ body{
 }
 
 .contenedor{
-    max-width:950px;
+    max-width:1150px;
     margin:30px auto;
     background:#161b22;
     padding:20px;
@@ -296,13 +242,10 @@ h1{
 }
 .home:hover{background:#2a313c;}
 
-/* =========================
-   CHECKBOX HORIZONTAL PRO
-========================= */
-
+/* GRID */
 .grid-opciones{
-    display:flex;
-    flex-wrap:wrap;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
     gap:10px;
     margin-top:15px;
 }
@@ -316,11 +259,6 @@ h1{
     align-items:center;
     gap:8px;
     cursor:pointer;
-    transition:0.2s;
-}
-
-.opcion:hover{
-    background:#222a36;
 }
 
 .opcion input{
@@ -419,7 +357,7 @@ button:hover{
 <div class="contenedor">
 
 <div class="top">
-<h1>🧹 Limpieza del sistema</h1>
+<h1>🧹 Limpieza del sistema (BleachBit Light)</h1>
 <a class="home" href="mmdvm.php">🏠 Panel PHPPLUS</a>
 </div>
 
@@ -433,18 +371,8 @@ button:hover{
 </label>
 
 <label class="opcion">
-<input type="checkbox" name="tmp">
-<span>/tmp seguro</span>
-</label>
-
-<label class="opcion">
-<input type="checkbox" name="oldlogs">
-<span>Logs antiguos</span>
-</label>
-
-<label class="opcion">
-<input type="checkbox" name="journal">
-<span>Journal</span>
+<input type="checkbox" name="logs">
+<span>Logs sistema</span>
 </label>
 
 <label class="opcion">
@@ -453,13 +381,18 @@ button:hover{
 </label>
 
 <label class="opcion">
-<input type="checkbox" name="history">
-<span>Historial</span>
+<input type="checkbox" name="journal">
+<span>Journal</span>
 </label>
 
 <label class="opcion">
-<input type="checkbox" name="extra">
-<span>Cache sistema</span>
+<input type="checkbox" name="cache">
+<span>Cache usuario</span>
+</label>
+
+<label class="opcion">
+<input type="checkbox" name="thumb">
+<span>Thumbnails</span>
 </label>
 
 </div>
@@ -469,28 +402,18 @@ button:hover{
 </form>
 
 <?php if ($report): ?>
-
 <div class="mt-3">
-
 <?php foreach ($report as $k => $v): ?>
-
 <div class="card">
 <span><?= htmlspecialchars($k) ?></span>
 <span class="badge"><?= htmlspecialchars($v) ?></span>
 </div>
-
 <?php endforeach; ?>
-
 </div>
-
 <?php endif; ?>
 
 <?php if ($console): ?>
-
-<div class="consola">
-<?= $console ?>
-</div>
-
+<div class="consola"><?= $console ?></div>
 <?php endif; ?>
 
 <div class="sysgrid">
