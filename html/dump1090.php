@@ -241,7 +241,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-ui); h
         </label>
         <span id="swLabel" style="font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;min-width:2rem;">OFF</span>
         <button class="btn-ex btn-green" onclick="fetchDump1090Log()">⟳ Log</button>
-        <button class="btn-ex btn-red"   onclick="cerrarVentana()">✖ Cerrar</button>
+        <a href="/mmdvm.php" class="btn-ex btn-red" style="text-decoration:none;">✖ Cerrar</a>
     </div>
 </header>
 
