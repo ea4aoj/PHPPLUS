@@ -15,6 +15,8 @@ zip -j "$ZIPPATH" \
   /home/pi/radiosonde_auto_rx/auto_rx/station.cfg \
   /etc/rbfeeder.ini \
   /etc/fr24feed.ini \
+  /etc/sxfeeder.ini \
+  /etc/AIS-catcher/config.cmd \
   /usr/local/etc/svxlink/svxlink.d/ModuleEchoLink.conf \
   /usr/local/etc/svxlink/svxlink.conf \
   /home/pi/.local/enlaces.json \
