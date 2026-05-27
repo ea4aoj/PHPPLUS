@@ -2,6 +2,20 @@
 require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
 
+/* ========== FUNCIÓN PARA EXTRAER PUERTO WEB DINÁMICO ========== */
+function getWebPortFromConfig($configFile) {
+    if (!file_exists($configFile)) return 8080;
+    
+    $content = file_get_contents($configFile);
+    // Busca -N seguido opcionalmente de espacio y luego el puerto (número)
+    // Ej: "-N 8100" o "-N8100" o "-N 8100 station MyStation"
+    if (preg_match('/-N\s*(\d+)/', $content, $matches)) {
+        return (int)$matches[1];
+    }
+    // Si no encuentra -N, fallback al puerto por defecto
+    return 8080;
+}
+
 $SERVICES = [
     'ais' => [
         'name'    => 'AIS-catcher',
@@ -25,6 +39,9 @@ if (!isset($SERVICES[$serviceKey])) die('Servicio inválido');
 $SVC = $SERVICES[$serviceKey];
 $SYSTEMD = $SVC['systemd'];
 $CONFIG_FILE = $SVC['config'];
+
+// ← Calcula el puerto web dinámico SOLO para ais-catcher
+$WEB_PORT = ($serviceKey === 'ais') ? getWebPortFromConfig($CONFIG_FILE) : null;
 
 /* ================= STATUS ================= */
 if ($action === 'status') {
@@ -297,6 +314,8 @@ border:1px solid var(--border);
 <script>
 
 const svc='<?= $serviceKey ?>';
+// Inyectamos el puerto desde PHP: si es null, escribimos la palabra null (valor JS), no string
+const webPort = <?= ($WEB_PORT !== null) ? intval($WEB_PORT) : 'null' ?>;
 
 /* API */
 function api(a,p=null){
@@ -335,10 +354,14 @@ function chg(){
 location.href='?service='+document.getElementById('svc').value;
 }
 
-/* WEB AIS ONLY */
+/* WEB AIS ONLY - Lógica original preservada */
 function openWeb(){
-if(svc!=='ais') return alert('SXFeeder no tiene web');
-window.open('http://'+location.hostname+':8080','_blank');
+    // ← Esta validación es la clave: si NO es ais, muestra alerta y sale
+    if(svc!=='ais') return alert('SXFeeder no tiene web');
+    
+    // Solo si es AIS, usamos el puerto dinámico o fallback a 8080
+    const port = (webPort !== null) ? webPort : 8080;
+    window.open('http://'+location.hostname+':'+port,'_blank');
 }
 
 /* CONFIG TOGGLE */
