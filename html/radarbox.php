@@ -1,5 +1,5 @@
 <?php
-$config_file = "/etc/fr24feed.ini";
+$config_file = "/etc/rbfeeder.ini";
 $message = "";
 $message_type = ""; // success, error, info
 
@@ -11,7 +11,7 @@ $view = isset($_POST['view']) ? $_POST['view'] : "none";
 /* 🔁 LOGS AJAX - Endpoint para logs en tiempo real */
 if (isset($_GET['logs'])) {
     header('Content-Type: text/plain; charset=utf-8');
-    echo shell_exec("journalctl -u fr24feed.service -n 100 --no-pager 2>&1");
+    echo shell_exec("journalctl -u rbfeeder.service -n 100 --no-pager 2>&1");
     exit;
 }
 
@@ -21,34 +21,34 @@ if (isset($_POST['action'])) {
     
     switch ($action) {
         case 'start':
-            shell_exec("sudo systemctl start fr24feed.service 2>&1");
+            shell_exec("sudo systemctl start rbfeeder.service 2>&1");
             $message = "✅ Servicio iniciado correctamente";
             $message_type = "success";
             break;
             
         case 'stop':
-            shell_exec("sudo systemctl stop fr24feed.service 2>&1");
+            shell_exec("sudo systemctl stop rbfeeder.service 2>&1");
             $message = "⏹️ Servicio detenido";
             $message_type = "info";
             break;
             
         case 'restart':
-            shell_exec("sudo systemctl restart fr24feed.service 2>&1");
+            shell_exec("sudo systemctl restart rbfeeder.service 2>&1");
             $message = "🔄 Servicio reiniciado";
             $message_type = "success";
             break;
             
         case 'toggle_power':
             // 🔁 LÓGICA UNIFICADA: Start+Enable / Stop+Disable
-            $is_active = trim(shell_exec("systemctl is-active fr24feed.service")) === "active";
+            $is_active = trim(shell_exec("systemctl is-active rbfeeder.service")) === "active";
             if ($is_active) {
-                shell_exec("sudo systemctl stop fr24feed.service 2>&1");
-                shell_exec("sudo systemctl disable fr24feed.service 2>&1");
+                shell_exec("sudo systemctl stop rbfeeder.service 2>&1");
+                shell_exec("sudo systemctl disable rbfeeder.service 2>&1");
                 $message = "🔌 Servicio desactivado y autoarranque OFF";
                 $message_type = "info";
             } else {
-                shell_exec("sudo systemctl enable fr24feed.service 2>&1");
-                shell_exec("sudo systemctl start fr24feed.service 2>&1");
+                shell_exec("sudo systemctl enable rbfeeder.service 2>&1");
+                shell_exec("sudo systemctl start rbfeeder.service 2>&1");
                 $message = "⚡ Servicio activado y autoarranque ON";
                 $message_type = "success";
             }
@@ -70,8 +70,8 @@ if (isset($_POST['save_config'])) {
 }
 
 /* 📊 CONSULTAR ESTADO DEL SERVICIO */
-$status_raw = trim(shell_exec("systemctl is-active fr24feed.service"));
-$enabled_raw = trim(shell_exec("systemctl is-enabled fr24feed.service"));
+$status_raw = trim(shell_exec("systemctl is-active rbfeeder.service"));
+$enabled_raw = trim(shell_exec("systemctl is-enabled rbfeeder.service"));
 $is_active = ($status_raw === "active");
 $is_enabled = ($enabled_raw === "enabled");
 
@@ -83,7 +83,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlightRadar24</title>
+    <title>Radarbox</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
@@ -115,29 +115,29 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             margin-bottom: 20px;
-            /* 👇 SIN TRANSFORM PARA EVITAR MOVIMIENTO */
-            transition: box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        /* 👇 SIN HOVER CON MOVIMIENTO - Solo sombra sutil opcional */
-        .card:hover {
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
-        }
+        /* ✅ Solo sombra, sin movimiento: */
+			.card:hover {
+			box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+			/* transform: none; ← implícito al no declararlo */
+}
         
         .card-header {
             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
             border-bottom: 1px solid var(--bg-tertiary);
             border-radius: 16px 16px 0 0 !important;
-            padding: 0.75rem 1.25rem;
+            padding: 0.75rem 1.25rem;  /* 👈 Más compacto */
             font-weight: 600;
         }
         
         /* 🔘 BOTONES COMPACTOS */
         .btn {
             border-radius: 8px;
-            padding: 0.4rem 0.9rem;
+            padding: 0.4rem 0.9rem;    /* 👈 Reducido */
             font-weight: 500;
-            font-size: 0.85rem;
+            font-size: 0.85rem;         /* 👈 Fuente más pequeña */
             transition: all 0.2s;
             border: none;
             line-height: 1.3;
@@ -167,7 +167,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         .btn-toggle {
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             color: white;
-            min-width: 180px;
+            min-width: 180px;           /* 👈 Más estrecho */
             font-weight: 600;
         }
         .btn-toggle:hover { 
@@ -184,20 +184,11 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
         }
         
-        .btn-web {
-            background: linear-gradient(135deg, #0ea5e9, #0284c7);
-            color: white;
-        }
-        .btn-web:hover {
-            background: linear-gradient(135deg, #0284c7, #0369a1);
-            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
-        }
-        
         .status-badge {
-            padding: 0.35rem 0.85rem;
+            padding: 0.35rem 0.85rem;   /* 👈 Más compacto */
             border-radius: 20px;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.85rem;         /* 👈 Fuente más pequeña */
         }
         .status-active { 
             background: rgba(16, 185, 129, 0.2); 
@@ -270,7 +261,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             border-radius: 12px;
             border: none;
             animation: slideIn 0.3s ease;
-            font-size: 0.9rem;
+            font-size: 0.9rem;          /* 👈 Texto de alerta más pequeño */
             padding: 0.6rem 1rem;
         }
         @keyframes slideIn {
@@ -281,13 +272,13 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         .action-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 8px;                   /* 👈 Menos espacio entre botones */
             align-items: center;
         }
         
         .info-row {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.75rem;               /* 👈 Menos espacio entre badges */
             flex-wrap: wrap;
             align-items: center;
             padding: 0.25rem 0;
@@ -319,7 +310,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0">
-                <i class="bi bi-airplane me-2" style="font-size:1.1em;"></i>FlightRadar24
+                <i class="bi bi-airplane me-2" style="font-size:1.1em;"></i>Radarbox
             </h4>
             <a href="mmdvm.php" class="btn btn-panel btn-sm">
                 <i class="bi bi-house-fill me-1"></i>Panel PHPPLUS
@@ -365,11 +356,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
                 
                 <div class="vr mx-1 d-none d-md-block"></div>
                 
-                <!-- 🌐 WEB FR24 -->
-                <a href="http://<?php echo $_SERVER['HTTP_HOST']; ?>:8754" target="_blank" class="btn btn-web">
-                    <i class="bi bi-globe me-1"></i>Web FR24
-                </a>
-                
                 <!-- 📟 TOGGLE TERMINAL -->
                 <button type="submit" name="view" value="<?= $view === 'terminal' ? 'none' : 'terminal' ?>" 
                         class="btn view-toggle-btn">
@@ -393,7 +379,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
     <?php if ($view === 'terminal'): ?>
     <div class="card">
         <div class="card-header">
-            <i class="bi bi-journal-text me-2"></i>📟 Logs - fr24feed.service
+            <i class="bi bi-journal-text me-2"></i>📟 Logs - rbfeeder.service
         </div>
         <div class="card-body">
             <div id="terminal" class="terminal">⏳ Cargando logs...</div>
@@ -408,7 +394,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
     <?php if ($view === 'editor'): ?>
     <div class="card">
         <div class="card-header">
-            <i class="bi bi-pencil-square me-2"></i>📝 Editor: fr24feed.ini
+            <i class="bi bi-pencil-square me-2"></i>📝 Editor: rbfeeder.ini
         </div>
         <div class="card-body">
             <form method="post">
