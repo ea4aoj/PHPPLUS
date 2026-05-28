@@ -8,11 +8,10 @@ function getWebPortFromConfig($configFile) {
     
     $content = file_get_contents($configFile);
     // Busca -N seguido opcionalmente de espacio y luego el puerto (número)
-    // Ej: "-N 8100" o "-N8100" o "-N 8100 station MyStation"
     if (preg_match('/-N\s*(\d+)/', $content, $matches)) {
         return (int)$matches[1];
     }
-    // Si no encuentra -N, fallback al puerto por defecto
+    // Fallback al puerto por defecto
     return 8080;
 }
 
@@ -45,7 +44,6 @@ $WEB_PORT = ($serviceKey === 'ais') ? getWebPortFromConfig($CONFIG_FILE) : null;
 
 /* ================= STATUS ================= */
 if ($action === 'status') {
-
     $st  = trim(shell_exec("systemctl is-active $SYSTEMD 2>/dev/null"));
     $en  = trim(shell_exec("systemctl is-enabled $SYSTEMD 2>/dev/null"));
 
@@ -60,7 +58,6 @@ if ($action === 'status') {
 
 /* ================= ON ================= */
 if ($action === 'on') {
-
     shell_exec("sudo systemctl enable $SYSTEMD 2>/dev/null");
     shell_exec("sudo systemctl start $SYSTEMD 2>/dev/null");
 
@@ -76,7 +73,6 @@ if ($action === 'on') {
 
 /* ================= OFF ================= */
 if ($action === 'off') {
-
     shell_exec("sudo systemctl stop $SYSTEMD 2>/dev/null");
     shell_exec("sudo systemctl disable $SYSTEMD 2>/dev/null");
 
@@ -135,6 +131,7 @@ if ($action === 'config-save') {
 --green:#00ff9f;
 --red:#ff4560;
 --text:#a8b9cc;
+--purple:#bd00ff; /* Nuevo color para Admin */
 }
 
 body{
@@ -190,6 +187,15 @@ font-size:11px;
 .btn:hover{background:#12202b;}
 .btn-red{border-color:var(--red);color:var(--red);}
 .btn-green{border-color:var(--green);color:var(--green);}
+
+/* Botón Admin (Naranja) */
+.btn-admin {
+    border-color: #ff9100; /* Naranja brillante */
+    color: #ff9100;
+}
+.btn-admin:hover {
+    background: #3d2300; /* Fondo naranja muy oscuro al pasar el mouse */
+}
 
 /* SWITCH tipo dump1090 */
 .switch{
@@ -275,7 +281,9 @@ border:1px solid var(--border);
 <button class="btn btn-green" onclick="toggleCfg()">CONFIG</button>
 <button class="btn btn-green" onclick="toggleLog()">LOG</button>
 
+<!-- Botones Web -->
 <button class="btn btn-green" onclick="openWeb()">WEB</button>
+<button class="btn btn-admin" onclick="openAdmin()">WEB ADMIN</button>
 
 </div>
 
@@ -314,7 +322,7 @@ border:1px solid var(--border);
 <script>
 
 const svc='<?= $serviceKey ?>';
-// Inyectamos el puerto desde PHP: si es null, escribimos la palabra null (valor JS), no string
+// Inyectamos el puerto desde PHP
 const webPort = <?= ($WEB_PORT !== null) ? intval($WEB_PORT) : 'null' ?>;
 
 /* API */
@@ -354,14 +362,17 @@ function chg(){
 location.href='?service='+document.getElementById('svc').value;
 }
 
-/* WEB AIS ONLY - Lógica original preservada */
+/* WEB AIS ONLY - Puerto Dinámico */
 function openWeb(){
-    // ← Esta validación es la clave: si NO es ais, muestra alerta y sale
     if(svc!=='ais') return alert('SXFeeder no tiene web');
-    
-    // Solo si es AIS, usamos el puerto dinámico o fallback a 8080
     const port = (webPort !== null) ? webPort : 8080;
     window.open('http://'+location.hostname+':'+port,'_blank');
+}
+
+/* WEB ADMIN - Puerto Fijo 8110 */
+function openAdmin(){
+    if(svc!=='ais') return alert('SXFeeder no tiene panel Admin');
+    window.open('http://'+location.hostname+':8110','_blank');
 }
 
 /* CONFIG TOGGLE */
@@ -378,8 +389,15 @@ const d=await r.json();
 document.getElementById('cfgTxt').value=d.content;
 }
 
+/* GUARDAR CONFIG Y RECARGAR */
 async function saveCfg(){
-await api('config-save','content='+encodeURIComponent(document.getElementById('cfgTxt').value));
+    // Guardamos la config
+    await api('config-save','content='+encodeURIComponent(document.getElementById('cfgTxt').value));
+    
+    // Pequeño delay para asegurar escritura en disco
+    setTimeout(() => {
+        location.reload(); // ← Recarga la página para actualizar la variable webPort de PHP
+    }, 500);
 }
 
 /* LOG TOGGLE */
