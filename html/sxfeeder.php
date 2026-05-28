@@ -269,7 +269,7 @@ border:1px solid var(--border);
 
 <div class="header">
 
-<div class="title">AIS / SX CONTROL</div>
+<div class="title">AIS-CATCHER / SXFEEDER CONTROL</div>
 
 <div class="row">
 
