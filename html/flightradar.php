@@ -207,6 +207,9 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             border-radius: 20px;
             font-weight: 600;
             font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
         .status-active { 
             background: rgba(16, 185, 129, 0.2); 
@@ -310,6 +313,34 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             color: white;
         }
         
+        /* ===== LED INDICATORS ===== */
+        .led {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+            box-shadow: 0 0 6px currentColor;
+            vertical-align: middle;
+        }
+        
+        .led-green-blink {
+            background-color: var(--accent-green);
+            color: var(--accent-green);
+            animation: blink 1s infinite;
+        }
+        
+        .led-red-solid {
+            background-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+            51%, 100% { opacity: 0.4; box-shadow: 0 0 2px currentColor; }
+        }
+        /* ===== END LED INDICATORS ===== */
+        
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--bg-primary); }
         ::-webkit-scrollbar-thumb { 
@@ -335,8 +366,9 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         <div class="card-body">
             
             <div class="info-row mb-3">
+                <!-- Badge de estado con LED personalizado reemplazando el círculo original -->
                 <span class="status-badge <?= $is_active ? 'status-active' : 'status-inactive' ?>">
-                    <i class="bi bi-circle-fill me-1" style="font-size:0.65em;"></i>
+                    <span class="led <?= $is_active ? 'led-green-blink' : 'led-red-solid' ?>" title="<?= $is_active ? 'Servicio activo' : 'Servicio detenido' ?>"></span>
                     <?= $is_active ? 'Activo' : 'Inactivo' ?>
                 </span>
                 <span class="status-badge <?= $is_enabled ? 'enabled-badge' : 'disabled-badge' ?>">
