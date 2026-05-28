@@ -4,14 +4,24 @@ header('X-Content-Type-Options: nosniff');
 
 /* ========== FUNCIÓN PARA EXTRAER PUERTO WEB DINÁMICO ========== */
 function getWebPortFromConfig($configFile) {
-    if (!file_exists($configFile)) return 8080;
+    // Si no existe el archivo o está vacío, devolver 8080 por defecto
+    if (!file_exists($configFile) || filesize($configFile) === 0) {
+        return 8080;
+    }
     
     $content = file_get_contents($configFile);
+    
+    // Si el contenido está vacío o solo tiene espacios, devolver 8080
+    if (empty(trim($content))) {
+        return 8080;
+    }
+    
     // Busca -N seguido opcionalmente de espacio y luego el puerto (número)
     if (preg_match('/-N\s*(\d+)/', $content, $matches)) {
         return (int)$matches[1];
     }
-    // Fallback al puerto por defecto
+    
+    // Fallback al puerto por defecto si no encuentra el parámetro
     return 8080;
 }
 
@@ -131,7 +141,7 @@ if ($action === 'config-save') {
 --green:#00ff9f;
 --red:#ff4560;
 --text:#a8b9cc;
---purple:#bd00ff; /* Nuevo color para Admin */
+--purple:#bd00ff;
 }
 
 body{
@@ -190,11 +200,11 @@ font-size:11px;
 
 /* Botón Admin (Naranja) */
 .btn-admin {
-    border-color: #ff9100; /* Naranja brillante */
+    border-color: #ff9100;
     color: #ff9100;
 }
 .btn-admin:hover {
-    background: #3d2300; /* Fondo naranja muy oscuro al pasar el mouse */
+    background: #3d2300;
 }
 
 /* SWITCH tipo dump1090 */
@@ -322,7 +332,7 @@ border:1px solid var(--border);
 <script>
 
 const svc='<?= $serviceKey ?>';
-// Inyectamos el puerto desde PHP
+// Inyectamos el puerto desde PHP (si es null, JS usará 8080)
 const webPort = <?= ($WEB_PORT !== null) ? intval($WEB_PORT) : 'null' ?>;
 
 /* API */
@@ -362,10 +372,11 @@ function chg(){
 location.href='?service='+document.getElementById('svc').value;
 }
 
-/* WEB AIS ONLY - Puerto Dinámico */
+/* WEB AIS ONLY - Puerto Dinámico (Default 8080 si no hay config) */
 function openWeb(){
     if(svc!=='ais') return alert('SXFeeder no tiene web');
-    const port = (webPort !== null) ? webPort : 8080;
+    // Usar el puerto inyectado desde PHP o fallback a 8080
+    const port = (webPort !== null && webPort > 0) ? webPort : 8080;
     window.open('http://'+location.hostname+':'+port,'_blank');
 }
 
@@ -391,12 +402,13 @@ document.getElementById('cfgTxt').value=d.content;
 
 /* GUARDAR CONFIG Y RECARGAR */
 async function saveCfg(){
-    // Guardamos la config
     await api('config-save','content='+encodeURIComponent(document.getElementById('cfgTxt').value));
     
     // Pequeño delay para asegurar escritura en disco
     setTimeout(() => {
-        location.reload(); // ← Recarga la página para actualizar la variable webPort de PHP
+        // Al recargar, PHP vuelve a leer la config y actualiza webPort
+        // El botón WEB apuntará automáticamente al nuevo puerto
+        location.reload();
     }, 500);
 }
 
