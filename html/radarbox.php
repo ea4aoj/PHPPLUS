@@ -1,29 +1,31 @@
 <?php
 $config_file = "/etc/rbfeeder.ini";
 $message = "";
-$message_type = ""; // success, error, info
+$message_type = "";
 
-/*
-🧠 ESTADO DE VISTA: none | terminal | editor
-*/
 $view = isset($_POST['view']) ? $_POST['view'] : "none";
 
-/* 🔁 LOGS AJAX - Endpoint para logs en tiempo real */
 if (isset($_GET['logs'])) {
     header('Content-Type: text/plain; charset=utf-8');
     echo shell_exec("journalctl -u rbfeeder.service -n 100 --no-pager 2>&1");
     exit;
 }
 
-/* ⚙️ ACCIONES DEL SERVICIO */
 if (isset($_POST['action'])) {
     $action = $_POST['action'];
     
     switch ($action) {
         case 'start':
             shell_exec("sudo systemctl start rbfeeder.service 2>&1");
-            $message = "✅ Servicio iniciado correctamente";
-            $message_type = "success";
+            usleep(500000);
+            $check = trim(shell_exec("systemctl is-active rbfeeder.service"));
+            if ($check === "active") {
+                $message = "✅ Servicio iniciado correctamente";
+                $message_type = "success";
+            } else {
+                $message = "❌ Error al iniciar. Revisa logs o configuración.";
+                $message_type = "error";
+            }
             break;
             
         case 'stop':
@@ -34,12 +36,18 @@ if (isset($_POST['action'])) {
             
         case 'restart':
             shell_exec("sudo systemctl restart rbfeeder.service 2>&1");
-            $message = "🔄 Servicio reiniciado";
-            $message_type = "success";
+            usleep(500000);
+            $check = trim(shell_exec("systemctl is-active rbfeeder.service"));
+            if ($check === "active") {
+                $message = "🔄 Servicio reiniciado correctamente";
+                $message_type = "success";
+            } else {
+                $message = "❌ Error al reiniciar. Revisa logs o configuración.";
+                $message_type = "error";
+            }
             break;
             
         case 'toggle_power':
-            // 🔁 LÓGICA UNIFICADA: Start+Enable / Stop+Disable
             $is_active = trim(shell_exec("systemctl is-active rbfeeder.service")) === "active";
             if ($is_active) {
                 shell_exec("sudo systemctl stop rbfeeder.service 2>&1");
@@ -49,14 +57,20 @@ if (isset($_POST['action'])) {
             } else {
                 shell_exec("sudo systemctl enable rbfeeder.service 2>&1");
                 shell_exec("sudo systemctl start rbfeeder.service 2>&1");
-                $message = "⚡ Servicio activado y autoarranque ON";
-                $message_type = "success";
+                usleep(500000);
+                $check = trim(shell_exec("systemctl is-active rbfeeder.service"));
+                if ($check === "active") {
+                    $message = "⚡ Servicio activado y autoarranque ON";
+                    $message_type = "success";
+                } else {
+                    $message = "❌ Error al iniciar. Revisa logs o configuración.";
+                    $message_type = "error";
+                }
             }
             break;
     }
 }
 
-/* 💾 GUARDAR CONFIGURACIÓN */
 if (isset($_POST['save_config'])) {
     $content = $_POST['config_content'] ?? '';
     if (file_put_contents($config_file, $content) !== false) {
@@ -69,13 +83,11 @@ if (isset($_POST['save_config'])) {
     $view = "editor";
 }
 
-/* 📊 CONSULTAR ESTADO DEL SERVICIO */
 $status_raw = trim(shell_exec("systemctl is-active rbfeeder.service"));
 $enabled_raw = trim(shell_exec("systemctl is-enabled rbfeeder.service"));
 $is_active = ($status_raw === "active");
 $is_enabled = ($enabled_raw === "enabled");
 
-/* 📄 LEER CONFIGURACIÓN */
 $config_content = file_exists($config_file) ? file_get_contents($config_file) : "// Archivo no encontrado: $config_file";
 ?>
 <!DOCTYPE html>
@@ -115,29 +127,26 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             margin-bottom: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: box-shadow 0.2s;
         }
         
-        /* ✅ Solo sombra, sin movimiento: */
-			.card:hover {
-			box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
-			/* transform: none; ← implícito al no declararlo */
-}
+        .card:hover {
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+        }
         
         .card-header {
             background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
             border-bottom: 1px solid var(--bg-tertiary);
             border-radius: 16px 16px 0 0 !important;
-            padding: 0.75rem 1.25rem;  /* 👈 Más compacto */
+            padding: 0.75rem 1.25rem;
             font-weight: 600;
         }
         
-        /* 🔘 BOTONES COMPACTOS */
         .btn {
             border-radius: 8px;
-            padding: 0.4rem 0.9rem;    /* 👈 Reducido */
+            padding: 0.4rem 0.9rem;
             font-weight: 500;
-            font-size: 0.85rem;         /* 👈 Fuente más pequeña */
+            font-size: 0.85rem;
             transition: all 0.2s;
             border: none;
             line-height: 1.3;
@@ -167,7 +176,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         .btn-toggle {
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
             color: white;
-            min-width: 180px;           /* 👈 Más estrecho */
+            min-width: 180px;
             font-weight: 600;
         }
         .btn-toggle:hover { 
@@ -185,10 +194,10 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         }
         
         .status-badge {
-            padding: 0.35rem 0.85rem;   /* 👈 Más compacto */
+            padding: 0.35rem 0.85rem;
             border-radius: 20px;
             font-weight: 600;
-            font-size: 0.85rem;         /* 👈 Fuente más pequeña */
+            font-size: 0.85rem;
         }
         .status-active { 
             background: rgba(16, 185, 129, 0.2); 
@@ -212,7 +221,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             border: 1px solid var(--bg-tertiary);
         }
         
-        /* 📟 TERMINAL */
         .terminal {
             background: #0a0f1d;
             color: #22c55e;
@@ -227,41 +235,41 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
             line-height: 1.5;
         }
         
-        /* 📝 EDITOR MATRIX ORANGE CLARO */
         .config-editor {
             background: #050505;
-            color: #ffaa33;
+            color: #ffffff;
             font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
             font-size: 0.85rem;
+            font-weight: 500;
             padding: 1rem;
             border-radius: 12px;
             height: 500px;
             width: 100%;
-            border: 1px solid #4d2600;
+            border: 1px solid #334155;
             resize: vertical;
-            line-height: 1.4;
-            text-shadow: 0 0 6px rgba(255, 170, 51, 0.4);
-            box-shadow: inset 0 0 20px rgba(255, 170, 51, 0.12);
+            line-height: 1.5;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.4);
             box-sizing: border-box;
         }
 
         .config-editor:focus {
             outline: none;
-            border-color: #ffaa33;
-            box-shadow: 0 0 0 3px rgba(255, 170, 51, 0.25), inset 0 0 20px rgba(255, 170, 51, 0.18);
+            border-color: #60a5fa;
+            box-shadow: 
+                0 0 0 3px rgba(96, 165, 250, 0.25), 
+                inset 0 0 15px rgba(0, 0, 0, 0.5);
         }
 
-        /* Scrollbar naranja claro */
         .config-editor::-webkit-scrollbar { width: 8px; }
         .config-editor::-webkit-scrollbar-track { background: #0a0a0a; border-radius: 4px; }
-        .config-editor::-webkit-scrollbar-thumb { background: #cc8800; border-radius: 4px; }
-        .config-editor::-webkit-scrollbar-thumb:hover { background: #ffaa33; }
+        .config-editor::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .config-editor::-webkit-scrollbar-thumb:hover { background: #64748b; }
         
         .alert-custom {
             border-radius: 12px;
             border: none;
             animation: slideIn 0.3s ease;
-            font-size: 0.9rem;          /* 👈 Texto de alerta más pequeño */
+            font-size: 0.9rem;
             padding: 0.6rem 1rem;
         }
         @keyframes slideIn {
@@ -272,13 +280,13 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         .action-group {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;                   /* 👈 Menos espacio entre botones */
+            gap: 8px;
             align-items: center;
         }
         
         .info-row {
             display: flex;
-            gap: 0.75rem;               /* 👈 Menos espacio entre badges */
+            gap: 0.75rem;
             flex-wrap: wrap;
             align-items: center;
             padding: 0.25rem 0;
@@ -306,7 +314,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
 
 <div class="container-fluid" style="max-width: 1200px;">
     
-    <!-- ✈️ HEADER -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4 class="mb-0">
@@ -318,7 +325,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         </div>
         <div class="card-body">
             
-            <!-- 📊 ESTADO ACTUAL -->
             <div class="info-row mb-3">
                 <span class="status-badge <?= $is_active ? 'status-active' : 'status-inactive' ?>">
                     <i class="bi bi-circle-fill me-1" style="font-size:0.65em;"></i>
@@ -330,17 +336,14 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
                 </span>
             </div>
             
-            <!-- 💬 MENSAJES -->
             <?php if ($message): ?>
                 <div class="alert alert-custom alert-<?= $message_type === 'error' ? 'danger' : ($message_type === 'success' ? 'success' : 'info') ?> mb-3">
                     <?= htmlspecialchars($message) ?>
                 </div>
             <?php endif; ?>
             
-            <!-- 🎮 CONTROLES -->
             <form method="post" class="action-group">
                 
-                <!-- 🔁 BOTÓN UNIFICADO: Activar/Desactivar -->
                 <button type="submit" name="action" value="toggle_power" class="btn btn-toggle">
                     <?php if ($is_active): ?>
                         <i class="bi bi-power me-1"></i>Desactivar
@@ -349,21 +352,18 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
                     <?php endif; ?>
                 </button>
                 
-                <!-- 🔄 REINICIAR -->
                 <button type="submit" name="action" value="restart" class="btn btn-restart">
                     <i class="bi bi-arrow-clockwise me-1"></i>Reiniciar
                 </button>
                 
                 <div class="vr mx-1 d-none d-md-block"></div>
                 
-                <!-- 📟 TOGGLE TERMINAL -->
                 <button type="submit" name="view" value="<?= $view === 'terminal' ? 'none' : 'terminal' ?>" 
                         class="btn view-toggle-btn">
                     <i class="bi bi-terminal me-1"></i>
                     <?= $view === 'terminal' ? 'Ocultar Logs' : 'Ver Logs' ?>
                 </button>
                 
-                <!-- 📝 TOGGLE EDITOR -->
                 <button type="submit" name="view" value="<?= $view === 'editor' ? 'none' : 'editor' ?>" 
                         class="btn view-toggle-btn">
                     <i class="bi bi-file-earmark-text me-1"></i>
@@ -375,7 +375,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
         </div>
     </div>
 
-    <!-- 📟 PANEL DE LOGS -->
     <?php if ($view === 'terminal'): ?>
     <div class="card">
         <div class="card-header">
@@ -390,7 +389,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
     </div>
     <?php endif; ?>
 
-    <!-- 📝 EDITOR DE CONFIGURACIÓN -->
     <?php if ($view === 'editor'): ?>
     <div class="card">
         <div class="card-header">
@@ -416,7 +414,6 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
 
 </div>
 
-<!-- 🔁 SCRIPT: Auto-refresh de logs -->
 <script>
 function fetchLogs() {
     const terminal = document.getElementById('terminal');
