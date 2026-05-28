@@ -5,7 +5,7 @@ docker run \
   --name sxfeeder \
   --privileged \
   --network host \
-  -v /etc/sxfeeder.ini:/etc/sxfeeder.ini:ro \
+  -v /etc/sxfeeder.ini:/etc/sxfeeder.ini \
   -v /sys/firmware/devicetree/base/serial-number:/host_serial:ro \
   -v /var/run/sxfeeder:/var/run/sxfeeder \
   -v /var/log/sxfeeder.log:/var/log/sxfeeder.log \
