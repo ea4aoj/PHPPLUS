@@ -505,61 +505,43 @@ const api = async (a, p={}, m='GET') => {
     return r.json();
 };
 
-// 🌍 Helper JS para banderas (mismo mapeo que PHP)
-function getFlag(cs) {
-    const prefixes = {
-        'EA':'🇪🇸','EB':'🇪🇸','EC':'🇪🇸','ED':'🇪🇸','EE':'🇪🇸','EF':'🇪🇸',
-        'F':'🇫🇷','FB':'🇫🇷','FC':'🇫🇷','FD':'🇫🇷','FE':'🇫🇷','FF':'🇫🇷',
-        'I':'🇮🇹','IZ':'🇮🇹','IW':'🇮🇹','IV':'🇮🇹','IX':'🇮🇹',
-        'G':'🇬🇧','M':'🇬🇧','2E':'🇬🇧','M6':'🇬🇧','M7':'🇬🇧',
-        'DL':'🇩🇪','DA':'🇩🇪','DB':'🇩🇪','DC':'🇩🇪','DD':'🇩🇪','DF':'🇩🇪',
-        'ON':'🇧🇪','OR':'🇧🇪','OT':'🇧🇪',
-        'PA':'🇳🇱','PB':'🇳🇱','PC':'🇳🇱','PD':'🇳🇱','PE':'🇳🇱','PF':'🇳🇱',
-        'OE':'🇦🇹','HB':'🇨🇭','HE':'🇨🇭',
-        'LY':'🇱🇹','ES':'🇪🇪','YL':'🇱🇻',
-        'SP':'🇵🇱','SQ':'🇵🇱','SN':'🇵🇱','SO':'🇵🇱',
-        'OK':'🇨🇿','OM':'🇸🇰','HA':'🇭🇺',
-        'YO':'🇷🇴','YR':'🇷🇴',
-        'SV':'🇬🇷','SW':'🇬🇷','SX':'🇬🇷','SY':'🇬🇷','SZ':'🇬🇷',
-        'UA':'🇷🇺','UB':'🇷🇺','UC':'🇷🇺','UD':'🇷🇺','UE':'🇷🇺',
-        'UW':'🇺🇦','UX':'🇺🇦','UY':'🇺🇦','UZ':'🇺🇦',
-        'K':'🇺🇸','N':'🇺🇸','W':'🇺🇸','AA':'🇺🇸','AB':'🇺🇸',
-        'VE':'🇻🇪','YV':'🇻🇪',
-        'PY':'🇧🇷','PU':'🇧🇷','PP':'🇧🇷','PQ':'🇧🇷','PR':'🇧🇷','PS':'🇧🇷','PT':'🇧🇷',
-        'CE':'🇨🇱','CA':'🇨🇱','CD':'🇨🇱',
-        'CX':'🇺🇾','CW':'🇺🇾',
-        'LV':'🇦🇷','LU':'🇦🇷','LW':'🇦🇷','LX':'🇦🇷',
-        'HC':'🇪🇨','HD':'🇪🇨',
-        'HK':'🇨🇴','HJ':'🇨🇴','5J':'🇨🇴','5K':'🇨🇴',
-        'TI':'🇨🇷','TE':'🇨🇷',
-        'CP':'🇧🇴',
-        'JA':'🇯🇵','JB':'🇯🇵','JC':'🇯🇵','JD':'🇯🇵','JE':'🇯🇵',
-        'BV':'🇹🇼','BU':'🇹🇼',
-        'VR':'🇭🇰','VS':'🇭🇰',
-        'XX':'🇲🇴',
-        'HL':'🇰🇷','DS':'🇰🇷','DT':'🇰🇷','DU':'🇰🇷',
-        'BY':'🇨🇳','BA':'🇨🇳','BD':'🇨🇳',
-        'VU':'🇮🇳','AT':'🇮🇳','AU':'🇮🇳',
-        'AP':'🇵🇰','A2':'🇧🇼','A3':'🇹🇴','A4':'🇴🇲','A5':'🇧🇹','A6':'🇦🇪','A7':'🇶🇦','A9':'🇧🇭',
-        '4X':'🇮🇱','4Z':'🇮🇱',
-        'ZS':'🇿🇦','ZT':'🇿🇦','ZU':'🇿🇦',
-        'VK':'🇦🇺','VH':'🇦🇺','VI':'🇦🇺',
-        'ZL':'🇳🇿','ZM':'🇳🇿',
-        '9A':'🇭🇷','S5':'🇸🇮','T7':'🇧🇦','E7':'🇧🇦',
-        'YT':'🇷🇸','YU':'🇷🇸','Z3':'🇲🇰','ZA':'🇦🇱',
-        'PZ':'🇸🇷','8P':'🇧🇧','9Y':'🇹🇹','9Z':'🇹🇹',
-        'J6':'🇱🇨','J7':'🇩🇲','J8':'🇬🇩',
-        'VP2':'🇦🇮','VP5':'🇹🇨','VP8':'🇫🇰',
-        'ZD8':'🇸🇭','C6':'🇧🇸','C9':'🇲🇿','D4':'🇨🇻',
-        'EA8':'🇪🇭','EA9':'🇪🇭','ZB2':'🇬🇮',
-        'CT':'🇵🇹','CU':'🇵🇹','CV':'🇵🇹','CW':'🇵🇹','CS':'🇵🇹','CR':'🇵🇹'
-    };
-    cs = cs.toUpperCase();
-    for (let len = 4; len >= 1; len--) {
-        const pfx = cs.substring(0, len);
-        if (prefixes[pfx]) return prefixes[pfx];
+// 🌍 Sistema de banderas (igual que mmdvm.php)
+const _winOS = /Windows/i.test(navigator.userAgent);
+const _TBASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
+const _FLAGS = [
+    {re:/^E[ABCDEFGH][1-9]/, e:'🇪🇸', t:'1f1ea-1f1f8'},
+    {re:/^C[TUQ]/, e:'🇵🇹', t:'1f1f5-1f1f9'},
+    {re:/^F[A-Z]/, e:'🇫🇷', t:'1f1eb-1f1f7'},
+    {re:/^I[0-9]|^IK|^IW|^IZ/, e:'🇮🇹', t:'1f1ee-1f1f9'},
+    {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/, e:'🇬🇧', t:'1f1ec-1f1e7'},
+    {re:/^D[A-R]|^Y[2-9]/, e:'🇩🇪', t:'1f1e9-1f1ea'},
+    {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/, e:'🇺🇸', t:'1f1fa-1f1f8'},
+    {re:/^VE|^VA|^VO|^VY/, e:'🇨🇦', t:'1f1e8-1f1e6'},
+    {re:/^PY|^PU|^PV|^PW|^PX/, e:'🇧🇷', t:'1f1e7-1f1f7'},
+    {re:/^LU|^LV|^LW|^LX/, e:'🇦🇷', t:'1f1e6-1f1f7'},
+    {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/, e:'🇯🇵', t:'1f1ef-1f1f5'},
+    {re:/^VK/, e:'🇦🇺', t:'1f1e6-1f1fa'},
+    {re:/^ZS|^ZT|^ZU/, e:'🇿🇦', t:'1f1ff-1f1e6'},
+    {re:/^OH|^OG/, e:'🇫🇮', t:'1f1eb-1f1ee'},
+    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/, e:'🇳🇱', t:'1f1f3-1f1f1'},
+    {re:/^HB/, e:'🇨🇭', t:'1f1e8-1f1ed'},
+    {re:/^OE/, e:'🇦🇹', t:'1f1e6-1f1f9'},
+    {re:/^SP|^SQ|^SR|^HF/, e:'🇵🇱', t:'1f1f5-1f1f1'},
+    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/, e:'🇷🇺', t:'1f1f7-1f1fa'},
+    {re:/^SV|^SW|^SX|^SY|^SZ/, e:'🇬🇷', t:'1f1ec-1f1f7'},
+    {re:/^LY/, e:'🇱🇹', t:'1f1f1-1f1f9'},
+    {re:/^9A/, e:'🇭🇷', t:'1f1ed-1f1f7'},
+];
+function getFlag(callsign){
+    if(!callsign) return '';
+    const cs = callsign.toUpperCase().trim();
+    for(const p of _FLAGS){
+        if(p.re.test(cs)){
+            if(_winOS) return '<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
+            return '<span class="flag-emoji">'+p.e+'</span>';
+        }
     }
-    return '🌐';
+    return '<span class="flag-emoji">🌐</span>';
 }
 
 let S = { active:false, poll:null, logT:null, txT:null, last:null, busy:false, cfgId:null };
