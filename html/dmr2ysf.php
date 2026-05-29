@@ -456,14 +456,14 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 </style>
 </head>
 <body>
+<!-- DESPUÉS: Panel PHPPLUS a la derecha con estilo primary (borde violeta) -->
 <header class="header">
     <div style="display:flex;align-items:center;gap:1rem;">
-        <a href="mmdvm.php" class="btn-nav">← Panel PHPPLUS</a>
         <h1>🔗 Puente DMR ⇄ YSF</h1>
         <span class="badge-direct">DMR2YSF</span>
     </div>
     <div class="nav-actions">
-        <button class="btn-nav primary" onclick="forceRefresh()">🔄 Refresco</button>
+        <a href="mmdvm.php" class="btn-nav primary">🏠 Panel PHPPLUS</a>
     </div>
 </header>
 
