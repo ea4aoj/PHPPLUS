@@ -334,7 +334,7 @@ if ($action === 'transmission') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🔗 Puente DMR ⇄ YSF | Modo Directo</title>
+<title>🔗 Puente DMR ⇄ YSF</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
@@ -458,9 +458,9 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 <body>
 <header class="header">
     <div style="display:flex;align-items:center;gap:1rem;">
-        <a href="mmdvm.php" class="btn-nav">← Panel Principal</a>
+        <a href="mmdvm.php" class="btn-nav">← Panel PHPPLUS</a>
         <h1>🔗 Puente DMR ⇄ YSF</h1>
-        <span class="badge-direct">MODO DIRECTO</span>
+        <span class="badge-direct">DMR2YSF</span>
     </div>
     <div class="nav-actions">
         <button class="btn-nav primary" onclick="forceRefresh()">🔄 Refresco</button>
@@ -550,7 +550,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
     </div>
 </div>
 
-<footer class="footer"> Panel DMR⇄YSF Directo | <a href="mmdvm.php" style="color:var(--cyan)">Volver al panel principal</a></footer>
+<footer class="footer"> Panel DMR⇄YSF Directo | <a href="mmdvm.php" style="color:var(--cyan)">Volver al panel PHPPLUS</a></footer>
 
 <script>
 const $ = id => document.getElementById(id);
