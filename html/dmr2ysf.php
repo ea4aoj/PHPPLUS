@@ -1,7 +1,7 @@
 <?php
 // ============================================================================
 // dmr2ysf_panel.php - Control de puente DMR ⇄ YSF (MODO DIRECTO)
-// Corregido: Red de seguridad para forzar parada de DMR2YSF y limpieza de PIDs
+// Con: RF/NET detection, banderas por país, VU meters animados
 // ============================================================================
 
 require_once __DIR__ . '/auth.php';
@@ -46,27 +46,14 @@ function saveState($key, $value) {
     @file_put_contents($file, implode("\n", $lines) . "\n");
 }
 
-// ✅ CORREGIDO: Detección estricta basada SOLO en PID y /proc
 function checkPid($pidFile, $binName) {
     clearstatcache(true, $pidFile);
     if (!file_exists($pidFile)) return 'inactive';
-    
     $pid = trim(file_get_contents($pidFile));
     if (!ctype_digit($pid)) { @unlink($pidFile); return 'inactive'; }
-    
-    // Verificación estricta vía sistema de procesos Linux
-    if (!is_dir("/proc/{$pid}")) {
-        @unlink($pidFile); // PID huérfano
-        return 'inactive';
-    }
-    
-    // Verificación extra: confirmar que el proceso pertenece al binario esperado
+    if (!is_dir("/proc/{$pid}")) { @unlink($pidFile); return 'inactive'; }
     $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
-    if ($cmdline && strpos($cmdline, $binName) === false) {
-        @unlink($pidFile);
-        return 'inactive';
-    }
-    
+    if ($cmdline && strpos($cmdline, $binName) === false) { @unlink($pidFile); return 'inactive'; }
     return 'active';
 }
 
@@ -89,6 +76,64 @@ function lookupCall($callsign) {
     return ['dmrid'=>'', 'name'=>''];
 }
 
+// 🌍 Bandera por prefijo de callsign
+function getFlagInfo($callsign) {
+    $prefixes = [
+        'EA'=>['ESP','🇪🇸'],'EB'=>['ESP','🇪🇸'],'EC'=>['ESP','🇪🇸'],'ED'=>['ESP','🇪🇸'],'EE'=>['ESP','🇪🇸'],'EF'=>['ESP','🇪🇸'],
+        'F'=>['FRA','🇫🇷'],'FB'=>['FRA','🇫🇷'],'FC'=>['FRA','🇫🇷'],'FD'=>['FRA','🇫🇷'],'FE'=>['FRA','🇫🇷'],'FF'=>['FRA','🇫🇷'],
+        'I'=>['ITA','🇮🇹'],'IZ'=>['ITA','🇮🇹'],'IW'=>['ITA','🇮🇹'],'IV'=>['ITA','🇮🇹'],'IX'=>['ITA','🇮🇹'],
+        'G'=>['GBR','🇬🇧'],'M'=>['GBR','🇬🇧'],'2E'=>['GBR','🇬🇧'],'M6'=>['GBR','🇬🇧'],'M7'=>['GBR','🇬🇧'],
+        'DL'=>['DEU','🇩🇪'],'DA'=>['DEU','🇩🇪'],'DB'=>['DEU','🇩🇪'],'DC'=>['DEU','🇩🇪'],'DD'=>['DEU','🇩🇪'],'DF'=>['DEU','🇩🇪'],
+        'ON'=>['BEL','🇧🇪'],'OR'=>['BEL','🇧🇪'],'OT'=>['BEL','🇧🇪'],
+        'PA'=>['NLD','🇳🇱'],'PB'=>['NLD','🇳🇱'],'PC'=>['NLD','🇳🇱'],'PD'=>['NLD','🇳🇱'],'PE'=>['NLD','🇳🇱'],'PF'=>['NLD','🇳🇱'],
+        'OE'=>['AUT','🇦🇹'],
+        'HB'=>['CHE','🇨🇭'],'HE'=>['CHE','🇨🇭'],
+        'LY'=>['LTU','🇱🇹'],'ES'=>['EST','🇪🇪'],'YL'=>['LVA','🇱🇻'],
+        'SP'=>['POL','🇵🇱'],'SQ'=>['POL','🇵🇱'],'SN'=>['POL','🇵🇱'],'SO'=>['POL','🇵🇱'],
+        'OK'=>['CZE','🇨🇿'],'OM'=>['SVK','🇸🇰'],'HA'=>['HUN','🇭🇺'],
+        'YO'=>['ROU','🇷🇴'],'YR'=>['ROU','🇷🇴'],
+        'SV'=>['GRC','🇬🇷'],'SW'=>['GRC','🇬🇷'],'SX'=>['GRC','🇬🇷'],'SY'=>['GRC','🇬🇷'],'SZ'=>['GRC','🇬🇷'],
+        'UA'=>['RUS','🇷🇺'],'UB'=>['RUS','🇷🇺'],'UC'=>['RUS','🇷🇺'],'UD'=>['RUS','🇷🇺'],'UE'=>['RUS','🇷🇺'],
+        'UW'=>['UKR','🇺🇦'],'UX'=>['UKR','🇺🇦'],'UY'=>['UKR','🇺🇦'],'UZ'=>['UKR','🇺🇦'],
+        'K'=>['USA','🇺🇸'],'N'=>['USA','🇺🇸'],'W'=>['USA','🇺🇸'],'AA'=>['USA','🇺🇸'],'AB'=>['USA','🇺🇸'],
+        'VE'=>['VEN','🇻🇪'],'YV'=>['VEN','🇻🇪'],
+        'PY'=>['BRA','🇧🇷'],'PU'=>['BRA','🇧🇷'],'PP'=>['BRA','🇧🇷'],'PQ'=>['BRA','🇧🇷'],'PR'=>['BRA','🇧🇷'],'PS'=>['BRA','🇧🇷'],'PT'=>['BRA','🇧🇷'],
+        'CE'=>['CHL','🇨🇱'],'CA'=>['CHL','🇨🇱'],'CD'=>['CHL','🇨🇱'],
+        'CX'=>['URY','🇺🇾'],'CW'=>['URY','🇺🇾'],
+        'LV'=>['ARG','🇦🇷'],'LU'=>['ARG','🇦🇷'],'LW'=>['ARG','🇦🇷'],'LX'=>['ARG','🇦🇷'],
+        'HC'=>['ECU','🇪🇨'],'HD'=>['ECU','🇪🇨'],
+        'HK'=>['COL','🇨🇴'],'HJ'=>['COL','🇨🇴'],'5J'=>['COL','🇨🇴'],'5K'=>['COL','🇨🇴'],
+        'TI'=>['CRI','🇨🇷'],'TE'=>['CRI','🇨🇷'],
+        'CP'=>['BOL','🇧🇴'],
+        'JA'=>['JPN','🇯🇵'],'JB'=>['JPN','🇯🇵'],'JC'=>['JPN','🇯🇵'],'JD'=>['JPN','🇯🇵'],'JE'=>['JPN','🇯🇵'],
+        'BV'=>['TWN','🇹🇼'],'BU'=>['TWN','🇹🇼'],
+        'VR'=>['HKG','🇭🇰'],'VS'=>['HKG','🇭🇰'],
+        'XX'=>['MAC','🇲🇴'],
+        'HL'=>['KOR','🇰🇷'],'DS'=>['KOR','🇰🇷'],'DT'=>['KOR','🇰🇷'],'DU'=>['KOR','🇰🇷'],
+        'BY'=>['CHN','🇨🇳'],'BA'=>['CHN','🇨🇳'],'BD'=>['CHN','🇨🇳'],
+        'VU'=>['IND','🇮🇳'],'AT'=>['IND','🇮🇳'],'AU'=>['IND','🇮🇳'],
+        'AP'=>['PAK','🇵🇰'],'A2'=>['BWA','🇧🇼'],'A3'=>['TON','🇹🇴'],'A4'=>['OMN','🇴🇲'],'A5'=>['BTN','🇧🇹'],'A6'=>['ARE','🇦🇪'],'A7'=>['QAT','🇶🇦'],'A9'=>['BHR','🇧🇭'],
+        '4X'=>['ISR','🇮🇱'],'4Z'=>['ISR','🇮🇱'],
+        'ZS'=>['ZAF','🇿🇦'],'ZT'=>['ZAF','🇿🇦'],'ZU'=>['ZAF','🇿🇦'],
+        'VK'=>['AUS','🇦🇺'],'VH'=>['AUS','🇦🇺'],'VI'=>['AUS','🇦🇺'],
+        'ZL'=>['NZL','🇳🇿'],'ZM'=>['NZL','🇳🇿'],
+        '9A'=>['HRV','🇭🇷'],'S5'=>['SVN','🇸🇮'],'T7'=>['BIH','🇧🇦'],'E7'=>['BIH','🇧🇦'],
+        'YT'=>['SRB','🇷🇸'],'YU'=>['SRB','🇷🇸'],'Z3'=>['MKD','🇲🇰'],'ZA'=>['ALB','🇦🇱'],
+        'PZ'=>['SUR','🇸🇷'],'8P'=>['BRB','🇧🇧'],'9Y'=>['TTO','🇹🇹'],'9Z'=>['TTO','🇹🇹'],
+        'J6'=>['LCA','🇱🇨'],'J7'=>['DMA','🇩🇲'],'J8'=>['GRD','🇬🇩'],
+        'VP2'=>['AIA','🇦🇮'],'VP5'=>['TCA','🇹🇨'],'VP8'=>['FLK','🇫🇰'],
+        'ZD8'=>['SHN','🇸🇭'],'C6'=>['BHS','🇧🇸'],'C9'=>['MOZ','🇲🇿'],'D4'=>['CPV','🇨🇻'],
+        'EA8'=>['ESH','🇪🇭'],'EA9'=>['ESH','🇪🇭'],'ZB2'=>['GIB','🇬🇮'],
+        'CT'=>['PRT','🇵🇹'],'CU'=>['PRT','🇵🇹'],'CV'=>['PRT','🇵🇹'],'CW'=>['PRT','🇵🇹'],'CS'=>['PRT','🇵🇹'],'CR'=>['PRT','🇵🇹']
+    ];
+    $cs = strtoupper(trim($callsign));
+    for ($len = 4; $len >= 1; $len--) {
+        $prefix = substr($cs, 0, $len);
+        if (isset($prefixes[$prefix])) return $prefixes[$prefix];
+    }
+    return ['XXX', '🌐'];
+}
+
 function colorizeLog($text) {
     return implode("\n", array_map(function($l) {
         $ll = strtolower($l);
@@ -105,19 +150,16 @@ function colorizeLog($text) {
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 if ($action === 'status') {
-    // Lee estado REAL de cada proceso mediante PID estricto
     $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
-    $d2y = checkPid(PID_D2Y,   'DMR2YSF');
+    $d2y = checkPid(PID_D2Y, 'DMR2YSF');
     $ysf = checkPid(PID_YSFGW, 'YSFGateway');
-    
     $perms = [];
     foreach ($CONFIG_FILES as $k => $p) {
         $perms[$k] = ['exists' => file_exists($p), 'writable' => is_writable($p)];
     }
-    
     header('Content-Type: application/json');
     echo json_encode([
-        'mmdvm'  => $mmd, 'dmr2ysf' => $d2y, 'ysfgateway' => $ysf,
+        'mmdvm' => $mmd, 'dmr2ysf' => $d2y, 'ysfgateway' => $ysf,
         'bridge_active' => ($mmd==='active' && $d2y==='active' && $ysf==='active'),
         'perms' => $perms, 'ts' => time()
     ]);
@@ -137,12 +179,8 @@ if ($action === 'stop') {
     saveState('dmr2ysf', 'off');
     $out = shell_exec('sudo ' . STOP_SCRIPT . ' 2>&1');
     sleep(2);
-    
-    // 🔒 RED DE SEGURIDAD: Forzar muerte de DMR2YSF si se queda colgado
-    // A veces el binario no muere al primer intento, esto asegura limpieza total.
     shell_exec('sudo pkill -9 -f DMR2YSF 2>/dev/null');
     shell_exec('sudo rm -f /tmp/DMR2YSF.pid');
-    
     sleep(1);
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true, 'msg'=>'Puente detenido', 'log'=>trim($out)?:'Sin salida']);
@@ -153,9 +191,9 @@ if ($action === 'logs') {
     $n = intval($_GET['lines'] ?? 80);
     header('Content-Type: application/json');
     echo json_encode([
-        'mmdvm'   => htmlspecialchars(tailLive(LOG_MMDVM, $n) ?: ''),
-        'dmr2ysf' => htmlspecialchars(tailLive(LOG_D2Y, $n)   ?: ''),
-        'ysf'     => htmlspecialchars(tailLive(LOG_YSFGW, $n) ?: '')
+        'mmdvm' => htmlspecialchars(tailLive(LOG_MMDVM, $n) ?: ''),
+        'dmr2ysf' => htmlspecialchars(tailLive(LOG_D2Y, $n) ?: ''),
+        'ysf' => htmlspecialchars(tailLive(LOG_YSFGW, $n) ?: '')
     ]);
     exit;
 }
@@ -188,44 +226,63 @@ if ($action === 'restart-svc') {
     header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
 
-// ── Transmisión y Last Heard (Captura desde YSFGateway) ──
+// ── Transmisión y Last Heard (MMDVMDMR2YSF.log con RF/NET + flags) ──
 if ($action === 'transmission') {
-    $log = tailLive(LOG_YSFGW, 300);
-    if (empty(trim($log))) $log = tailLive(LOG_MMDVM, 300);
+    $log = tailLive(LOG_MMDVM, 500);
+    if (empty(trim($log))) {
+        header('Content-Type: application/json');
+        echo json_encode(['state'=>['active'=>false], 'lastHeard'=>[], 'vu'=>['slot1'=>0,'slot2'=>0]]);
+        exit;
+    }
+    $lines = array_reverse(explode("\n", $log));
+    $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'','time'=>'','source'=>'','duration'=>'','loss'=>''];
+    $lastHeard = []; $seen = []; $namesMap = [];
+    $vu = ['slot1'=>0, 'slot2'=>0]; // Niveles simulados 0-100
     
-    $lines = array_reverse(explode("\n", $log ?? ''));
-    $state = ['active'=>false, 'callsign'=>'', 'name'=>'', 'dest'=>'', 'source'=>'', 'time'=>''];
-    $lastHeard = []; $seen = [];
-
     foreach ($lines as $line) {
-        if (preg_match('/(\d{2}:\d{2}:\d{2}).*Linked to\s+([A-Z0-9\/]+)\s*[-–]?\s*(.*)/i', $line, $m)) {
-            $state = ['active'=>true, 'callsign'=>strtoupper(trim($m[2])), 'name'=>trim($m[3]), 'dest'=>'YSF', 'source'=>'NET', 'time'=>$m[1]];
-        } elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9\/]+)\s*(.*)/i', $line, $m)) {
-            $state = ['active'=>true, 'callsign'=>strtoupper(trim($m[2])), 'name'=>trim($m[3]), 'dest'=>'YSF', 'source'=>'NET', 'time'=>$m[1]];
+        if (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9]+)\s+(.+)/i', $line, $m)) {
+            $namesMap[strtoupper(trim($m[2]))] = trim($m[3]);
         }
-        if (preg_match('/Unlinked from/i', $line) && $state['active']) {
-            $state['active'] = false;
+        // INICIO: "received (RF|network) voice header from XXX to TG Y"
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
+            $time = explode('.', $m[1])[0]; $slot = $m[2];
+            $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
+            $callsign = strtoupper(trim($m[4])); $tg = $m[5];
+            if (empty($state['active']) || strtotime($time) >= strtotime($state['time'])) {
+                $state = ['active'=>true,'callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'duration'=>'','loss'=>''];
+            }
+            if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
+                $lastHeard[] = ['callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'status'=>'TX'];
+                $seen[] = $callsign;
+            }
+            // VU meter: activar slot con nivel alto
+            $vu['slot'.$slot] = 85 + rand(0,15);
+        }
+        // FIN: "end of voice transmission from XXX to TG Y, X.X seconds, X% packet loss"
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*([\d.]+)%\s*packet loss/i', $line, $m)) {
+            $time = explode('.', $m[1])[0]; $slot = $m[2];
+            $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
+            $callsign = strtoupper(trim($m[4])); $tg = $m[5];
+            $duration = $m[6]; $loss = $m[7];
+            if ($state['active'] && $state['callsign']===$callsign && $state['tg']===$tg) {
+                $state['duration'] = $duration.'s'; $state['loss'] = $loss.'%';
+            }
+            if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
+                $lastHeard[] = ['callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'status'=>'RX','duration'=>$duration.'s','loss'=>$loss.'%'];
+                $seen[] = $callsign;
+            }
+            // VU meter: bajar nivel gradualmente
+            $vu['slot'.$slot] = max(0, $vu['slot'.$slot] - 30);
         }
     }
-
-    foreach ($lines as $line) {
-        if (preg_match('/(\d{2}:\d{2}:\d{2}).*Linked to\s+([A-Z0-9\/]+)\s*[-–]?\s*(.*)/i', $line, $m)) {
-            $cs = strtoupper(trim($m[2]));
-            if (!in_array($cs, $seen)) {
-                $lastHeard[] = ['callsign'=>$cs, 'name'=>trim($m[3]), 'dest'=>'YSF', 'source'=>'NET', 'time'=>$m[1]];
-                $seen[] = $cs; if(count($lastHeard)>=8) break;
-            }
-        } elseif (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9\/]+)\s*(.*)/i', $line, $m)) {
-            $cs = strtoupper(trim($m[2]));
-            if (!in_array($cs, $seen)) {
-                $lastHeard[] = ['callsign'=>$cs, 'name'=>trim($m[3]), 'dest'=>'YSF', 'source'=>'NET', 'time'=>$m[1]];
-                $seen[] = $cs; if(count($lastHeard)>=8) break;
-            }
-        }
+    // Si no hay transmisión activa, decaer VU meters
+    if (!$state['active']) {
+        $vu['slot1'] = max(0, $vu['slot1'] - 10);
+        $vu['slot2'] = max(0, $vu['slot2'] - 10);
     }
-
+    
     header('Content-Type: application/json');
-    echo json_encode(['state'=>$state, 'lastHeard'=>$lastHeard]);
+    echo json_encode(['state'=>$state, 'lastHeard'=>$lastHeard, 'vu'=>$vu]);
     exit;
 }
 ?>
@@ -278,6 +335,16 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .btn-cfg { font-family:var(--font-mono); font-size:.72rem; text-transform:uppercase; padding:.4rem .6rem; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer; transition:all .2s; text-align:center; }
 .btn-cfg:hover:not(.muted) { background:rgba(255,179,0,.1); border-color:var(--amber); color:var(--amber); }
 .btn-cfg.muted { color:var(--text-dim); border-color:var(--border); cursor:not-allowed; }
+
+/* ── VU METERS ── */
+.vu-container { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:1rem; }
+.vu-box { background:rgba(0,0,0,.25); border:1px solid var(--border); border-radius:6px; padding:.8rem 1rem; }
+.vu-label { font-family:var(--font-mono); font-size:.75rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; margin-bottom:.5rem; display:flex; justify-content:space-between; }
+.vu-track { height:8px; background:#1a2535; border-radius:4px; overflow:hidden; position:relative; }
+.vu-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--cyan),var(--green)); border-radius:4px; transition:width .15s ease-out; box-shadow:0 0 10px rgba(0,212,255,.4); }
+.vu-fill.peak { background:linear-gradient(90deg,var(--amber),var(--red)); box-shadow:0 0 10px rgba(255,179,0,.5); }
+.vu-peak { position:absolute; top:0; width:2px; height:100%; background:var(--amber); opacity:.7; transition:left .1s; }
+
 .logs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 @media (max-width: 900px) { .logs { grid-template-columns: 1fr; } }
 .l-panel { height: 200px; display: flex; flex-direction: column; border: 1px solid var(--border); }
@@ -290,6 +357,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .l-out::-webkit-scrollbar { width: 4px; }
 .l-out::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 .log-info{color:#7a9ab5;} .log-ok{color:var(--green);} .log-warn{color:var(--amber);} .log-err{color:var(--red);}
+
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:1000; align-items:center; justify-content:center; }
 .modal.open { display:flex; }
 .m-box { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.5rem; width:900px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; gap:1rem; }
@@ -302,23 +370,28 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .m-msg.err { color:var(--red); border-color:var(--red); background:rgba(255,69,96,.06); }
 .m-acts { display:flex; gap:.8rem; justify-content:flex-end; }
 .footer { text-align:center; padding:1.5rem; color:var(--text-dim); font-family:var(--font-mono); font-size:.75rem; border-top:1px solid var(--border); margin-top:2rem; }
-.tx-panel { min-height:60px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); border-radius:6px; padding:1rem; font-family:var(--font-mono); }
+
+.tx-panel { min-height:80px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); border-radius:6px; padding:1rem; font-family:var(--font-mono); }
 .tx-idle { color:var(--text-dim); font-size:.9rem; }
 .tx-active { width:100%; display:flex; flex-direction:column; align-items:center; gap:.4rem; }
-.tx-callsign { font-family:var(--font-ui); font-size:2.2rem; font-weight:700; color:var(--green); text-shadow:0 0 12px rgba(0,255,159,.4); letter-spacing:.04em; }
-.tx-name { font-size:1.1rem; color:var(--cyan); font-weight:500; }
-.tx-meta { display:flex; gap:1rem; align-items:center; font-size:.8rem; }
-.tx-src { padding:.15rem .5rem; border-radius:4px; font-weight:bold; }
+.tx-callsign { font-family:var(--font-ui); font-size:2rem; font-weight:700; color:var(--green); text-shadow:0 0 12px rgba(0,255,159,.4); letter-spacing:.04em; display:flex; align-items:center; gap:.4rem; }
+.tx-flag { font-size:1.4rem; }
+.tx-name { font-size:1rem; color:var(--cyan); font-weight:500; }
+.tx-meta { display:flex; gap:.8rem; align-items:center; font-size:.75rem; flex-wrap:wrap; justify-content:center; }
+.tx-src { padding:.1rem .45rem; border-radius:3px; font-weight:600; font-family:var(--font-mono); text-transform:uppercase; font-size:.7rem; }
 .tx-src.rf { background:rgba(0,255,159,.15); color:var(--green); border:1px solid rgba(0,255,159,.3); }
 .tx-src.net { background:rgba(0,212,255,.15); color:var(--cyan); border:1px solid rgba(0,212,255,.3); }
-.tx-dest { color:var(--amber); }
-.tx-time { color:var(--text-dim); }
-.lh-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:.8rem; }
-.lh-table th { text-align:left; padding:.5rem .8rem; background:rgba(0,0,0,.25); color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; font-size:.7rem; border-bottom:1px solid var(--border); }
-.lh-table td { padding:.45rem .8rem; border-bottom:1px solid rgba(30,45,61,.5); color:var(--text); }
+.tx-dest { color:var(--amber); font-weight:600; }
+.tx-time { color:var(--text-dim); font-family:var(--font-mono); }
+.tx-slot { color:var(--violet); font-weight:600; }
+
+.lh-table { width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:.75rem; }
+.lh-table th { text-align:left; padding:.5rem .6rem; background:rgba(0,0,0,.25); color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; font-size:.7rem; border-bottom:1px solid var(--border); }
+.lh-table td { padding:.4rem .6rem; border-bottom:1px solid rgba(30,45,61,.5); color:var(--text); vertical-align:middle; }
 .lh-table tr:hover td { background:rgba(181,122,255,.05); }
 .tx-row td { background:rgba(0,255,159,.08); }
-.lh-cs { color:var(--violet); font-weight:bold; letter-spacing:.04em; }
+.lh-cs { color:var(--violet); font-weight:bold; letter-spacing:.04em; display:flex; align-items:center; gap:.3rem; }
+.lh-flag { font-size:1.1rem; }
 .lh-empty { text-align:center; color:var(--text-dim); padding:1rem !important; }
 </style>
 </head>
@@ -367,13 +440,24 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
         <div id="txDisplay" class="tx-panel">
             <div class="tx-idle">⏸ Canal libre - Esperando actividad...</div>
         </div>
+        <!-- VU METERS -->
+        <div class="vu-container">
+            <div class="vu-box">
+                <div class="vu-label"><span>Slot 1</span><span id="vu1Val">0%</span></div>
+                <div class="vu-track"><div class="vu-fill" id="vu1"></div><div class="vu-peak" id="vu1Peak"></div></div>
+            </div>
+            <div class="vu-box">
+                <div class="vu-label"><span>Slot 2</span><span id="vu2Val">0%</span></div>
+                <div class="vu-track"><div class="vu-fill" id="vu2"></div><div class="vu-peak" id="vu2Peak"></div></div>
+            </div>
+        </div>
     </div>
 
     <div class="card">
         <div class="c-title">📋 Últimas Estaciones Escuchadas</div>
         <table class="lh-table">
-            <thead><tr><th>Indicativo</th><th>Nombre</th><th>Destino</th><th>Hora</th><th>Origen</th></tr></thead>
-            <tbody id="lhBody"><tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr></tbody>
+            <thead><tr><th>Indicativo</th><th>Nombre</th><th>TG</th><th>Slot</th><th>Hora</th><th>Origen</th></tr></thead>
+            <tbody id="lhBody"><tr><td colspan="6" class="lh-empty">Sin actividad reciente</td></tr></tbody>
         </table>
     </div>
 
@@ -421,18 +505,81 @@ const api = async (a, p={}, m='GET') => {
     return r.json();
 };
 
+// 🌍 Helper JS para banderas (mismo mapeo que PHP)
+function getFlag(cs) {
+    const prefixes = {
+        'EA':'🇪🇸','EB':'🇪🇸','EC':'🇪🇸','ED':'🇪🇸','EE':'🇪🇸','EF':'🇪🇸',
+        'F':'🇫🇷','FB':'🇫🇷','FC':'🇫🇷','FD':'🇫🇷','FE':'🇫🇷','FF':'🇫🇷',
+        'I':'🇮🇹','IZ':'🇮🇹','IW':'🇮🇹','IV':'🇮🇹','IX':'🇮🇹',
+        'G':'🇬🇧','M':'🇬🇧','2E':'🇬🇧','M6':'🇬🇧','M7':'🇬🇧',
+        'DL':'🇩🇪','DA':'🇩🇪','DB':'🇩🇪','DC':'🇩🇪','DD':'🇩🇪','DF':'🇩🇪',
+        'ON':'🇧🇪','OR':'🇧🇪','OT':'🇧🇪',
+        'PA':'🇳🇱','PB':'🇳🇱','PC':'🇳🇱','PD':'🇳🇱','PE':'🇳🇱','PF':'🇳🇱',
+        'OE':'🇦🇹','HB':'🇨🇭','HE':'🇨🇭',
+        'LY':'🇱🇹','ES':'🇪🇪','YL':'🇱🇻',
+        'SP':'🇵🇱','SQ':'🇵🇱','SN':'🇵🇱','SO':'🇵🇱',
+        'OK':'🇨🇿','OM':'🇸🇰','HA':'🇭🇺',
+        'YO':'🇷🇴','YR':'🇷🇴',
+        'SV':'🇬🇷','SW':'🇬🇷','SX':'🇬🇷','SY':'🇬🇷','SZ':'🇬🇷',
+        'UA':'🇷🇺','UB':'🇷🇺','UC':'🇷🇺','UD':'🇷🇺','UE':'🇷🇺',
+        'UW':'🇺🇦','UX':'🇺🇦','UY':'🇺🇦','UZ':'🇺🇦',
+        'K':'🇺🇸','N':'🇺🇸','W':'🇺🇸','AA':'🇺🇸','AB':'🇺🇸',
+        'VE':'🇻🇪','YV':'🇻🇪',
+        'PY':'🇧🇷','PU':'🇧🇷','PP':'🇧🇷','PQ':'🇧🇷','PR':'🇧🇷','PS':'🇧🇷','PT':'🇧🇷',
+        'CE':'🇨🇱','CA':'🇨🇱','CD':'🇨🇱',
+        'CX':'🇺🇾','CW':'🇺🇾',
+        'LV':'🇦🇷','LU':'🇦🇷','LW':'🇦🇷','LX':'🇦🇷',
+        'HC':'🇪🇨','HD':'🇪🇨',
+        'HK':'🇨🇴','HJ':'🇨🇴','5J':'🇨🇴','5K':'🇨🇴',
+        'TI':'🇨🇷','TE':'🇨🇷',
+        'CP':'🇧🇴',
+        'JA':'🇯🇵','JB':'🇯🇵','JC':'🇯🇵','JD':'🇯🇵','JE':'🇯🇵',
+        'BV':'🇹🇼','BU':'🇹🇼',
+        'VR':'🇭🇰','VS':'🇭🇰',
+        'XX':'🇲🇴',
+        'HL':'🇰🇷','DS':'🇰🇷','DT':'🇰🇷','DU':'🇰🇷',
+        'BY':'🇨🇳','BA':'🇨🇳','BD':'🇨🇳',
+        'VU':'🇮🇳','AT':'🇮🇳','AU':'🇮🇳',
+        'AP':'🇵🇰','A2':'🇧🇼','A3':'🇹🇴','A4':'🇴🇲','A5':'🇧🇹','A6':'🇦🇪','A7':'🇶🇦','A9':'🇧🇭',
+        '4X':'🇮🇱','4Z':'🇮🇱',
+        'ZS':'🇿🇦','ZT':'🇿🇦','ZU':'🇿🇦',
+        'VK':'🇦🇺','VH':'🇦🇺','VI':'🇦🇺',
+        'ZL':'🇳🇿','ZM':'🇳🇿',
+        '9A':'🇭🇷','S5':'🇸🇮','T7':'🇧🇦','E7':'🇧🇦',
+        'YT':'🇷🇸','YU':'🇷🇸','Z3':'🇲🇰','ZA':'🇦🇱',
+        'PZ':'🇸🇷','8P':'🇧🇧','9Y':'🇹🇹','9Z':'🇹🇹',
+        'J6':'🇱🇨','J7':'🇩🇲','J8':'🇬🇩',
+        'VP2':'🇦🇮','VP5':'🇹🇨','VP8':'🇫🇰',
+        'ZD8':'🇸🇭','C6':'🇧🇸','C9':'🇲🇿','D4':'🇨🇻',
+        'EA8':'🇪🇭','EA9':'🇪🇭','ZB2':'🇬🇮',
+        'CT':'🇵🇹','CU':'🇵🇹','CV':'🇵🇹','CW':'🇵🇹','CS':'🇵🇹','CR':'🇵🇹'
+    };
+    cs = cs.toUpperCase();
+    for (let len = 4; len >= 1; len--) {
+        const pfx = cs.substring(0, len);
+        if (prefixes[pfx]) return prefixes[pfx];
+    }
+    return '🌐';
+}
+
 let S = { active:false, poll:null, logT:null, txT:null, last:null, busy:false, cfgId:null };
 
 function setDot(id, v) { const e=$(id); const vEl=$(id.replace('dot-','val-')); if(!e||!vEl)return; e.className='s-dot '+(v==='active'?'on':'off'); vEl.textContent=v==='active'?'ON':'OFF'; vEl.className='s-val '+(v==='active'?'on':'off'); }
 function setToggle(on, busy=false) {
     const chk=$('chk'), sts=$('sts'), sw=$('sw');
-    if (!busy) {
-        chk.checked = on;
-        sts.textContent = on ? 'ON' : 'OFF';
-        sts.className = 'toggle-status ' + (on ? 'on' : 'off');
-    }
-    sw.classList.toggle('busy', busy);
-    S.busy = busy;
+    if (!busy) { chk.checked = on; sts.textContent = on ? 'ON' : 'OFF'; sts.className = 'toggle-status ' + (on ? 'on' : 'off'); }
+    sw.classList.toggle('busy', busy); S.busy = busy;
+}
+
+// 🎚️ Actualizar VU meters
+function updateVU(slot, level) {
+    const fill = $('vu'+slot), peak = $('vu'+slot+'Peak'), val = $('vu'+slot+'Val');
+    if(!fill || !peak || !val) return;
+    level = Math.max(0, Math.min(100, level));
+    fill.style.width = level + '%';
+    val.textContent = level + '%';
+    peak.style.left = level + '%';
+    fill.classList.toggle('peak', level >= 90);
 }
 
 async function status() {
@@ -440,9 +587,7 @@ async function status() {
         const d = await api('status');
         setDot('dot-mmd', d.mmdvm); setDot('dot-d2y', d.dmr2ysf); setDot('dot-ysf', d.ysfgateway);
         const newActive = d.bridge_active;
-        if (!S.busy && newActive !== S.active) {
-            setToggle(newActive, false);
-        }
+        if (!S.busy && newActive !== S.active) { setToggle(newActive, false); }
         S.active = newActive;
         $('ts').textContent=fmtT(d.ts);
         document.querySelectorAll('.btn-cfg').forEach(btn=>{
@@ -470,31 +615,54 @@ async function fetchTransmission() {
         const r = await api('transmission');
         const d = r.state || {};
         const display = $('txDisplay');
-        if (d.active) {
-            display.innerHTML = `<div class="tx-active">
-                <div class="tx-callsign">${esc(d.callsign)} ${d.name ? '<span class="tx-name">('+esc(d.name)+')</span>' : ''}</div>
+        
+        if (d.active && d.callsign) {
+            const flag = getFlag(d.callsign);
+            const nameHtml = d.name ? `<span class="tx-name">(${esc(d.name)})</span>` : '';
+            const sourceBadge = `<span class="tx-src ${d.source==='RF'?'rf':'net'}">${d.source||'—'}</span>`;
+            const metaHtml = `
                 <div class="tx-meta">
-                    <span class="tx-src ${d.source==='RF'?'rf':'net'}">${d.source||'—'}</span>
-                    ${d.dest ? '<span class="tx-dest">→ '+esc(d.dest)+'</span>' : ''}
-                    <span class="tx-time">${esc(d.time)}</span>
+                    ${sourceBadge}
+                    <span class="tx-dest">→ TG ${d.tg||'—'}</span>
+                    <span class="tx-slot">📡 Slot ${d.slot||'-'}</span>
+                    ${d.duration ? `<span class="tx-time">⏱ ${esc(d.duration)}</span>` : ''}
+                    ${d.loss ? `<span class="tx-time">📉 ${esc(d.loss)}</span>` : ''}
+                    <span class="tx-time">${esc(d.time||'')}</span>
                 </div>
-            </div>`;
+            `;
+            display.innerHTML = `
+                <div class="tx-active">
+                    <div class="tx-callsign"><span class="tx-flag">${flag}</span>${esc(d.callsign)} ${nameHtml}</div>
+                    ${metaHtml}
+                </div>
+            `;
         } else {
             display.innerHTML = '<div class="tx-idle">⏸ Canal libre - Esperando actividad...</div>';
         }
+        
+        // Actualizar VU meters
+        if (r.vu) {
+            updateVU(1, r.vu.slot1||0);
+            updateVU(2, r.vu.slot2||0);
+        }
+        
+        // Actualizar tabla Last Heard
         const tbody = $('lhBody');
         const list = r.lastHeard || [];
         if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="lh-empty">Sin actividad reciente</td></tr>';
         } else {
             tbody.innerHTML = list.map(r => {
-                const isTx = d.active && r.callsign === d.callsign;
+                const flag = getFlag(r.callsign);
+                const isTx = d.active && r.callsign === d.callsign && r.tg === d.tg;
+                const durLoss = (r.duration || r.loss) ? `<small style="color:var(--text-dim)">(${r.duration||''} ${r.loss||''})</small>` : '';
                 return `<tr class="${isTx?'tx-row':''}">
-                    <td class="lh-cs">${esc(r.callsign)}</td>
+                    <td><span class="lh-cs"><span class="lh-flag">${flag}</span>${esc(r.callsign)}</span></td>
                     <td>${esc(r.name||'—')}</td>
-                    <td>${esc(r.dest||'—')}</td>
+                    <td>TG ${esc(r.tg||'—')}</td>
+                    <td style="text-align:center">${esc(r.slot||'—')}</td>
                     <td>${esc(r.time||'—')}</td>
-                    <td><span class="tx-src ${r.source==='RF'?'rf':'net'}">${r.source||'—'}</span></td>
+                    <td><span class="tx-src ${r.source==='RF'?'rf':'net'}">${r.source||'—'}</span> ${durLoss}</td>
                 </tr>`;
             }).join('');
         }
