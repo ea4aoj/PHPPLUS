@@ -234,48 +234,91 @@ if ($action === 'transmission') {
         echo json_encode(['state'=>['active'=>false], 'lastHeard'=>[], 'vu'=>['slot1'=>0,'slot2'=>0]]);
         exit;
     }
-    $lines = array_reverse(explode("\n", $log));
+    
+    // 👈 PROCESAR EN ORDEN CRONOLÓGICO (sin array_reverse)
+    $lines = explode("\n", $log);
+    
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'','time'=>'','source'=>'','duration'=>'','loss'=>''];
     $lastHeard = []; $seen = []; $namesMap = [];
-    $vu = ['slot1'=>0, 'slot2'=>0]; // Niveles simulados 0-100
+    $vu = ['slot1'=>0, 'slot2'=>0];
     
     foreach ($lines as $line) {
+        // Extraer nombres asociados a callsigns
         if (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9]+)\s+(.+)/i', $line, $m)) {
             $namesMap[strtoupper(trim($m[2]))] = trim($m[3]);
         }
-        // INICIO: "received (RF|network) voice header from XXX to TG Y"
+        
+        // 🟢 INICIO: "received (RF|network) voice header from XXX to TG Y"
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
             $time = explode('.', $m[1])[0]; $slot = $m[2];
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $callsign = strtoupper(trim($m[4])); $tg = $m[5];
-            if (empty($state['active']) || strtotime($time) >= strtotime($state['time'])) {
-                $state = ['active'=>true,'callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'duration'=>'','loss'=>''];
-            }
+            
+            // 👉 Activar estado para esta transmisión (la más reciente gana)
+            $state = [
+                'active'=>true,
+                'callsign'=>$callsign,
+                'name'=>$namesMap[$callsign]??'',
+                'tg'=>$tg,
+                'slot'=>$slot,
+                'time'=>$time,
+                'source'=>$source,
+                'duration'=>'',
+                'loss'=>''
+            ];
+            
+            // Añadir a Last Heard si no está repetido
             if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
-                $lastHeard[] = ['callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'status'=>'TX'];
+                $lastHeard[] = [
+                    'callsign'=>$callsign,
+                    'name'=>$namesMap[$callsign]??'',
+                    'tg'=>$tg,
+                    'slot'=>$slot,
+                    'time'=>$time,
+                    'source'=>$source,
+                    'status'=>'TX'
+                ];
                 $seen[] = $callsign;
             }
             // VU meter: activar slot con nivel alto
             $vu['slot'.$slot] = 85 + rand(0,15);
         }
-        // FIN: "end of voice transmission from XXX to TG Y, X.X seconds, X% packet loss"
+        
+        // 🔴 FIN: "end of voice transmission from XXX to TG Y, X.X seconds, X% packet loss"
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*([\d.]+)%\s*packet loss/i', $line, $m)) {
             $time = explode('.', $m[1])[0]; $slot = $m[2];
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $callsign = strtoupper(trim($m[4])); $tg = $m[5];
             $duration = $m[6]; $loss = $m[7];
+            
+            // 👉 Si coincide con la transmisión activa, MARCAR COMO FINALIZADA
             if ($state['active'] && $state['callsign']===$callsign && $state['tg']===$tg) {
-                $state['duration'] = $duration.'s'; $state['loss'] = $loss.'%';
+                $state['active'] = false;  // ✅ AQUÍ: desactivar al finalizar
+                $state['duration'] = $duration.'s';
+                $state['loss'] = $loss.'%';
             }
+            
+            // Añadir a Last Heard si no está repetido
             if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
-                $lastHeard[] = ['callsign'=>$callsign,'name'=>$namesMap[$callsign]??'','tg'=>$tg,'slot'=>$slot,'time'=>$time,'source'=>$source,'status'=>'RX','duration'=>$duration.'s','loss'=>$loss.'%'];
+                $lastHeard[] = [
+                    'callsign'=>$callsign,
+                    'name'=>$namesMap[$callsign]??'',
+                    'tg'=>$tg,
+                    'slot'=>$slot,
+                    'time'=>$time,
+                    'source'=>$source,
+                    'status'=>'RX',
+                    'duration'=>$duration.'s',
+                    'loss'=>$loss.'%'
+                ];
                 $seen[] = $callsign;
             }
             // VU meter: bajar nivel gradualmente
             $vu['slot'.$slot] = max(0, $vu['slot'.$slot] - 30);
         }
     }
-    // Si no hay transmisión activa, decaer VU meters
+    
+    // Si no hay transmisión activa, decaer VU meters suavemente
     if (!$state['active']) {
         $vu['slot1'] = max(0, $vu['slot1'] - 10);
         $vu['slot2'] = max(0, $vu['slot2'] - 10);
@@ -374,8 +417,14 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .tx-panel { min-height:80px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); border-radius:6px; padding:1rem; font-family:var(--font-mono); }
 .tx-idle { color:var(--text-dim); font-size:.9rem; }
 .tx-active { width:100%; display:flex; flex-direction:column; align-items:center; gap:.4rem; }
-.tx-callsign { font-family:var(--font-ui); font-size:2rem; font-weight:700; color:var(--green); text-shadow:0 0 12px rgba(0,255,159,.4); letter-spacing:.04em; display:flex; align-items:center; gap:.4rem; }
-.tx-flag { font-size:1.4rem; }
+.tx-callsign { font-family:var(--font-ui); font-size:3rem; font-weight:700; color:var(--green); text-shadow:0 0 12px rgba(0,255,159,.4); letter-spacing:.04em; display:flex; align-items:center; gap:.4rem; }
+.tx-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transform: translateY(-2px);
+}
 .tx-name { font-size:1rem; color:var(--cyan); font-weight:500; }
 .tx-meta { display:flex; gap:.8rem; align-items:center; font-size:.75rem; flex-wrap:wrap; justify-content:center; }
 .tx-src { padding:.1rem .45rem; border-radius:3px; font-weight:600; font-family:var(--font-mono); text-transform:uppercase; font-size:.7rem; }
@@ -393,6 +442,17 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .lh-cs { color:var(--violet); font-weight:bold; letter-spacing:.04em; display:flex; align-items:center; gap:.3rem; }
 .lh-flag { font-size:1.1rem; }
 .lh-empty { text-align:center; color:var(--text-dim); padding:1rem !important; }
+.tx-flag img {
+    width: 3rem;
+    height: 3rem;
+    vertical-align: middle;
+}
+
+.lh-flag img {
+    width: 1.2rem;
+    height: 1.2rem;
+    vertical-align: middle;
+}
 </style>
 </head>
 <body>
