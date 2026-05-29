@@ -212,10 +212,17 @@ if ($action === 'cfg-read') {
 if ($action === 'cfg-save') {
     $id = $_POST['id'] ?? '';
     $path = $CONFIG_FILES[$id] ?? null;
-    if (!$path) { header('Content-Type: application/json'); echo json_encode(['ok'=>false]); exit; }
+    if (!$path) { 
+        header('Content-Type: application/json'); 
+        echo json_encode(['ok'=>false, 'msg'=>'Ruta no válida']); 
+        exit; 
+    }
     $res = file_put_contents($path, $_POST['content'] ?? '');
     header('Content-Type: application/json');
-    echo json_encode(['ok' => ($res !== false)]);
+    echo json_encode([
+        'ok' => ($res !== false), 
+        'msg' => ($res !== false ? 'Guardado correctamente' : 'Error al escribir el fichero')
+    ]);
     exit;
 }
 
@@ -411,7 +418,57 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .m-msg { font-family:var(--font-mono); font-size:.75rem; padding:.4rem .8rem; border-radius:4px; display:none; border:1px solid; }
 .m-msg.ok { color:var(--green); border-color:var(--green); background:rgba(0,255,159,.06); }
 .m-msg.err { color:var(--red); border-color:var(--red); background:rgba(255,69,96,.06); }
+/* ── BOTONES DEL MODAL (Guardar/Cerrar) ── */
 .m-acts { display:flex; gap:.8rem; justify-content:flex-end; }
+
+.btn-act {
+    font-family: var(--font-mono);
+    font-size: .75rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .5rem 1.2rem;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all .2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-weight: 600;
+}
+
+/* Botón Cerrar (rojo suave) */
+.btn-act.stop {
+    background: transparent;
+    color: var(--red);
+    border-color: var(--red);
+}
+.btn-act.stop:hover {
+    background: rgba(255,69,96,.1);
+    color: #fff;
+    border-color: #ff6b81;
+    box-shadow: 0 0 12px rgba(255,69,96,.3);
+}
+
+/* Botón Guardar (verde/cyan) */
+.btn-act.start {
+    background: transparent;
+    color: var(--green);
+    border-color: var(--green);
+}
+.btn-act.start:hover {
+    background: rgba(0,255,159,.1);
+    color: #fff;
+    border-color: #00ff9f;
+    box-shadow: 0 0 12px rgba(0,255,159,.3);
+}
+
+/* Deshabilitado */
+.btn-act:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
 .footer { text-align:center; padding:1.5rem; color:var(--text-dim); font-family:var(--font-mono); font-size:.75rem; border-top:1px solid var(--border); margin-top:2rem; }
 
 .tx-panel { min-height:80px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.2); border-radius:6px; padding:1rem; font-family:var(--font-mono); }
