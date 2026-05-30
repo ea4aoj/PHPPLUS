@@ -1277,7 +1277,7 @@ body {
                 </div>
                 
                 <!-- TRANSMISIÓN CENTRAL -->
-                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad ..</div>
+                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad </div>
                 
                 <!-- VU METER SLOT 2 -->
                 <div class="vu-meter">
@@ -1524,7 +1524,7 @@ async function fetchTransmission() {
                 </div>
             `;
         } else {
-            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad ..</div>';
+            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad </div>';
         }
         
         // Actualizar VU meters
