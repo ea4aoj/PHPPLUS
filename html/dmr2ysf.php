@@ -262,68 +262,77 @@ if ($action === 'transmission') {
         return $name;
     };
     
-    // ── PASO 2: Recopilar TODAS las transmisiones (sin duplicados) ──
-    // Usamos un mapa clave -> datos para consolidar TX y RX en una sola entrada
-    $transmissions = [];
+    // ── PASO 2: Last Heard dinámico FIFO (máximo 5, el más antiguo sale) ──
+    $lastHeard = [];
+    $maxEntries = 5;  // ← Aquí defines el límite de la lista
     
     foreach ($lines as $line) {
         // 🟢 Voice Header (TX)
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
             $callsign = strtoupper(trim($m[4]));
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
-            $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source; // callsign-slot-tg-source
+            $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            if (!isset($transmissions[$key])) {
-                $transmissions[$key] = [
-                    'callsign' => $callsign,
-                    'name' => $getName($callsign),
-                    'tg' => $m[5],
-                    'slot' => $m[2],
-                    'time' => explode('.', $m[1])[0],
-                    'source' => $source,
-                    'status' => 'TX',
-                    'duration' => '',
-                    'loss' => '',
-                    '_order' => count($transmissions) // para mantener orden cronológico
-                ];
+            // Buscar si ya existe en la lista
+            $foundIndex = null;
+            foreach ($lastHeard as $i => $entry) {
+                if (($entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source']) === $key) {
+                    $foundIndex = $i;
+                    break;
+                }
+            }
+            
+            $newEntry = [
+                'callsign' => $callsign,
+                'name' => $getName($callsign),
+                'tg' => $m[5],
+                'slot' => $m[2],
+                'time' => explode('.', $m[1])[0],
+                'source' => $source,
+                'status' => 'TX',
+                'duration' => '',
+                'loss' => ''
+            ];
+            
+            if ($foundIndex !== null) {
+                // Actualizar existente: quitar de posición antigua y añadir al final (más reciente)
+                unset($lastHeard[$foundIndex]);
+                $lastHeard[] = $newEntry;
+            } else {
+                // Nueva entrada: añadir al final
+                $lastHeard[] = $newEntry;
             }
         }
-        // 🔴 End of voice (RX) - Actualiza la entrada existente si existe
+        
+        // 🔴 End of voice (RX) - Actualizar duración en entrada existente
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*([\d.]+)%|([\d.]+)%\s*packet loss)/i', $line, $m)) {
             $callsign = strtoupper(trim($m[4]));
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            if (isset($transmissions[$key])) {
-                // ✅ Actualiza duración y loss en la entrada existente
-                $transmissions[$key]['duration'] = $m[6].'s';
-                $transmissions[$key]['loss'] = ($m[7] ?? $m[8] ?? '').'%';
-            } else {
-                // Si no existe header previo (caso raro), crea entrada RX
-                $transmissions[$key] = [
-                    'callsign' => $callsign,
-                    'name' => $getName($callsign),
-                    'tg' => $m[5],
-                    'slot' => $m[2],
-                    'time' => explode('.', $m[1])[0],
-                    'source' => $source,
-                    'status' => 'RX',
-                    'duration' => $m[6].'s',
-                    'loss' => ($m[7] ?? $m[8] ?? '').'%',
-                    '_order' => count($transmissions)
-                ];
+            // Buscar la entrada para actualizar duración
+            foreach ($lastHeard as &$entry) {
+                $entryKey = $entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source'];
+                if ($entryKey === $key) {
+                    $entry['duration'] = $m[6].'s';
+                    $entry['loss'] = ($m[7] ?? $m[8] ?? '').'%';
+                    // Mover al final para que sea la más reciente
+                    $temp = $entry;
+                    unset($entry);
+                    $lastHeard[] = $temp;
+                    break;
+                }
             }
+            unset($entry);
         }
     }
     
-    // Convertir a array ordenado y limitar a 8 entradas
-    uasort($transmissions, function($a, $b) {
-        return $a['_order'] - $b['_order'];
-    });
-    $lastHeard = array_values(array_slice($transmissions, 0, 5));
-    // Limpiar campo interno _order
-    foreach ($lastHeard as &$entry) unset($entry['_order']);
-    unset($entry);
+    // ✅ FIFO: si hay más de $maxEntries, eliminar las más antiguas (primeras)
+    if (count($lastHeard) > $maxEntries) {
+        $lastHeard = array_slice($lastHeard, -$maxEntries);
+    }
+    // Reindexar array numérico (importante para JSON)
+    $lastHeard = array_values($lastHeard);
     
     // ── PASO 3: Estado activo (emparejando header/end por callsign+slot) ──
     $activeBySlot = [1 => null, 2 => null];
