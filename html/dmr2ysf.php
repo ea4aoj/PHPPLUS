@@ -234,7 +234,7 @@ if ($action === 'restart-svc') {
 
 // ── Transmisión y Last Heard ──
 if ($action === 'transmission') {
-    $log = tailLive(LOG_MMDVM, 800);
+    $log = tailLive(LOG_MMDVM, 1200);
     if (empty(trim($log))) {
         header('Content-Type: application/json');
         echo json_encode(['state'=>['active'=>false], 'lastHeard'=>[], 'vu'=>['slot1'=>0,'slot2'=>0]]);
@@ -244,18 +244,15 @@ if ($action === 'transmission') {
     $lines = explode("\n", $log);
     
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'','time'=>'','source'=>'','duration'=>'','loss'=>''];
-    $lastHeard = [];
-    $seen = [];
     $namesMap = [];
     
-    // ── PASO 1: Construir mapa de nombres (primer pasada) ──
+    // ── PASO 1: Construir mapa de nombres ─
     foreach ($lines as $line) {
         if (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9]+)\s+(.+)/i', $line, $m)) {
             $namesMap[strtoupper(trim($m[2]))] = trim($m[3]);
         }
     }
     
-    // Función auxiliar para obtener nombre (mapa + fallback a DMRIds.dat) ✅ Nombres por RF
     $getName = function($cs) use ($namesMap) {
         $name = $namesMap[$cs] ?? '';
         if (!$name) {
@@ -265,91 +262,115 @@ if ($action === 'transmission') {
         return $name;
     };
     
-    // ── PASO 2: Recorrer log para Last Heard (TODAS las transmisiones) ──
+    // ── PASO 2: Recopilar TODAS las transmisiones (sin duplicados) ──
+    // Usamos un mapa clave -> datos para consolidar TX y RX en una sola entrada
+    $transmissions = [];
+    
     foreach ($lines as $line) {
-        // 🟢 Voice Header -> Añadir a Last Heard como TX
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.(\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
-            $callsign = strtoupper(trim($m[5]));
-            if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
-                $lastHeard[] = [
+        // 🟢 Voice Header (TX)
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
+            $callsign = strtoupper(trim($m[4]));
+            $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
+            $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source; // callsign-slot-tg-source
+            
+            if (!isset($transmissions[$key])) {
+                $transmissions[$key] = [
                     'callsign' => $callsign,
                     'name' => $getName($callsign),
-                    'tg' => $m[6],
-                    'slot' => $m[3],
-                    'time' => $m[1],
-                    'source' => strtoupper($m[4])==='RF'?'RF':'NET',
-                    'status' => 'TX'
+                    'tg' => $m[5],
+                    'slot' => $m[2],
+                    'time' => explode('.', $m[1])[0],
+                    'source' => $source,
+                    'status' => 'TX',
+                    'duration' => '',
+                    'loss' => '',
+                    '_order' => count($transmissions) // para mantener orden cronológico
                 ];
-                $seen[] = $callsign;
             }
         }
-        // 🔴 End of voice -> Añadir a Last Heard como RX (si no está ya)
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.(\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds/i', $line, $m)) {
-            $callsign = strtoupper(trim($m[5]));
-            if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
-                $lastHeard[] = [
+        // 🔴 End of voice (RX) - Actualiza la entrada existente si existe
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*([\d.]+)%|([\d.]+)%\s*packet loss)/i', $line, $m)) {
+            $callsign = strtoupper(trim($m[4]));
+            $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
+            $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
+            
+            if (isset($transmissions[$key])) {
+                // ✅ Actualiza duración y loss en la entrada existente
+                $transmissions[$key]['duration'] = $m[6].'s';
+                $transmissions[$key]['loss'] = ($m[7] ?? $m[8] ?? '').'%';
+            } else {
+                // Si no existe header previo (caso raro), crea entrada RX
+                $transmissions[$key] = [
                     'callsign' => $callsign,
                     'name' => $getName($callsign),
-                    'tg' => $m[6],
-                    'slot' => $m[3],
-                    'time' => $m[1],
-                    'source' => (strpos($line, ' RF ') !== false || preg_match('/from\s+'.preg_quote($callsign,'/').'\s+to/i', $line) ? 'RF' : 'NET'),
+                    'tg' => $m[5],
+                    'slot' => $m[2],
+                    'time' => explode('.', $m[1])[0],
+                    'source' => $source,
                     'status' => 'RX',
-                    'duration' => $m[7].'s'
+                    'duration' => $m[6].'s',
+                    'loss' => ($m[7] ?? $m[8] ?? '').'%',
+                    '_order' => count($transmissions)
                 ];
-                $seen[] = $callsign;
             }
         }
     }
     
-    // ── PASO 3: Determinar estado activo (último header vs último end) ──
-    $latestHeader = null;
-    $latestEnd = null;
+    // Convertir a array ordenado y limitar a 8 entradas
+    uasort($transmissions, function($a, $b) {
+        return $a['_order'] - $b['_order'];
+    });
+    $lastHeard = array_values(array_slice($transmissions, 0, 5));
+    // Limpiar campo interno _order
+    foreach ($lastHeard as &$entry) unset($entry['_order']);
+    unset($entry);
+    
+    // ── PASO 3: Estado activo (emparejando header/end por callsign+slot) ──
+    $activeBySlot = [1 => null, 2 => null];
     
     foreach ($lines as $line) {
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.(\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
-            $ts = $m[1].'.'.$m[2];
-            if (!$latestHeader || $ts > $latestHeader['ts']) {
-                $latestHeader = [
-                    'ts' => $ts, 'time'=>$m[1], 'slot'=>$m[3],
-                    'source' => strtoupper($m[4])==='RF'?'RF':'NET',
-                    'callsign' => strtoupper(trim($m[5])), 'tg'=>$m[6]
-                ];
-            }
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
+            $slot = (int)$m[2];
+            $callsign = strtoupper(trim($m[4]));
+            $activeBySlot[$slot] = [
+                'callsign' => $callsign,
+                'tg' => $m[5],
+                'time' => explode('.', $m[1])[0],
+                'source' => strtoupper($m[3]) === 'RF' ? 'RF' : 'NET'
+            ];
         }
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.(\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds/i', $line, $m)) {
-            $ts = $m[1].'.'.$m[2];
-            if (!$latestEnd || $ts > $latestEnd['ts']) {
-                $latestEnd = [
-                    'ts' => $ts, 'slot'=>$m[3],
-                    'callsign' => strtoupper(trim($m[5])), 'tg'=>$m[6]
-                ];
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds/i', $line, $m)) {
+            $slot = (int)$m[2];
+            $callsign = strtoupper(trim($m[4]));
+            $tg = $m[5];
+            if ($activeBySlot[$slot] && $activeBySlot[$slot]['callsign'] === $callsign && $activeBySlot[$slot]['tg'] === $tg) {
+                $activeBySlot[$slot] = null;
             }
         }
     }
     
-    // Determinar si hay transmisión activa ✅ Sin timeout, solo por lógica header/end
-    if ($latestHeader) {
-        $isActive = (!$latestEnd) || ($latestHeader['ts'] > $latestEnd['ts']);
-        if ($isActive) {
-            $state = [
-                'active'=>true,
-                'callsign' => $latestHeader['callsign'],
-                'name' => $getName($latestHeader['callsign']),
-                'tg' => $latestHeader['tg'],
-                'slot' => $latestHeader['slot'],
-                'time' => $latestHeader['time'],
-                'source' => $latestHeader['source'],
-                'duration' => '',
-                'loss' => ''
-            ];
+    foreach ([1, 2] as $slot) {
+        if ($activeBySlot[$slot]) {
+            if (!$state['active'] || $activeBySlot[$slot]['time'] > $state['time']) {
+                $state = [
+                    'active' => true,
+                    'callsign' => $activeBySlot[$slot]['callsign'],
+                    'name' => $getName($activeBySlot[$slot]['callsign']),
+                    'tg' => $activeBySlot[$slot]['tg'],
+                    'slot' => $slot,
+                    'time' => $activeBySlot[$slot]['time'],
+                    'source' => $activeBySlot[$slot]['source'],
+                    'duration' => '',
+                    'loss' => ''
+                ];
+            }
         }
     }
     
     // ── VU Meters animados ──
     $vu = ['slot1'=>0, 'slot2'=>0];
     if ($state['active']) {
-        $vu['slot'.$state['slot']] = 30 + rand(0, 70); // oscila 30-100% más dinámico
+        $vu['slot'.$state['slot']] = 30 + rand(0, 70);
     }
     
     header('Content-Type: application/json');
