@@ -234,7 +234,7 @@ if ($action === 'restart-svc') {
 
 // ── Transmisión y Last Heard ──
 if ($action === 'transmission') {
-    $log = tailLive(LOG_MMDVM, 1200);
+    $log = tailLive(LOG_MMDVM, 5000);
     if (empty(trim($log))) {
         header('Content-Type: application/json');
         // 🔥 Devolver caché sin reordenar si no hay logs nuevos
