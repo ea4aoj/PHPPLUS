@@ -341,7 +341,7 @@ if ($action === 'transmission') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🔗 Puente DMR ⇄ YSF</title>
+<title>🔗 DMR ⇄ YSF</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
@@ -546,7 +546,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
             <span class="t-status" id="sts">OFF</span>
         </div>
         <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--text-dim);margin:.5rem 0 1rem;">
-            <span style="color:var(--violet);">ℹ️</span> MMDVMHost ⇄ DMR2YSF ⇄ YSFGateway. Sin DMRGateway intermedio.
+            <span style="color:var(--violet);">ℹ️</span> MMDVMHost ⇄ DMR2YSF ⇄ YSFGateway
         </div>
         <div class="cfg-row">
             <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMDMR2YSF.ini</button>
