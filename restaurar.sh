@@ -23,6 +23,7 @@ declare -A DESTMAP=(
   ["MMDVMNXDN.ini"]="/home/pi/MMDVMHost/MMDVMNXDN.ini"
   ["MMDVMDMR2YSF.ini"]="/home/pi/MMDVMHost/MMDVMDMR2YSF.ini"
   ["DMR2YSF.ini"]="/home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini"
+  ["TG-YSFList.txt"]="/home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt"
   ["DisplayDriver.ini"]="/home/pi/Display-Driver/DisplayDriver.ini"
   ["YSFGateway.ini"]="/home/pi/YSFClients/YSFGateway/YSFGateway.ini"
   ["DMRGateway.ini"]="/home/pi/DMRGateway/DMRGateway.ini"
@@ -85,4 +86,3 @@ if [ ${#ERRORS[@]} -gt 0 ]; then
 else
   echo "OK:Restaurados: $RESTORED_STR"
 fi
-
