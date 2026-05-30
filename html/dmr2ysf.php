@@ -291,52 +291,38 @@ if ($action === 'transmission') {
             $vu['slot'.$slot] = 85 + rand(0,15);
         }
         
- // 🔴 FIN: "end of voice transmission" - compatible con RF (BER) y NET (packet loss)
-$pattern = '/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*)?([\d.]+)%\s*(?:packet loss)?/i';
-
-if (preg_match($pattern, $line, $m)) {
-    
-    $time = explode('.', $m[1])[0]; 
-    $slot = $m[2];
-    $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
-    
-    // 👉 NORMALIZACIÓN: limpiar callsign de espacios/padding
-    $callsign = strtoupper(trim(preg_replace('/\s+/', '', $m[4])));
-    $tg = trim($m[5]);
-    $duration = trim($m[6]); 
-    $loss = trim($m[7]);  // Funciona tanto para BER como packet loss
-    
-    // 👉 CONDICIÓN MEJORADA: verificar slot + comparación flexible
-    if (
-        $state['active'] && 
-        $state['callsign'] === $callsign && 
-        $state['tg'] == $tg &&                // == para evitar int vs string
-        $state['slot'] === $slot              // Validar slot correcto
-    ) {
-        $state['active'] = false;
-        $state['duration'] = $duration.'s';
-        $state['loss'] = $loss.'%';
-    }
-    
-    // ➕ Last Heard
-    if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
-        $lastHeard[] = [
-            'callsign' => $callsign,
-            'name'     => $namesMap[$callsign] ?? '',
-            'tg'       => $tg,
-            'slot'     => $slot,
-            'time'     => $time,
-            'source'   => $source,
-            'status'   => 'RX',
-            'duration' => $duration.'s',
-            'loss'     => $loss.'%'
-        ];
-        $seen[] = $callsign;
-    }
-    
-    // 📊 VU meter
-    $vu['slot'.$slot] = max(0, $vu['slot'.$slot] - 30);
-}
+        // 🔴 FIN: "end of voice transmission from XXX to TG Y, X.X seconds, X% packet loss"
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*([\d.]+)%\s*packet loss/i', $line, $m)) {
+            $time = explode('.', $m[1])[0]; $slot = $m[2];
+            $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
+            $callsign = strtoupper(trim($m[4])); $tg = $m[5];
+            $duration = $m[6]; $loss = $m[7];
+            
+            // 👉 Si coincide con la transmisión activa, MARCAR COMO FINALIZADA
+            if ($state['active'] && $state['callsign']===$callsign && $state['tg']===$tg) {
+                $state['active'] = false;  // ✅ AQUÍ: desactivar al finalizar
+                $state['duration'] = $duration.'s';
+                $state['loss'] = $loss.'%';
+            }
+            
+            // Añadir a Last Heard si no está repetido
+            if (!in_array($callsign, $seen) && count($lastHeard) < 8) {
+                $lastHeard[] = [
+                    'callsign'=>$callsign,
+                    'name'=>$namesMap[$callsign]??'',
+                    'tg'=>$tg,
+                    'slot'=>$slot,
+                    'time'=>$time,
+                    'source'=>$source,
+                    'status'=>'RX',
+                    'duration'=>$duration.'s',
+                    'loss'=>$loss.'%'
+                ];
+                $seen[] = $callsign;
+            }
+            // VU meter: bajar nivel gradualmente
+            $vu['slot'.$slot] = max(0, $vu['slot'.$slot] - 30);
+        }
     }
     
     // Si no hay transmisión activa, decaer VU meters suavemente
