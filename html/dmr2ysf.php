@@ -264,7 +264,7 @@ if ($action === 'transmission') {
     
     // ── PASO 2: Last Heard dinámico FIFO (máximo 5, el más antiguo sale) ──
     $lastHeard = [];
-    $maxEntries = 5;  // ← Aquí defines el límite de la lista
+    $maxEntries = 5;
     
     foreach ($lines as $line) {
         // 🟢 Voice Header (TX)
@@ -295,7 +295,7 @@ if ($action === 'transmission') {
             ];
             
             if ($foundIndex !== null) {
-                // Actualizar existente: quitar de posición antigua y añadir al final (más reciente)
+                // Actualizar existente: quitar de posición antigua y añadir al final
                 unset($lastHeard[$foundIndex]);
                 $lastHeard[] = $newEntry;
             } else {
@@ -310,20 +310,25 @@ if ($action === 'transmission') {
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            // Buscar la entrada para actualizar duración
-            foreach ($lastHeard as &$entry) {
+            // ✅ Buscar POR ÍNDICE para actualizar sin duplicar
+            $foundIndex = null;
+            foreach ($lastHeard as $i => $entry) {
                 $entryKey = $entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source'];
                 if ($entryKey === $key) {
-                    $entry['duration'] = $m[6].'s';
-                    $entry['loss'] = ($m[7] ?? $m[8] ?? '').'%';
-                    // Mover al final para que sea la más reciente
-                    $temp = $entry;
-                    unset($entry);
-                    $lastHeard[] = $temp;
+                    $foundIndex = $i;
                     break;
                 }
             }
-            unset($entry);
+            
+            if ($foundIndex !== null) {
+                // Actualizar duración y loss en la entrada existente
+                $lastHeard[$foundIndex]['duration'] = $m[6].'s';
+                $lastHeard[$foundIndex]['loss'] = ($m[7] ?? $m[8] ?? '').'%';
+                // Mover al final para que sea la más reciente
+                $updatedEntry = $lastHeard[$foundIndex];
+                unset($lastHeard[$foundIndex]);  // ✅ Eliminar de posición antigua
+                $lastHeard[] = $updatedEntry;     // ✅ Añadir al final (sin duplicar)
+            }
         }
     }
     
