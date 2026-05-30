@@ -292,7 +292,7 @@ if ($action === 'transmission') {
         }
         
         // 🔴 FIN: "end of voice transmission from XXX to TG Y, X.X seconds, X% packet loss"
-        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*([\d.]+)%\s*packet loss/i', $line, $m)) {
+        if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*([\d.]+)%|([\d.]+)%\s*packet loss)/i', $line, $m)) {
             $time = explode('.', $m[1])[0]; $slot = $m[2];
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $callsign = strtoupper(trim($m[4])); $tg = $m[5];
