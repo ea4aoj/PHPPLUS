@@ -365,6 +365,10 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 .s-label { color:var(--text-dim); text-transform:uppercase; letter-spacing:.08em; font-size:.75rem; }
 .s-val { font-weight:600; color:var(--cyan); }
 .s-val.on { color:var(--green); } .s-val.off { color:var(--red); }
+.s-val.on,
+.s-val.off {
+    transform: translateY(2px); /* prueba 1px o 2px */
+}
 .card { background:linear-gradient(135deg,var(--surface) 60%,#0d1e2a 100%); border:1px solid var(--border); border-radius:10px; padding:1.5rem; margin-bottom:1.5rem; position:relative; overflow:hidden; }
 .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(--violet),var(--cyan),transparent); }
 .c-title { font-family:var(--font-mono); font-size:.85rem; letter-spacing:.12em; text-transform:uppercase; color:var(--violet); margin-bottom:1.2rem; display:flex; align-items:center; gap:.5rem; }
