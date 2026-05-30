@@ -237,7 +237,9 @@ if ($action === 'transmission') {
     $log = tailLive(LOG_MMDVM, 1200);
     if (empty(trim($log))) {
         header('Content-Type: application/json');
-        echo json_encode(['state'=>['active'=>false], 'lastHeard'=>[], 'vu'=>['slot1'=>0,'slot2'=>0]]);
+        // 🔥 Devolver caché sin reordenar si no hay logs nuevos
+        $cached = _loadLastHeardCache(5, 300, true);  // ← true = mantener orden estable
+        echo json_encode(['state'=>['active'=>false], 'lastHeard'=>$cached, 'vu'=>['slot1'=>0,'slot2'=>0]]);
         exit;
     }
     
@@ -262,9 +264,17 @@ if ($action === 'transmission') {
         return $name;
     };
     
-    // ── PASO 2: Last Heard dinámico FIFO (máximo 5, el más antiguo sale) ──
+    // ── PASO 2: Last Heard estable (sin reordenar innecesariamente) ──
     $lastHeard = [];
     $maxEntries = 5;
+    $cacheFile = '/tmp/dmr2ysf_lastheard.json';
+    $cacheTTL = 300;
+    
+    // Cargar caché EXISTENTE sin reordenar (mantener orden original)
+    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false); // ← false = no reordenar
+    
+    // Procesar logs nuevos
+    $newEntries = [];
     
     foreach ($lines as $line) {
         // 🟢 Voice Header (TX)
@@ -273,9 +283,9 @@ if ($action === 'transmission') {
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            // Buscar si ya existe en la lista
+            // Buscar si ya existe en newEntries
             $foundIndex = null;
-            foreach ($lastHeard as $i => $entry) {
+            foreach ($newEntries as $i => $entry) {
                 if (($entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source']) === $key) {
                     $foundIndex = $i;
                     break;
@@ -295,24 +305,21 @@ if ($action === 'transmission') {
             ];
             
             if ($foundIndex !== null) {
-                // Actualizar existente: quitar de posición antigua y añadir al final
-                unset($lastHeard[$foundIndex]);
-                $lastHeard[] = $newEntry;
+                unset($newEntries[$foundIndex]);
+                $newEntries[] = $newEntry;
             } else {
-                // Nueva entrada: añadir al final
-                $lastHeard[] = $newEntry;
+                $newEntries[] = $newEntry;
             }
         }
         
-        // 🔴 End of voice (RX) - Actualizar duración en entrada existente
+        // 🔴 End of voice (RX) - Actualizar duración
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*([\d.]+)%|([\d.]+)%\s*packet loss)/i', $line, $m)) {
             $callsign = strtoupper(trim($m[4]));
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            // ✅ Buscar POR ÍNDICE para actualizar sin duplicar
             $foundIndex = null;
-            foreach ($lastHeard as $i => $entry) {
+            foreach ($newEntries as $i => $entry) {
                 $entryKey = $entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source'];
                 if ($entryKey === $key) {
                     $foundIndex = $i;
@@ -321,25 +328,54 @@ if ($action === 'transmission') {
             }
             
             if ($foundIndex !== null) {
-                // Actualizar duración y loss en la entrada existente
-                $lastHeard[$foundIndex]['duration'] = $m[6].'s';
-                $lastHeard[$foundIndex]['loss'] = ($m[7] ?? $m[8] ?? '').'%';
-                // Mover al final para que sea la más reciente
-                $updatedEntry = $lastHeard[$foundIndex];
-                unset($lastHeard[$foundIndex]);  // ✅ Eliminar de posición antigua
-                $lastHeard[] = $updatedEntry;     // ✅ Añadir al final (sin duplicar)
+                $newEntries[$foundIndex]['duration'] = $m[6].'s';
+                $newEntries[$foundIndex]['loss'] = ($m[7] ?? $m[8] ?? '').'%';
+                $updatedEntry = $newEntries[$foundIndex];
+                unset($newEntries[$foundIndex]);
+                $newEntries[] = $updatedEntry;
             }
         }
     }
     
-    // ✅ FIFO: si hay más de $maxEntries, eliminar las más antiguas (primeras)
-    if (count($lastHeard) > $maxEntries) {
-        $lastHeard = array_slice($lastHeard, -$maxEntries);
-    }
-    // Reindexar array numérico (importante para JSON)
-    $lastHeard = array_values($lastHeard);
+    // Fusionar: empezar con caché antiguo, añadir/actualizar con nuevos
+    $merged = $cachedEntries;
     
-    // ── PASO 3: Estado activo (emparejando header/end por callsign+slot) ──
+    foreach ($newEntries as $new) {
+        $key = $new['callsign'].'-'.$new['slot'].'-'.$new['tg'].'-'.$new['source'];
+        $foundIndex = null;
+        foreach ($merged as $i => $entry) {
+            if (($entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source']) === $key) {
+                $foundIndex = $i;
+                break;
+            }
+        }
+        
+        if ($foundIndex !== null) {
+            // Actualizar existente: solo si hay duración nueva (terminó)
+            if ($new['duration'] && !$merged[$foundIndex]['duration']) {
+                $merged[$foundIndex]['duration'] = $new['duration'];
+                $merged[$foundIndex]['loss'] = $new['loss'];
+            }
+            // Mover al final para que sea "más reciente" visualmente
+            $temp = $merged[$foundIndex];
+            unset($merged[$foundIndex]);
+            $merged[] = $temp;
+        } else {
+            // Nueva entrada: añadir al final
+            $merged[] = $new;
+        }
+    }
+    
+    // FIFO: limitar a $maxEntries (eliminar las más antiguas = primeras)
+    if (count($merged) > $maxEntries) {
+        $merged = array_slice($merged, -$maxEntries);
+    }
+    $lastHeard = array_values($merged);  // Reindexar
+    
+    // Guardar en caché para próxima petición
+    _saveLastHeardCache($lastHeard, $cacheFile);
+    
+    // ── PASO 3: Estado activo (igual que antes) ──
     $activeBySlot = [1 => null, 2 => null];
     
     foreach ($lines as $line) {
@@ -390,6 +426,58 @@ if ($action === 'transmission') {
     header('Content-Type: application/json');
     echo json_encode(['state'=>$state, 'lastHeard'=>$lastHeard, 'vu'=>$vu]);
     exit;
+}
+
+// ============================================================================
+// FUNCIONES DE PERSISTENCIA (actualizadas para orden estable)
+// ============================================================================
+
+/**
+ * Carga Last Heard desde caché JSON
+ * @param bool $stableOrder Si true, mantiene orden original; si false, ordena por timestamp
+ */
+function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/tmp/dmr2ysf_lastheard.json', $stableOrder = true) {
+    if (!file_exists($cacheFile)) return [];
+    
+    $data = @json_decode(file_get_contents($cacheFile), true);
+    if (!$data || !is_array($data['entries'] ?? null)) return [];
+    
+    $now = time();
+    // Filtrar entradas expiradas
+    $valid = array_filter($data['entries'], function($e) use ($now, $ttlSeconds) {
+        return ($now - ($e['_ts'] ?? 0)) < $ttlSeconds;
+    });
+    
+    if ($stableOrder) {
+        // ✅ Mantener orden original (como estaban guardados)
+        $valid = array_values($valid);
+    } else {
+        // Ordenar por más reciente (solo si se pide explícitamente)
+        usort($valid, function($a, $b) {
+            return ($b['_ts'] ?? 0) - ($a['_ts'] ?? 0);
+        });
+        $valid = array_values($valid);
+    }
+    
+    return array_slice($valid, 0, $maxEntries);
+}
+
+/**
+ * Guarda Last Heard en caché JSON (sin modificar orden)
+ */
+function _saveLastHeardCache($entries, $cacheFile = '/tmp/dmr2ysf_lastheard.json') {
+    $now = time();
+    $data = [
+        'entries' => array_map(function($e) use ($now) {
+            // Solo añadir timestamp si no existe (no actualizar en cada guardado)
+            $e['_ts'] = $e['_ts'] ?? $now;
+            return $e;
+        }, $entries),
+        'saved_at' => $now
+    ];
+    
+    @file_put_contents($cacheFile, json_encode($data, JSON_PRETTY_PRINT));
+    @chmod($cacheFile, 0644);
 }
 ?>
 <!DOCTYPE html>
@@ -1687,7 +1775,7 @@ function startPoll(){
     fetchTransmission();
     S.poll=setInterval(status,5000);
     S.logT=setInterval(fetchLogs,7000);
-    S.txT=setInterval(fetchTransmission,2500);
+    S.txT=setInterval(fetchTransmission,500);
 }
 
 function stopPoll(){
