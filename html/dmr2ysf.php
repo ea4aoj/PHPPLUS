@@ -339,7 +339,8 @@ if ($action === 'transmission') {
     // ── VU Meters animados ──
     $vu = ['slot1'=>0, 'slot2'=>0];
     if ($state['active']) {
-        $vu['slot'.$state['slot']] = 60 + rand(0, 35); // oscila 60-95%
+        // 🔥 MÁS DINÁMICO: oscila entre 30-100% para simular modulación de voz real
+        $vu['slot'.$state['slot']] = 30 + rand(0, 70);
     }
     // Si no está activo, ya están en 0 por defecto
     
@@ -676,7 +677,7 @@ body {
 }
 
 .vu-track {
-    width: 35px;
+    width: 32px;              /* ← Ancho FIJO: nunca cambia, evita desplazamientos */
     height: 160px;
     background: linear-gradient(180deg, #0a0e14, #1a2535);
     border: 2px solid var(--border);
@@ -684,6 +685,7 @@ body {
     position: relative;
     overflow: hidden;
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    /* ✅ SIN transition en width = posición horizontal estable */
 }
 
 /* Marcas horizontales del VU meter */
@@ -737,7 +739,7 @@ body {
         var(--red) 100%
     );
     border-radius: 2px;
-    transition: height 0.1s ease-out;
+    transition: height 0.05s ease-out; /* ← MÁS RÁPIDO: 0.05s = movimiento vivo */
     box-shadow: 0 0 15px rgba(0,212,255,0.5);
     z-index: 1;
 }
@@ -747,6 +749,11 @@ body {
     box-shadow: 0 0 20px rgba(255,179,0,0.8), 0 0 30px rgba(255,69,96,0.5);
 }
 
+/* Glow sutil cuando hay actividad (sin cambiar dimensiones) */
+.vu-track.active {
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5), 0 0 12px rgba(0,212,255,0.4);
+}
+
 .vu-peak {
     position: absolute;
     left: 0;
@@ -754,7 +761,7 @@ body {
     height: 2px;
     background: var(--amber);
     opacity: 0.9;
-    transition: bottom 0.2s ease-out;
+    transition: bottom 0.1s ease-out;
     box-shadow: 0 0 8px var(--amber);
     z-index: 3;
 }
@@ -1269,7 +1276,7 @@ body {
                 <!-- VU METER SLOT 1 -->
                 <div class="vu-meter">
                     <div class="vu-label">Slot 1</div>
-                    <div class="vu-track">
+                    <div class="vu-track" id="vu1Track">
                         <div class="vu-fill" id="vu1"></div>
                         <div class="vu-peak" id="vu1Peak"></div>
                     </div>
@@ -1277,12 +1284,12 @@ body {
                 </div>
                 
                 <!-- TRANSMISIÓN CENTRAL -->
-                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad ..</div>
+                <div class="tx-idle" id="txCenter">⏸ Canal libre - Esperando actividad...</div>
                 
                 <!-- VU METER SLOT 2 -->
                 <div class="vu-meter">
                     <div class="vu-label">Slot 2</div>
-                    <div class="vu-track">
+                    <div class="vu-track" id="vu2Track">
                         <div class="vu-fill" id="vu2"></div>
                         <div class="vu-peak" id="vu2Peak"></div>
                     </div>
@@ -1359,7 +1366,7 @@ body {
 </div>
 
 <footer class="footer">
-    Panel DMR⇄YSF Directo | <a href="mmdvm.php">Volver al panel PHPPLUS</a>
+    Panel Bridge DMR⇄YSF  | <a href="mmdvm.php">Volver al panel PHPPLUS</a>
 </footer>
 
 <script>
@@ -1437,14 +1444,25 @@ function setToggle(on, busy=false) {
     S.busy = busy;
 }
 
-// 🎚️ Actualizar VU meters verticales
+// 🎚️ Actualizar VU meters verticales (ANIMACIÓN RÁPIDA + POSICIÓN FIJA)
 function updateVU(slot, level) {
     const fill = $('vu'+slot), peak = $('vu'+slot+'Peak'), val = $('vu'+slot+'Val');
+    const track = $('vu'+slot+'Track'); // ← El contenedor .vu-track
     if(!fill || !peak || !val) return;
+    
     level = Math.max(0, Math.min(100, level));
+    
+    // Altura con transición muy rápida (0.05s = movimiento vivo)
     fill.style.height = level + '%';
     val.textContent = level + '%';
     peak.style.bottom = level + '%';
+    
+    // ✅ Glow sutil cuando hay actividad (>10%) SIN cambiar ancho ni posición
+    if(track) {
+        track.classList.toggle('active', level > 10);
+    }
+    
+    // Clase 'peak' para color rojo/ámbar en niveles altos
     fill.classList.toggle('peak', level >= 90);
 }
 
@@ -1524,7 +1542,7 @@ async function fetchTransmission() {
                 </div>
             `;
         } else {
-            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad ..</div>';
+            txCenter.innerHTML = '<div class="tx-idle">⏸ Canal libre - Esperando actividad...</div>';
         }
         
         // Actualizar VU meters
