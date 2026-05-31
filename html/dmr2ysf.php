@@ -7,7 +7,10 @@
 if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
     // Bypass auth para control local
 } else {
+   // 🔧 Permitir polling automático de estado desde localhost
+if (!isset($_GET['action']) || ($_GET['action'] !== 'status' && $_SERVER['REMOTE_ADDR'] !== '127.0.0.1' && $_SERVER['REMOTE_ADDR'] !== '::1')) {
     require_once __DIR__ . '/auth.php';
+}
 }
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
