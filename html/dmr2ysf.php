@@ -3,7 +3,12 @@
 // dmr2ysf_panel.php - Control de puente DMR ⇄ YSF by EA4AOJ
 // =============================================================
 
-require_once __DIR__ . '/auth.php';
+// 🔧 Permitir acceso sin sesión SOLO desde localhost (systemd/terminal)
+if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
+    // Bypass auth para control local
+} else {
+    require_once __DIR__ . '/auth.php';
+}
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 
