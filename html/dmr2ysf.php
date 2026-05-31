@@ -24,6 +24,8 @@ define('INI_MMDVM',   '/home/pi/MMDVMHost/MMDVMDMR2YSF.ini');
 define('INI_DMR2YSF', '/home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini');
 define('INI_YSFGW',   '/home/pi/YSFClients/YSFGateway/YSFGateway.ini');
 define('INI_TGLIST',  '/home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt');
+define('TGYSF_NAMES', '/home/pi/MMDVM_CM/DMR2YSF/TG-YSFNames.json');
+define('YSF_HOSTS',   '/home/pi/YSFClients/YSFGateway/YSFHosts.json');
 
 // ─ Archivos PID ──
 define('PID_MMDVM',   '/tmp/MMDVMDMR2YSF.pid');
@@ -156,6 +158,85 @@ function colorizeLog($text) {
 // ============================================================================
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
+// ── TG-YSFList: listar reflectores disponibles ──
+if ($action === 'tgysf-hosts') {
+    $list = [];
+    if (file_exists(YSF_HOSTS)) {
+        $json = json_decode(file_get_contents(YSF_HOSTS), true);
+        if (isset($json['reflectors']) && is_array($json['reflectors'])) {
+            foreach ($json['reflectors'] as $ref) {
+                $id = intval($ref['designator'] ?? 0);
+                $name = trim($ref['name'] ?? '');
+                $desc = trim($ref['sponsor'] ?? '');
+                $country = strtoupper(trim($ref['country'] ?? ''));
+                if ($id <= 0) continue;
+                $list[] = ['id'=>$id,'name'=>$name,'desc'=>$desc,'country'=>$country];
+            }
+        }
+    }
+    usort($list, function($a,$b){
+        $aES = $a['country']==='ES'?0:1; $bES = $b['country']==='ES'?0:1;
+        if ($aES !== $bES) return $aES - $bES;
+        return strcmp($a['name'], $b['name']);
+    });
+    header('Content-Type: application/json');
+    echo json_encode(['ok'=>true,'hosts'=>$list]);
+    exit;
+}
+
+// ── TG-YSFList: leer entradas actuales ──
+if ($action === 'tgysf-read') {
+    $entries = [];
+    $names = file_exists(TGYSF_NAMES) ? (json_decode(file_get_contents(TGYSF_NAMES), true) ?: []) : [];
+    $hostNames = [];
+    if (file_exists(YSF_HOSTS)) {
+        $hjson = json_decode(file_get_contents(YSF_HOSTS), true);
+        if (isset($hjson['reflectors'])) {
+            foreach ($hjson['reflectors'] as $ref) {
+                $hid = intval($ref['designator'] ?? 0);
+                $hnm = trim($ref['name'] ?? '');
+                if ($hid > 0 && $hnm !== '') $hostNames[(string)$hid] = $hnm;
+            }
+        }
+    }
+    if (file_exists(INI_TGLIST)) {
+        foreach (file(INI_TGLIST, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') continue;
+            $parts = explode(';', $line, 2);
+            if (count($parts) === 2 && is_numeric(trim($parts[0]))) {
+                $tg = trim($parts[0]); $ysf = trim($parts[1]);
+                $nm = $names[$tg] ?? $hostNames[$ysf] ?? '';
+                $entries[] = ['tg'=>$tg, 'ysf'=>$ysf, 'name'=>$nm];
+            }
+        }
+    }
+    header('Content-Type: application/json');
+    echo json_encode(['ok'=>true, 'entries'=>$entries]);
+    exit;
+}
+
+// ── TG-YSFList: guardar entradas ──
+if ($action === 'tgysf-save') {
+    $raw = json_decode(file_get_contents('php://input'), true);
+    $entries = $raw['entries'] ?? [];
+    $lines = ["# DMR TG - YSF ID mapping", "# DMR TG ID;YSF reflector ID", "#"];
+    $names = [];
+    foreach ($entries as $e) {
+        $tg = intval($e['tg'] ?? 0); $ysf = intval($e['ysf'] ?? 0); $nm = trim($e['name'] ?? '');
+        if ($tg > 0 && $ysf > 0) {
+            $lines[] = $tg . ';' . $ysf;
+            if ($nm !== '') $names[(string)$tg] = $nm;
+        }
+    }
+    $b1 = file_put_contents(INI_TGLIST, implode("\n", $lines) . "\n");
+    $b2 = file_put_contents(TGYSF_NAMES, json_encode($names, JSON_PRETTY_PRINT));
+    $ok = ($b1 !== false && $b2 !== false);
+    header('Content-Type: application/json');
+    echo json_encode(['ok'=>$ok, 'msg'=>$ok?'Guardado correctamente':'Error al escribir']);
+    exit;
+}
+
 if ($action === 'status') {
     $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
     $d2y = checkPid(PID_D2Y, 'DMR2YSF');
@@ -245,8 +326,7 @@ if ($action === 'transmission') {
     $log = tailLive(LOG_MMDVM, 5000);
     if (empty(trim($log))) {
         header('Content-Type: application/json');
-        // 🔥 Devolver caché sin reordenar si no hay logs nuevos
-        $cached = _loadLastHeardCache(5, 300, true);  // ← true = mantener orden estable
+        $cached = _loadLastHeardCache(5, 300, true);
         echo json_encode(['state'=>['active'=>false], 'lastHeard'=>$cached, 'vu'=>['slot1'=>0,'slot2'=>0]]);
         exit;
     }
@@ -256,7 +336,6 @@ if ($action === 'transmission') {
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'','time'=>'','source'=>'','duration'=>'','loss'=>''];
     $namesMap = [];
     
-    // ── PASO 1: Construir mapa de nombres ─
     foreach ($lines as $line) {
         if (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9]+)\s+(.+)/i', $line, $m)) {
             $namesMap[strtoupper(trim($m[2]))] = trim($m[3]);
@@ -272,26 +351,21 @@ if ($action === 'transmission') {
         return $name;
     };
     
-    // ── PASO 2: Last Heard estable (sin reordenar innecesariamente)
     $lastHeard = [];
     $maxEntries = 5;
     $cacheFile = '/tmp/dmr2ysf_lastheard.json';
     $cacheTTL = 300;
     
-    // Cargar caché EXISTENTE sin reordenar (mantener orden original)
-    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false); // ← false = no reordenar
+    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false);
     
-    // Procesar logs nuevos
     $newEntries = [];
     
     foreach ($lines as $line) {
-        // 🟢 Voice Header (TX)
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+voice header from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
             $callsign = strtoupper(trim($m[4]));
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
             $key = $callsign.'-'.$m[2].'-'.$m[5].'-'.$source;
             
-            // Buscar si ya existe en newEntries
             $foundIndex = null;
             foreach ($newEntries as $i => $entry) {
                 if (($entry['callsign'].'-'.$entry['slot'].'-'.$entry['tg'].'-'.$entry['source']) === $key) {
@@ -320,7 +394,6 @@ if ($action === 'transmission') {
             }
         }
         
-        // 🔴 End of voice (RX) - Actualizar duración
         if (preg_match('/(\d{2}:\d{2}:\d{2}\.\d+).*DMR Slot ([12]),\s*received\s+(RF|network)\s+end of voice transmission from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+),\s*([\d.]+)\s*seconds,\s*(?:BER:\s*([\d.]+)%|([\d.]+)%\s*packet loss)/i', $line, $m)) {
             $callsign = strtoupper(trim($m[4]));
             $source = strtoupper($m[3]) === 'RF' ? 'RF' : 'NET';
@@ -345,7 +418,6 @@ if ($action === 'transmission') {
         }
     }
     
-    // Fusionar: empezar con caché antiguo, añadir/actualizar con nuevos
     $merged = $cachedEntries;
     
     foreach ($newEntries as $new) {
@@ -359,31 +431,25 @@ if ($action === 'transmission') {
         }
         
         if ($foundIndex !== null) {
-            // Actualizar existente: solo si hay duración nueva (terminó)
             if ($new['duration'] && !$merged[$foundIndex]['duration']) {
                 $merged[$foundIndex]['duration'] = $new['duration'];
                 $merged[$foundIndex]['loss'] = $new['loss'];
             }
-            // Mover al final para que sea "más reciente" visualmente
             $temp = $merged[$foundIndex];
             unset($merged[$foundIndex]);
             $merged[] = $temp;
         } else {
-            // Nueva entrada: añadir al final
             $merged[] = $new;
         }
     }
     
-    // FIFO: limitar a $maxEntries (eliminar las más antiguas = primeras)
     if (count($merged) > $maxEntries) {
         $merged = array_slice($merged, -$maxEntries);
     }
-    $lastHeard = array_values($merged);  // Reindexar
+    $lastHeard = array_values($merged);
     
-    // Guardar en caché para próxima petición
     _saveLastHeardCache($lastHeard, $cacheFile);
     
-    // ── PASO 3: Estado activo (igual que antes) ──
     $activeBySlot = [1 => null, 2 => null];
     
     foreach ($lines as $line) {
@@ -425,7 +491,6 @@ if ($action === 'transmission') {
         }
     }
     
-    // ── VU Meters animados ──
     $vu = ['slot1'=>0, 'slot2'=>0];
     if ($state['active']) {
         $vu['slot'.$state['slot']] = 30 + rand(0, 70);
@@ -437,13 +502,9 @@ if ($action === 'transmission') {
 }
 
 // ============================================================================
-// FUNCIONES DE PERSISTENCIA (actualizadas para orden estable)
+// FUNCIONES DE PERSISTENCIA
 // ============================================================================
 
-/**
- * Carga Last Heard desde caché JSON
- * @param bool $stableOrder Si true, mantiene orden original; si false, ordena por timestamp
- */
 function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/tmp/dmr2ysf_lastheard.json', $stableOrder = true) {
     if (!file_exists($cacheFile)) return [];
     
@@ -451,16 +512,13 @@ function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/
     if (!$data || !is_array($data['entries'] ?? null)) return [];
     
     $now = time();
-    // Filtrar entradas expiradas
     $valid = array_filter($data['entries'], function($e) use ($now, $ttlSeconds) {
         return ($now - ($e['_ts'] ?? 0)) < $ttlSeconds;
     });
     
     if ($stableOrder) {
-        // ✅ Mantener orden original (como estaban guardados)
         $valid = array_values($valid);
     } else {
-        // Ordenar por más reciente (solo si se pide explícitamente)
         usort($valid, function($a, $b) {
             return ($b['_ts'] ?? 0) - ($a['_ts'] ?? 0);
         });
@@ -470,14 +528,10 @@ function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/
     return array_slice($valid, 0, $maxEntries);
 }
 
-/**
- * Guarda Last Heard en caché JSON (sin modificar orden)
- */
 function _saveLastHeardCache($entries, $cacheFile = '/tmp/dmr2ysf_lastheard.json') {
     $now = time();
     $data = [
         'entries' => array_map(function($e) use ($now) {
-            // Solo añadir timestamp si no existe (no actualizar en cada guardado)
             $e['_ts'] = $e['_ts'] ?? $now;
             return $e;
         }, $entries),
@@ -826,7 +880,6 @@ body {
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
 }
 
-/* Marcas horizontales del VU meter */
 .vu-track::before {
     content: '';
     position: absolute;
@@ -845,7 +898,6 @@ body {
     pointer-events: none;
 }
 
-/* Marcas más pronunciadas cada 10% */
 .vu-track::after {
     content: '';
     position: absolute;
@@ -1176,7 +1228,7 @@ body {
 .log-warn { color: var(--amber); }
 .log-err { color: var(--red); }
 
-/* MODAL */
+/* MODAL GENERIC */
 .modal {
     display: none;
     position: fixed;
@@ -1328,6 +1380,227 @@ body {
     pointer-events: none;
 }
 
+/* ── MODAL TG-YSFList (adaptado a tus colores) ── */
+#tgYsfModal .m-box { width: 720px; }
+#tgYsfModal .tg-header {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--cyan);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+}
+#tgYsfModal .tg-sub {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 0.8rem;
+}
+#tgYsfModal .tg-table-wrap {
+    background: #060c10;
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.8rem;
+}
+#tgYsfModal .tg-table-head {
+    display: grid;
+    grid-template-columns: 90px 110px 1fr 36px;
+    padding: 0.4rem 0.8rem;
+    background: rgba(0,0,0,0.3);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    gap: 0.5rem;
+}
+#tgYsfModal .tg-rows {
+    max-height: 220px;
+    overflow-y: auto;
+}
+#tgYsfModal .tg-row {
+    display: grid;
+    grid-template-columns: 90px 110px 1fr 36px;
+    padding: 0.38rem 0.8rem;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+    align-items: center;
+    gap: 0.5rem;
+}
+#tgYsfModal .tg-val {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--cyan);
+}
+#tgYsfModal .tg-ysf {
+    color: #80ffe8;
+}
+#tgYsfModal .tg-name-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0,212,255,0.2);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.15rem 0.2rem;
+    outline: none;
+    width: 100%;
+}
+#tgYsfModal .tg-name-input:focus {
+    border-bottom-color: var(--cyan);
+}
+#tgYsfModal .tg-del {
+    background: transparent;
+    border: 1px solid rgba(255,69,96,0.3);
+    border-radius: 3px;
+    color: var(--red);
+    font-size: 0.7rem;
+    cursor: pointer;
+    padding: 0.15rem 0.3rem;
+}
+#tgYsfModal .tg-del:hover {
+    background: rgba(255,69,96,0.1);
+}
+#tgYsfModal .tg-add-row {
+    display: grid;
+    grid-template-columns: 90px 110px 1fr auto;
+    gap: 0.5rem;
+    align-items: end;
+    margin-bottom: 0.5rem;
+}
+#tgYsfModal .tg-add-row input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 4px;
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 0.42rem 0.5rem;
+    outline: none;
+}
+#tgYsfModal .tg-add-row input:focus {
+    border-color: var(--cyan);
+}
+#tgYsfModal .tg-add-btn {
+    background: rgba(0,204,153,0.2);
+    color: var(--green);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.42rem 0.8rem;
+    cursor: pointer;
+}
+#tgYsfModal .tg-add-btn:hover {
+    background: rgba(0,204,153,0.3);
+}
+#tgYsfModal .tg-search-btn {
+    background: rgba(13,37,53,0.5);
+    color: var(--cyan);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.42rem 0.8rem;
+    cursor: pointer;
+    margin-top: 0.25rem;
+}
+#tgYsfModal .tg-search-btn:hover {
+    background: rgba(0,212,255,0.1);
+}
+#tgYsfModal .tg-host-panel {
+    display: none;
+    background: #060c10;
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+#tgYsfModal .tg-host-search {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+}
+#tgYsfModal .tg-host-search input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid rgba(0,212,255,0.3);
+    border-radius: 4px;
+    color: var(--cyan);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.38rem 0.6rem;
+    outline: none;
+}
+#tgYsfModal .tg-host-close {
+    background: transparent;
+    border: 1px solid rgba(255,69,96,0.3);
+    color: var(--red);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+}
+#tgYsfModal .tg-host-list {
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+}
+#tgYsfModal .tg-host-item {
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0,212,255,0.1);
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+}
+#tgYsfModal .tg-host-item:hover {
+    background: rgba(0,212,255,0.08);
+}
+#tgYsfModal .tg-host-id {
+    color: var(--cyan);
+    min-width: 52px;
+}
+#tgYsfModal .tg-host-name {
+    color: #80ffe8;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#tgYsfModal .tg-host-ctry {
+    color: var(--text-dim);
+    font-size: 0.6rem;
+}
+#tgYsfModal .tg-hint {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    margin-top: 0.4rem;
+}
+#tgYsfModal .tg-msg {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    display: none;
+    border: 1px solid;
+    margin-bottom: 0.5rem;
+}
+#tgYsfModal .tg-msg.ok {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(0,255,159,0.1);
+}
+#tgYsfModal .tg-msg.err {
+    color: var(--red);
+    border-color: var(--red);
+    background: rgba(255,69,96,0.1);
+}
+
 .footer {
     text-align: center;
     padding: 2rem;
@@ -1360,6 +1633,10 @@ body {
     .logs { grid-template-columns: 1fr; }
     .l-panel { height: 200px; }
     .vu-wrapper { gap: 1rem; }
+    #tgYsfModal .m-box { width: 95vw; }
+    #tgYsfModal .tg-add-row { grid-template-columns: 1fr; }
+    #tgYsfModal .tg-table-head,
+    #tgYsfModal .tg-row { grid-template-columns: 1fr; gap: 0.3rem; }
 }
 </style>
 </head>
@@ -1398,7 +1675,7 @@ body {
             <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMDMR2YSF.ini</button>
             <button class="btn-cfg" onclick="openCfg('dmr2ysf')">📄 DMR2YSF.ini</button>
             <button class="btn-cfg" onclick="openCfg('ysf')">📄 YSFGateway.ini</button>
-            <button class="btn-cfg" onclick="openCfg('tglist')">📋 TG-YSFList.txt</button>
+            <button class="btn-cfg" onclick="openTgYsfModal()">📋 TG-YSFList.txt</button>
         </div>
     </div>
 
@@ -1485,6 +1762,7 @@ body {
     </div>
 </main>
 
+<!-- Modal genérico de edición -->
 <div id="cfgModal" class="modal" onclick="if(event.target===this)closeCfg()">
     <div class="m-box">
         <div class="m-title">✏️ Editor de Configuración</div>
@@ -1494,6 +1772,47 @@ body {
         <div class="m-acts">
             <button class="btn-act stop" onclick="closeCfg()">✖ Cerrar</button>
             <button class="btn-act start" onclick="saveCfg()">💾 Guardar Cambios</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal TG-YSFList -->
+<div id="tgYsfModal" class="modal" onclick="if(event.target===this)closeTgYsfModal()">
+    <div class="m-box">
+        <div class="tg-header">📋 TG-YSF List · Mapeo TalkGroup → Reflector YSF</div>
+        <div class="tg-sub">/home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt</div>
+        
+        <div class="tg-table-wrap">
+            <div class="tg-table-head">
+                <span>TG DMR</span><span>YSF ID</span><span>Nombre</span><span></span>
+            </div>
+            <div id="tgYsfRows" class="tg-rows"></div>
+        </div>
+        
+        <div class="tg-add-row">
+            <div><input type="text" id="tgYsfNewTG" placeholder="9"></div>
+            <div><input type="text" id="tgYsfNewYSF" placeholder="62980"></div>
+            <div><input type="text" id="tgYsfNewName" placeholder="ej: ES-REM SPAIN"></div>
+            <div style="display:flex;flex-direction:column;gap:0.25rem;">
+                <button onclick="tgYsfAdd()" class="tg-add-btn">➕ Añadir</button>
+                <button onclick="tgYsfToggleHosts()" class="tg-search-btn">📡 Buscar Sala</button>
+            </div>
+        </div>
+        
+        <div id="tgYsfHostPanel" class="tg-host-panel">
+            <div class="tg-host-search">
+                <input type="text" id="tgYsfSearch" placeholder="🔍 Buscar reflector…" oninput="tgYsfFilterHosts(this.value)">
+                <button onclick="tgYsfToggleHosts()" class="tg-host-close">✖</button>
+            </div>
+            <div id="tgYsfHostList" class="tg-host-list"></div>
+            <div class="tg-hint">↑ Haz clic para rellenar YSF ID y Nombre</div>
+        </div>
+        
+        <div id="tgYsfMsg" class="tg-msg"></div>
+        
+        <div class="m-acts">
+            <button class="btn-act stop" onclick="closeTgYsfModal()">✖ Cerrar</button>
+            <button class="btn-act start" onclick="tgYsfSave()">💾 Guardar</button>
         </div>
     </div>
 </div>
@@ -1577,7 +1896,6 @@ function setToggle(on, busy=false) {
     S.busy = busy;
 }
 
-// 🎚️ Actualizar VU meters verticales
 function updateVU(slot, level) {
     const fill = $('vu'+slot), peak = $('vu'+slot+'Peak'), val = $('vu'+slot+'Val');
     if(!fill || !peak || !val) return;
@@ -1607,7 +1925,6 @@ async function status() {
     } catch(e){ console.warn('status err',e); }
 }
 
-// ✅ FUNCIÓN ARREGLADA PARA REFRESH DE LOGS
 async function refreshLogs() {
     try {
         const d = await api('logs', {lines:80});
@@ -1667,13 +1984,11 @@ async function fetchTransmission() {
             txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad </div>';
         }
         
-        // Actualizar VU meters
         if (r.vu) {
             updateVU(1, r.vu.slot1||0);
             updateVU(2, r.vu.slot2||0);
         }
         
-        // Actualizar tabla Last Heard
         const tbody = $('lhBody');
         const list = r.lastHeard || [];
         if (list.length === 0) {
@@ -1794,7 +2109,132 @@ function stopPoll(){
 
 document.addEventListener('keydown',e=>{
     if(e.key==='Escape' && $('cfgModal').classList.contains('open')) closeCfg();
+    if(e.key==='Escape' && $('tgYsfModal').style.display==='flex') closeTgYsfModal();
 });
+
+// ── Funciones TG-YSFList ──────────────────────────────────────────────────────
+let _tgYsfEntries=[], _tgYsfHosts=[], _tgYsfHostsLoaded=false;
+
+function openTgYsfModal(){
+    $('tgYsfModal').style.display='flex';
+    $('tgYsfMsg').style.display='none';
+    $('tgYsfHostPanel').style.display='none';
+    tgYsfLoad();
+}
+
+function closeTgYsfModal(){
+    $('tgYsfModal').style.display='none';
+}
+
+async function tgYsfLoad(){
+    try{
+        const r=await api('tgysf-read');
+        _tgYsfEntries=r.entries||[];
+        tgYsfRender();
+    }catch(e){ console.warn('tgysf-read err',e); }
+}
+
+function tgYsfRender(){
+    const c=$('tgYsfRows');
+    if(!_tgYsfEntries.length){
+        c.innerHTML='<div style="padding:1rem;font-family:var(--font-mono);font-size:.72rem;color:var(--text-dim);text-align:center;">Sin entradas</div>';
+        return;
+    }
+    c.innerHTML=_tgYsfEntries.map((e,i)=>`<div class="tg-row">
+        <span class="tg-val">${esc(e.tg)}</span>
+        <span class="tg-val tg-ysf">${esc(e.ysf)}</span>
+        <input type="text" class="tg-name-input" value="${esc(e.name||'')}" placeholder="—" onchange="_tgYsfEntries[${i}].name=this.value">
+        <button class="tg-del" onclick="tgYsfRemove(${i})">✖</button>
+    </div>`).join('');
+}
+
+function tgYsfAdd(){
+    const tg=$('tgYsfNewTG').value.trim();
+    const ysf=$('tgYsfNewYSF').value.trim();
+    const name=$('tgYsfNewName').value.trim();
+    if(!tg||!ysf||isNaN(tg)||isNaN(ysf)){ tgYsfShowMsg('Introduce valores numéricos válidos',false); return; }
+    if(_tgYsfEntries.some(e=>e.tg===tg)){ tgYsfShowMsg('El TG '+tg+' ya existe',false); return; }
+    _tgYsfEntries.push({tg,ysf,name});
+    $('tgYsfNewTG').value=''; $('tgYsfNewYSF').value=''; $('tgYsfNewName').value='';
+    tgYsfRender();
+}
+
+function tgYsfRemove(i){
+    _tgYsfEntries.splice(i,1);
+    tgYsfRender();
+}
+
+async function tgYsfSave(){
+    try{
+        const r=await fetch(location.href+'?action=tgysf-save',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({entries:_tgYsfEntries})
+        });
+        const d=await r.json();
+        tgYsfShowMsg(d.msg,d.ok);
+        if(d.ok) setTimeout(closeTgYsfModal,1500);
+    }catch(e){ tgYsfShowMsg('Error de red',false); }
+}
+
+async function tgYsfToggleHosts(){
+    const p=$('tgYsfHostPanel');
+    const v=p.style.display!=='none';
+    p.style.display=v?'none':'block';
+    if(!v&&!_tgYsfHostsLoaded) await tgYsfLoadHosts();
+}
+
+async function tgYsfLoadHosts(){
+    $('tgYsfHostList').innerHTML='<div style="color:var(--text-dim);text-align:center;padding:.5rem;">Cargando…</div>';
+    try{
+        const r=await api('tgysf-hosts');
+        _tgYsfHosts=r.hosts||[];
+        _tgYsfHostsLoaded=true;
+        tgYsfRenderHosts(_tgYsfHosts);
+    }catch(e){
+        $('tgYsfHostList').innerHTML='<div style="color:var(--red);text-align:center;padding:.5rem;">Error</div>';
+    }
+}
+
+function tgYsfFilterHosts(q){
+    const term=q.trim().toLowerCase();
+    tgYsfRenderHosts(term===''?_tgYsfHosts:_tgYsfHosts.filter(h=>
+        String(h.id).includes(term)||h.name.toLowerCase().includes(term)||h.desc.toLowerCase().includes(term)||h.country.toLowerCase().includes(term)
+    ));
+}
+
+function tgYsfRenderHosts(list){
+    const el=$('tgYsfHostList');
+    if(!list.length){ el.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:.5rem;">Sin resultados</div>'; return; }
+    el.innerHTML=list.map(h=>{
+        const flag=h.country==='ES'?'🇪🇸 ':h.country?h.country+' ':'';
+        const nm=h.name||'—';
+        const desc=h.desc?' · '+h.desc:'';
+        const nmEsc=nm.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return `<div class="tg-host-item" onclick="tgYsfSelectHost(${h.id},'${nmEsc}')">
+            <span class="tg-host-id">${h.id}</span>
+            <span class="tg-host-name">${flag}${esc(nm)}${esc(desc)}</span>
+            <span class="tg-host-ctry">${h.country}</span>
+        </div>`;
+    }).join('');
+}
+
+function tgYsfSelectHost(id,name){
+    $('tgYsfNewYSF').value=id;
+    $('tgYsfNewName').value=name;
+    $('tgYsfHostPanel').style.display='none';
+    $('tgYsfSearch').value='';
+    $('tgYsfNewTG').focus();
+}
+
+function tgYsfShowMsg(msg,ok){
+    const el=$('tgYsfMsg');
+    el.textContent=(ok?'✔ ':'✖ ')+msg;
+    el.style.display='block';
+    el.className='tg-msg '+(ok?'ok':'err');
+    if(ok) setTimeout(()=>el.style.display='none',3000);
+}
+// ── Fin funciones TG-YSFList ─────────────────────────────────────────────────
 
 window.addEventListener('load', startPoll);
 </script>
