@@ -184,6 +184,7 @@ if ($action === 'start') {
 if ($action === 'stop') {
     // 🔧 Desabilitar dmr2ysf.service para que no arranque
     shell_exec('sudo /bin/systemctl disable dmr2ysf.service 2>&1');
+    shell_exec('sudo /bin/systemctl stop dmr2ysf.service 2>&1');
     saveState('dmr2ysf', 'off');
     $out = shell_exec('sudo ' . STOP_SCRIPT . ' 2>&1');
     sleep(2);
