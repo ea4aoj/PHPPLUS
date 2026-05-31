@@ -172,6 +172,8 @@ if ($action === 'status') {
 
 if ($action === 'start') {
     saveState('dmr2ysf', 'on');
+    // 🔧 Habilitar dmr2ysf.service para arranque automático
+    shell_exec('sudo /bin/systemctl enable dmr2ysf.service 2>&1');
     $out = shell_exec('sudo ' . START_SCRIPT . ' 2>&1');
     sleep(4);
     header('Content-Type: application/json');
@@ -180,6 +182,8 @@ if ($action === 'start') {
 }
 
 if ($action === 'stop') {
+    // 🔧 Desabilitar dmr2ysf.service para que no arranque
+    shell_exec('sudo /bin/systemctl disable dmr2ysf.service 2>&1');
     saveState('dmr2ysf', 'off');
     $out = shell_exec('sudo ' . STOP_SCRIPT . ' 2>&1');
     sleep(2);
