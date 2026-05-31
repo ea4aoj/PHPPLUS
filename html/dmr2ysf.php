@@ -1,7 +1,7 @@
 <?php
-// ============================================================================
-// dmr2ysf_panel.php - Control de puente DMR ⇄ YSF (MODO DIRECTO)
-// ============================================================================
+// =============================================================
+// dmr2ysf_panel.php - Control de puente DMR ⇄ YSF by EA4AOJ
+// =============================================================
 
 require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
@@ -264,7 +264,7 @@ if ($action === 'transmission') {
         return $name;
     };
     
-    // ── PASO 2: Last Heard estable (sin reordenar innecesariamente) ──
+    // ── PASO 2: Last Heard estable (sin reordenar innecesariamente)
     $lastHeard = [];
     $maxEntries = 5;
     $cacheFile = '/tmp/dmr2ysf_lastheard.json';
@@ -782,7 +782,7 @@ body {
     opacity:0.5;
 }
 
-/* ── VU METERS VERTICALES REALISTAS ── */
+/* ── VU METERS VERTICALES ── */
 .vu-wrapper {
     display: flex;
     align-items: center;
@@ -1359,7 +1359,7 @@ body {
 <header class="header">
     <div style="display:flex;align-items:center;gap:1rem;">
         <h1>🔗 Puente DMR ⇄ YSF</h1>
-        <span class="badge-direct">MODO DIRECTO</span>
+        <span class="badge-direct">BRIDGE</span>
     </div>
     <div class="nav-actions">
         <a href="mmdvm.php" class="btn-nav primary">🏠 Panel PHPPLUS</a>
@@ -1379,7 +1379,7 @@ body {
     <div class="card">
         <div class="c-title">⚙️ Control Principal del Puente</div>
         <div class="toggle-row">
-            <span class="t-label">Activar / Desactivar los 3 sistemas</span>
+            <span class="t-label">Activar / Desactivar sistemas</span>
             <label class="sw" id="sw"><input type="checkbox" id="chk" onchange="toggle(this)"><span class="sw-track"></span><span class="sw-knob"></span></label>
             <span class="t-status" id="sts">OFF</span>
         </div>
@@ -1425,7 +1425,7 @@ body {
     </div>
 
     <div class="card">
-        <div class="c-title">📋 Últimas Estaciones Escuchadas</div>
+        <div class="c-title">📋 Ultimas Estaciones Escuchadas</div>
         <table class="lh-table">
             <thead>
                 <tr>
@@ -1775,7 +1775,7 @@ function startPoll(){
     fetchTransmission();
     S.poll=setInterval(status,5000);
     S.logT=setInterval(fetchLogs,7000);
-    S.txT=setInterval(fetchTransmission,500);
+    S.txT=setInterval(fetchTransmission,1000);
 }
 
 function stopPoll(){
