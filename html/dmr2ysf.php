@@ -1792,7 +1792,7 @@ body {
         <div class="tg-add-row">
             <div><input type="text" id="tgYsfNewTG" placeholder="9"></div>
             <div><input type="text" id="tgYsfNewYSF" placeholder="62980"></div>
-            <div><input type="text" id="tgYsfNewName" placeholder="ej: ES-REM SPAIN"></div>
+            <div><input type="text" id="tgYsfNewName" placeholder="ej: ES-EA-DISTRITO-4"></div>
             <div style="display:flex;flex-direction:column;gap:0.25rem;">
                 <button onclick="tgYsfAdd()" class="tg-add-btn">➕ Añadir</button>
                 <button onclick="tgYsfToggleHosts()" class="tg-search-btn">📡 Buscar Sala</button>
