@@ -16,8 +16,8 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 
 // ── Rutas de Scripts ──
-//define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh');
-//define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh');
+define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh');
+define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh');
 
 // ── Archivos de Configuración ──
 define('INI_MMDVM',   '/home/pi/MMDVMHost/MMDVMDMR2YSF.ini');
@@ -255,33 +255,20 @@ if ($action === 'status') {
 }
 
 if ($action === 'start') {
-    // 1. Guardamos el estado en ON para que systemd sepa que debe arrancar al reiniciar
     saveState('dmr2ysf', 'on');
-    
-    // 2. Le ordenamos a systemd que inicie el servicio (él ejecutará el .sh)
-    $out = shell_exec('sudo systemctl start dmr2ysf.service 2>&1');
-    
-    // 3. Esperamos a que los procesos se estabilicen
+    $out = shell_exec('sudo ' . START_SCRIPT . ' 2>&1');
     sleep(4);
-    
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true, 'msg'=>'Puente iniciado', 'log'=>trim($out)?:'Sin salida']);
     exit;
 }
 
 if ($action === 'stop') {
-    // 1. Guardamos el estado en OFF para que systemd NO lo arranque al reiniciar
     saveState('dmr2ysf', 'off');
-    
-    // 2. Le ordenamos a systemd que detenga el servicio (ejecutará el ExecStop)
-    $out = shell_exec('sudo systemctl stop dmr2ysf.service 2>&1');
-    
+    $out = shell_exec('sudo ' . STOP_SCRIPT . ' 2>&1');
     sleep(2);
-    
-    // 3. Limpieza de seguridad extrema por si algún proceso se quedó colgado
     shell_exec('sudo pkill -9 -f DMR2YSF 2>/dev/null');
-    shell_exec('sudo rm -f /tmp/DMR2YSF.pid /tmp/MMDVMDMR2YSF.pid /tmp/YSFGateway.pid');
-    
+    shell_exec('sudo rm -f /tmp/DMR2YSF.pid');
     sleep(1);
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true, 'msg'=>'Puente detenido', 'log'=>trim($out)?:'Sin salida']);
@@ -328,13 +315,10 @@ if ($action === 'cfg-save') {
 }
 
 if ($action === 'restart-svc') {
-    // Forzamos estado ON y reinicio limpio vía systemd
-    saveState('dmr2ysf', 'on');
-    shell_exec('sudo systemctl restart dmr2ysf.service >/dev/null 2>&1');
+    shell_exec('sudo '.STOP_SCRIPT.' >/dev/null 2>&1'); sleep(1);
+    shell_exec('sudo '.START_SCRIPT.' >/dev/null 2>&1');
     usleep(1000000);
-    header('Content-Type: application/json'); 
-    echo json_encode(['ok'=>true]); 
-    exit;
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
 
 // ── Transmisión y Last Heard ──
@@ -1889,8 +1873,6 @@ function getFlag(callsign){
     }
     return '<span class="flag-emoji">🌐</span>';
 }
-
-
 
 let S = { active:false, poll:null, logT:null, txT:null, last:null, busy:false, cfgId:null };
 
