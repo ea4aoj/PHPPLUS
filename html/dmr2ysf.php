@@ -3,21 +3,24 @@
 // dmr2ysf_panel.php - Control de puente DMR ⇄ YSF by EA4AOJ
 // =============================================================
 
-// 🔧 Permitir acceso sin sesión SOLO desde localhost (systemd/terminal)
-if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
-    // Bypass auth para control local
-} else {
-   // 🔧 Permitir polling automático de estado desde localhost
-if (!isset($_GET['action']) || ($_GET['action'] !== 'status' && $_SERVER['REMOTE_ADDR'] !== '127.0.0.1' && $_SERVER['REMOTE_ADDR'] !== '::1')) {
+$ip = $_SERVER['REMOTE_ADDR'];
+
+$local_network =
+    $ip === '127.0.0.1' ||
+    $ip === '::1' ||
+    preg_match('/^192\.168\./', $ip) ||
+    preg_match('/^10\./', $ip) ||
+    preg_match('/^172\.(1[6-9]|2[0-9]|3[0-1])\./', $ip);
+
+if (!$local_network) {
     require_once __DIR__ . '/auth.php';
-}
 }
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 
 // ── Rutas de Scripts ──
-define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh && sudo systemctl enable dmr2ysf.service');
-define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh && sudo systemctl disable dmr2ysf.service');
+define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh');
+define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh');
 
 // ── Archivos de Configuración ──
 define('INI_MMDVM',   '/home/pi/MMDVMHost/MMDVMDMR2YSF.ini');
