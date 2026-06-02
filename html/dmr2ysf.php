@@ -3,17 +3,14 @@
 // dmr2ysf_panel.php - Control de puente DMR ⇄ YSF by EA4AOJ
 // =============================================================
 
-$ip = $_SERVER['REMOTE_ADDR'];
-
-$local_network =
-    $ip === '127.0.0.1' ||
-    $ip === '::1' ||
-    preg_match('/^192\.168\./', $ip) ||
-    preg_match('/^10\./', $ip) ||
-    preg_match('/^172\.(1[6-9]|2[0-9]|3[0-1])\./', $ip);
-
-if (!$local_network) {
+// 🔧 Permitir acceso sin sesión SOLO desde localhost (systemd/terminal)
+if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
+    // Bypass auth para control local
+} else {
+   // 🔧 Permitir polling automático de estado desde localhost
+if (!isset($_GET['action']) || ($_GET['action'] !== 'status' && $_SERVER['REMOTE_ADDR'] !== '127.0.0.1' && $_SERVER['REMOTE_ADDR'] !== '::1')) {
     require_once __DIR__ . '/auth.php';
+}
 }
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
@@ -244,15 +241,42 @@ if ($action === 'status') {
     $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
     $d2y = checkPid(PID_D2Y, 'DMR2YSF');
     $ysf = checkPid(PID_YSFGW, 'YSFGateway');
+    $bridge_active = ($mmd==='active' && $d2y==='active' && $ysf==='active');
+
+    // Leer el estado persistente del fichero.
+    // IMPORTANTE: este bloque SOLO LEE, nunca escribe off automáticamente.
+    // El off solo lo escribe el botón stop o el script de parada.
+    // Así el servicio puede arrancar los procesos sin que el poll lo revierta.
+    $state_on = null;
+    $state_file = '/var/lib/mmdvm-state';
+    if (file_exists($state_file)) {
+        foreach (file($state_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
+            if (strpos($ln, 'dmr2ysf=') === 0) {
+                $state_on = (trim(substr($ln, 8)) === 'on');
+                break;
+            }
+        }
+    }
+    // Si los procesos están activos pero el fichero dice off (o no existe),
+    // actualizamos a on para que quede en consonancia.
+    if ($bridge_active && $state_on !== true) {
+        saveState('dmr2ysf', 'on');
+        $state_on = true;
+    }
+
     $perms = [];
     foreach ($CONFIG_FILES as $k => $p) {
         $perms[$k] = ['exists' => file_exists($p), 'writable' => is_writable($p)];
     }
     header('Content-Type: application/json');
     echo json_encode([
-        'mmdvm' => $mmd, 'dmr2ysf' => $d2y, 'ysfgateway' => $ysf,
-        'bridge_active' => ($mmd==='active' && $d2y==='active' && $ysf==='active'),
-        'perms' => $perms, 'ts' => time()
+        'mmdvm'         => $mmd,
+        'dmr2ysf'       => $d2y,
+        'ysfgateway'    => $ysf,
+        'bridge_active' => $bridge_active,
+        'state_on'      => $state_on,
+        'perms'         => $perms,
+        'ts'            => time()
     ]);
     exit;
 }
@@ -260,9 +284,20 @@ if ($action === 'status') {
 if ($action === 'start') {
     saveState('dmr2ysf', 'on');
     $out = shell_exec('sudo ' . START_SCRIPT . ' 2>&1');
-    sleep(4);
+    // Esperar hasta 10s a que los procesos estén realmente activos
+    $ok = false;
+    for ($i = 0; $i < 5; $i++) {
+        sleep(2);
+        $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
+        $d2y = checkPid(PID_D2Y, 'DMR2YSF');
+        $ysf = checkPid(PID_YSFGW, 'YSFGateway');
+        if ($mmd === 'active' && $d2y === 'active' && $ysf === 'active') {
+            $ok = true;
+            break;
+        }
+    }
     header('Content-Type: application/json');
-    echo json_encode(['ok'=>true, 'msg'=>'Puente iniciado', 'log'=>trim($out)?:'Sin salida']);
+    echo json_encode(['ok' => $ok, 'msg' => $ok ? 'Puente iniciado' : 'Puente iniciado (procesos aún arrancando)', 'log' => trim($out) ?: 'Sin salida']);
     exit;
 }
 
@@ -1915,17 +1950,27 @@ async function status() {
         setDot('dot-mmd', d.mmdvm);
         setDot('dot-d2y', d.dmr2ysf);
         setDot('dot-ysf', d.ysfgateway);
-        const newActive = d.bridge_active;
-        if (!S.busy && newActive !== S.active) {
-            setToggle(newActive, false);
+
+        // state_on es la fuente de verdad: lo escribe el botón start/stop
+        // y los scripts externos. bridge_active solo refleja si los PIDs existen.
+        // Usamos state_on para el toggle y bridge_active para los pilotos.
+        // Así si el servicio arranca los procesos sin pasar por el botón,
+        // el toggle se pone verde en el siguiente poll.
+        const desiredOn = (d.state_on !== null && d.state_on !== undefined)
+            ? !!d.state_on
+            : !!d.bridge_active;
+
+        // Sincronizar siempre mientras no haya operación manual en curso
+        if (!S.busy) {
+            setToggle(desiredOn, false);
         }
-        S.active = newActive;
-        $('ts').textContent=fmtT(d.ts);
-        document.querySelectorAll('.btn-cfg').forEach(btn=>{
-            const id=btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-            if(d.perms[id]) btn.classList.toggle('muted', !d.perms[id].writable);
+        S.active = desiredOn;
+        $('ts').textContent = fmtT(d.ts);
+        document.querySelectorAll('.btn-cfg').forEach(btn => {
+            const id = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+            if (d.perms[id]) btn.classList.toggle('muted', !d.perms[id].writable);
         });
-    } catch(e){ console.warn('status err',e); }
+    } catch(e) { console.warn('status err', e); }
 }
 
 async function refreshLogs() {
