@@ -2,9 +2,9 @@
 
 # path usuario
 usuario="/home/pi"
-fecha_imagen="11-05-26"
-nombre_imagen="Opi3-"
-version="Opi3-11-05-26"
+fecha_imagen="03-06-26"
+nombre_imagen="OPHP-"
+version="Opi3-03-06-26"
 
 # Añadir líneas vacías hasta tener al menos 58 líneas 
 #sudo awk '{
