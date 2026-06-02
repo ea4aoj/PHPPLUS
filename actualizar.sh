@@ -4,7 +4,7 @@
 usuario="/home/pi"
 fecha_imagen="03-06-26"
 nombre_imagen="OPHP-"
-version="Opi3.LTS 03-06-26"
+version="Opi3 LTS 03-06-26"
 
 # Añadir líneas vacías hasta tener al menos 58 líneas 
 #sudo awk '{
