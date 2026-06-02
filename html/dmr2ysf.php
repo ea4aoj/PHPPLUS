@@ -16,8 +16,8 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 
 // ── Rutas de Scripts ──
-define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh');
-define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh');
+define('START_SCRIPT', '/usr/local/bin/dmr2ysf-start.sh && sudo systemctl enable dmr2ysf.service');
+define('STOP_SCRIPT',  '/usr/local/bin/dmr2ysf-stop.sh && sudo systemctl disable dmr2ysf.service');
 
 // ── Archivos de Configuración ──
 define('INI_MMDVM',   '/home/pi/MMDVMHost/MMDVMDMR2YSF.ini');
