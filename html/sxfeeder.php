@@ -193,6 +193,29 @@ body {
     justify-content: center;
     font-size: 18px;
     color: white;
+    transition: all 0.2s ease;
+}
+
+/* LOGO CLICKEABLE */
+.brand-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    transition: opacity 0.2s ease;
+}
+
+.brand-link:hover {
+    opacity: 0.85;
+}
+
+.brand-link:hover .brand-icon {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+}
+
+.brand-link:hover .brand > div:last-child {
+    color: var(--accent);
+    transition: color 0.2s ease;
 }
 
 .topbar-right {
@@ -584,12 +607,14 @@ input:checked + .slider:before {
 
 <!-- TOPBAR -->
 <div class="topbar">
-    <div class="brand">
-        <div class="brand-icon"><i class="bi bi-tsunami"></i></div>
-        <div>
-            Ship <span style="color: var(--text-secondary); font-weight: 400;">· AIS Tracker</span>
+    <a href="https://www.shipxplorer.com/" target="_blank" rel="noopener" class="brand-link">
+        <div class="brand">
+            <div class="brand-icon"><i class="bi bi-tsunami"></i></div>
+            <div>
+                Ship <span style="color: var(--text-secondary); font-weight: 400;">· AIS Tracker</span>
+            </div>
         </div>
-    </div>
+    </a>
     
     <div class="topbar-right">
         <a href="mmdvm.php" class="btn-action btn-phpplus" style="padding: 7px 14px; font-size: 12px;">
