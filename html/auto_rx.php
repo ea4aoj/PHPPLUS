@@ -19,16 +19,18 @@ if (isset($_GET['logs'])) {
 if (isset($_POST['action'])) {
     switch ($_POST['action']) {
 
-        case 'start':
-            shell_exec("sudo systemctl start auto_rx.service");
-            $message = "Servicio arrancado correctamente";
-            $message_type = "success";
-            break;
-
-        case 'stop':
-            shell_exec("sudo systemctl stop auto_rx.service");
-            $message = "Servicio detenido";
-            $message_type = "warning";
+        /* 🔥 SERVICIO (toggle único) */
+        case 'toggle_service':
+            $current = trim(shell_exec("systemctl is-active auto_rx.service"));
+            if ($current === 'active') {
+                shell_exec("sudo systemctl stop auto_rx.service");
+                $message = "Servicio detenido";
+                $message_type = "warning";
+            } else {
+                shell_exec("sudo systemctl start auto_rx.service");
+                $message = "Servicio arrancado correctamente";
+                $message_type = "success";
+            }
             break;
 
         case 'restart':
@@ -75,7 +77,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Radiosonde · Control Panel</title>
 
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📡</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎈</text></svg>">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -91,6 +93,7 @@ $config_content = file_exists($config_file) ? file_get_contents($config_file) : 
     --accent: #3b82f6;
     --accent-hover: #2563eb;
     --success: #10b981;
+    --success-hover: #059669;
     --danger: #ef4444;
     --warning: #f59e0b;
 }
@@ -145,34 +148,9 @@ body {
     color: white;
 }
 
-.status-pill {
-    display: inline-flex;
+.topbar-right {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 500;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-light);
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--danger);
-}
-
-.status-dot.active {
-    background: var(--success);
-    box-shadow: 0 0 10px var(--success);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
 }
 
 /* LAYOUT */
@@ -227,7 +205,7 @@ body {
     padding: 22px;
 }
 
-/* BOTONES */
+/* BOTONES BASE */
 .btn-action {
     display: inline-flex;
     align-items: center;
@@ -253,26 +231,28 @@ body {
 
 .btn-action i { font-size: 14px; }
 
-.btn-start {
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: #34d399;
+/* BOTONES SÓLIDOS DE ACCIÓN */
+.btn-primary-act {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
 }
-.btn-start:hover {
-    background: rgba(16, 185, 129, 0.2);
-    border-color: #10b981;
-    color: #6ee7b7;
+.btn-primary-act:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: white;
 }
 
-.btn-stop {
-    background: rgba(239, 68, 68, 0.12);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: #f87171;
+/* BOTÓN SONDEHUB (VERDE SÓLIDO, LETRA BLANCA) */
+.btn-sondehub {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
 }
-.btn-stop:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: #ef4444;
-    color: #fca5a5;
+.btn-sondehub:hover {
+    background: var(--success-hover);
+    border-color: var(--success-hover);
+    color: white;
 }
 
 .btn-restart {
@@ -286,17 +266,30 @@ body {
     color: #fcd34d;
 }
 
-.btn-primary-act {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+/* BOTÓN SERVICIO (toggle) */
+.btn-service-on {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
 }
-.btn-primary-act:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
-    color: white;
+.btn-service-on:hover {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: #34d399;
 }
 
+.btn-service-off {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.35);
+    color: #34d399;
+}
+.btn-service-off:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #f87171;
+}
+
+/* BOTÓN AUTOARRANQUE (toggle) */
 .btn-autostart-on {
     background: rgba(16, 185, 129, 0.12);
     border-color: rgba(16, 185, 129, 0.35);
@@ -467,13 +460,6 @@ body {
     gap: 8px;
 }
 
-.badge-on {
-    color: #34d399;
-}
-.badge-off {
-    color: #9ca3af;
-}
-
 @media (max-width: 640px) {
     .container-main { padding: 16px; }
     .topbar { padding: 12px 16px; }
@@ -513,11 +499,12 @@ setInterval(() => {
             Radiosonde <span style="color: var(--text-secondary); font-weight: 400;">· auto_rx</span>
         </div>
     </div>
-    <div class="status-pill">
-        <span class="status-dot <?php echo ($status == 'active') ? 'active' : ''; ?>"></span>
-        Servicio: <strong style="margin-left:4px; color: <?php echo ($status == 'active') ? '#34d399' : '#f87171'; ?>;">
-            <?php echo strtoupper($status); ?>
-        </strong>
+    
+    <div class="topbar-right">
+        <!-- BOTÓN PHPPLUS -->
+        <a href="mmdvm.php" class="btn-action" style="padding: 7px 14px; font-size: 12px;">
+            <i class="bi bi-house-door-fill"></i> Panel PHPPLUS
+        </a>
     </div>
 </div>
 
@@ -572,23 +559,32 @@ setInterval(() => {
             <!-- CONTROL SERVICIO -->
             <div class="section-label">Control del servicio</div>
             <div class="btn-group-custom" style="margin-bottom: 22px;">
+                
+                <!-- SERVICIO (toggle único Arrancar/Detener) -->
                 <form method="post" style="display:inline;">
-                    <button class="btn-action btn-start" name="action" value="start">
-                        <i class="bi bi-play-fill"></i> Arrancar
-                    </button>
+                    <?php if ($status === 'active'): ?>
+                        <button class="btn-action btn-service-on" name="action" value="toggle_service"
+                                title="Pulsa para detener el servicio">
+                            <i class="bi bi-stop-circle-fill"></i> Detener servicio
+                            <i class="bi bi-toggle-on" style="font-size:16px; margin-left:4px;"></i>
+                        </button>
+                    <?php else: ?>
+                        <button class="btn-action btn-service-off" name="action" value="toggle_service"
+                                title="Pulsa para arrancar el servicio">
+                            <i class="bi bi-play-circle-fill"></i> Arrancar servicio
+                            <i class="bi bi-toggle-off" style="font-size:16px; margin-left:4px;"></i>
+                        </button>
+                    <?php endif; ?>
                 </form>
-                <form method="post" style="display:inline;">
-                    <button class="btn-action btn-stop" name="action" value="stop">
-                        <i class="bi bi-stop-fill"></i> Detener
-                    </button>
-                </form>
+
+                <!-- REINICIAR (acción puntual) -->
                 <form method="post" style="display:inline;">
                     <button class="btn-action btn-restart" name="action" value="restart">
                         <i class="bi bi-arrow-clockwise"></i> Reiniciar
                     </button>
                 </form>
 
-                <!-- AUTOARRANQUE ÚNICO -->
+                <!-- AUTOARRANQUE (toggle único) -->
                 <form method="post" style="display:inline;">
                     <?php if ($autostart === 'enabled'): ?>
                         <button class="btn-action btn-autostart-on" name="action" value="toggle_autostart"
@@ -613,11 +609,10 @@ setInterval(() => {
                    target="_blank" class="btn-action btn-primary-act">
                     <i class="bi bi-broadcast-pin"></i> Interfaz Radiosonde
                 </a>
-                <a href="https://sondehub.org/" target="_blank" class="btn-action">
+                
+                <!-- BOTÓN SONDEHUB (VERDE SÓLIDO, LETRA BLANCA) -->
+                <a href="https://sondehub.org/" target="_blank" class="btn-action btn-sondehub">
                     <i class="bi bi-globe2"></i> SondeHub
-                </a>
-                <a href="mmdvm.php" class="btn-action">
-                    <i class="bi bi-house-door-fill"></i> Panel PHPPLUS
                 </a>
             </div>
 
@@ -675,10 +670,10 @@ setInterval(() => {
             <form method="post">
                 <textarea name="config_content" class="config-editor"><?php echo htmlspecialchars($config_content); ?></textarea>
                 <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button type="submit" name="save_config" class="btn-action btn-start">
+                    <button type="submit" name="save_config" class="btn-action btn-service-off">
                         <i class="bi bi-check2-circle"></i> Guardar cambios
                     </button>
-                    <button type="submit" name="view" value="none" class="btn-action btn-stop">
+                    <button type="submit" name="view" value="none" class="btn-action btn-service-on">
                         <i class="bi bi-x-circle"></i> Descartar y cerrar
                     </button>
                 </div>
