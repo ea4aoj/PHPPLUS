@@ -86,62 +86,6 @@ function lookupCall($callsign) {
 }
 
 // 🌍 Bandera por prefijo de callsign
-function getFlagInfo($callsign) {
-    $prefixes = [
-        'EA'=>['ESP','🇪🇸'],'EB'=>['ESP','🇪'],'EC'=>['ESP','🇸'],'ED'=>['ESP','🇪🇸'],'EE'=>['ESP','🇪🇸'],'EF'=>['ESP','🇪🇸'],
-        'F'=>['FRA','🇫🇷'],'FB'=>['FRA','🇫🇷'],'FC'=>['FRA','🇫🇷'],'FD'=>['FRA','🇫🇷'],'FE'=>['FRA','🇫🇷'],'FF'=>['FRA','🇫🇷'],
-        'I'=>['ITA','🇮🇹'],'IZ'=>['ITA','🇮🇹'],'IW'=>['ITA','🇮🇹'],'IV'=>['ITA','🇮🇹'],'IX'=>['ITA','🇮🇹'],
-        'G'=>['GBR','🇬🇧'],'M'=>['GBR','🇬🇧'],'2E'=>['GBR','🇬🇧'],'M6'=>['GBR','🇬🇧'],'M7'=>['GBR','🇬🇧'],
-        'DL'=>['DEU','🇩🇪'],'DA'=>['DEU','🇩🇪'],'DB'=>['DEU','🇩🇪'],'DC'=>['DEU','🇩🇪'],'DD'=>['DEU','🇩🇪'],'DF'=>['DEU','🇩🇪'],
-        'ON'=>['BEL','🇧🇪'],'OR'=>['BEL','🇧🇪'],'OT'=>['BEL','🇧🇪'],
-        'PA'=>['NLD','🇳🇱'],'PB'=>['NLD','🇳🇱'],'PC'=>['NLD','🇳🇱'],'PD'=>['NLD','🇳🇱'],'PE'=>['NLD','🇳🇱'],'PF'=>['NLD','🇳🇱'],
-        'OE'=>['AUT','🇦🇹'],
-        'HB'=>['CHE','🇨🇭'],'HE'=>['CHE','🇨🇭'],
-        'LY'=>['LTU','🇱🇹'],'ES'=>['EST','🇪🇪'],'YL'=>['LVA','🇱🇻'],
-        'SP'=>['POL','🇵'],'SQ'=>['POL','🇱'],'SN'=>['POL','🇵'],'SO'=>['POL','🇱'],
-        'OK'=>['CZE','🇨'],'OM'=>['SVK','🇸🇰'],'HA'=>['HUN','🇭🇺'],
-        'YO'=>['ROU','🇷🇴'],'YR'=>['ROU','🇷'],
-        'SV'=>['GRC','🇬🇷'],'SW'=>['GRC','🇬🇷'],'SX'=>['GRC','🇬🇷'],'SY'=>['GRC','🇬🇷'],'SZ'=>['GRC','🇬🇷'],
-        'UA'=>['RUS','🇷'],'UB'=>['RUS','🇷'],'UC'=>['RUS','🇷🇺'],'UD'=>['RUS','🇷'],'UE'=>['RUS','🇷🇺'],
-        'UW'=>['UKR','🇺🇦'],'UX'=>['UKR','🇺'],'UY'=>['UKR','🇺'],'UZ'=>['UKR','🇺🇦'],
-        'K'=>['USA','🇺'],'N'=>['USA','🇸'],'W'=>['USA','🇺'],'AA'=>['USA','🇸'],'AB'=>['USA','🇺'],
-        'VE'=>['VEN','🇻'],'YV'=>['VEN','🇻🇪'],
-        'PY'=>['BRA','🇧🇷'],'PU'=>['BRA','🇧'],'PP'=>['BRA','🇷'],'PQ'=>['BRA','🇧🇷'],'PR'=>['BRA','🇧'],'PS'=>['BRA','🇷'],'PT'=>['BRA','🇧🇷'],
-        'CE'=>['CHL','🇨'],'CA'=>['CHL','🇨🇱'],'CD'=>['CHL','🇨🇱'],
-        'CX'=>['URY','🇺'],'CW'=>['URY','🇺'],
-        'LV'=>['ARG','🇦'],'LU'=>['ARG','🇷'],'LW'=>['ARG','🇦🇷'],'LX'=>['ARG','🇦🇷'],
-        'HC'=>['ECU','🇪'],'HD'=>['ECU','🇪🇨'],
-        'HK'=>['COL','🇨🇴'],'HJ'=>['COL','🇨🇴'],'5J'=>['COL','🇨🇴'],'5K'=>['COL','🇨🇴'],
-        'TI'=>['CRI','🇨🇷'],'TE'=>['CRI','🇨🇷'],
-        'CP'=>['BOL','🇧🇴'],
-        'JA'=>['JPN','🇯🇵'],'JB'=>['JPN','🇯🇵'],'JC'=>['JPN','🇯🇵'],'JD'=>['JPN','🇯🇵'],'JE'=>['JPN','🇯'],
-        'BV'=>['TWN','🇹🇼'],'BU'=>['TWN','🇹🇼'],
-        'VR'=>['HKG','🇭'],'VS'=>['HKG','🇭🇰'],
-        'XX'=>['MAC','🇲🇴'],
-        'HL'=>['KOR','🇰'],'DS'=>['KOR','🇰🇷'],'DT'=>['KOR','🇰🇷'],'DU'=>['KOR','🇰'],
-        'BY'=>['CHN','🇨'],'BA'=>['CHN','🇨🇳'],'BD'=>['CHN','🇨🇳'],
-        'VU'=>['IND','🇮🇳'],'AT'=>['IND','🇮🇳'],'AU'=>['IND','🇮🇳'],
-        'AP'=>['PAK','🇵🇰'],'A2'=>['BWA','🇧'],'A3'=>['TON','🇹🇴'],'A4'=>['OMN','🇴🇲'],'A5'=>['BTN','🇧🇹'],'A6'=>['ARE','🇦🇪'],'A7'=>['QAT','🇶🇦'],'A9'=>['BHR','🇧'],
-        '4X'=>['ISR','🇮'],'4Z'=>['ISR','🇮🇱'],
-        'ZS'=>['ZAF','🇿'],'ZT'=>['ZAF','🇿🇦'],'ZU'=>['ZAF','🇿'],
-        'VK'=>['AUS','🇦🇺'],'VH'=>['AUS','🇦🇺'],'VI'=>['AUS','🇦🇺'],
-        'ZL'=>['NZL','🇳🇿'],'ZM'=>['NZL','🇳'],
-        '9A'=>['HRV','🇭🇷'],'S5'=>['SVN','🇸🇮'],'T7'=>['BIH','🇧'],'E7'=>['BIH','🇧'],
-        'YT'=>['SRB','🇷🇸'],'YU'=>['SRB','🇷'],'Z3'=>['MKD','🇲'],'ZA'=>['ALB','🇦'],
-        'PZ'=>['SUR','🇸🇷'],'8P'=>['BRB','🇧'],'9Y'=>['TTO','🇹'],'9Z'=>['TTO','🇹🇹'],
-        'J6'=>['LCA','🇱'],'J7'=>['DMA','🇩'],'J8'=>['GRD','🇬'],
-        'VP2'=>['AIA','🇦'],'VP5'=>['TCA','🇹'],'VP8'=>['FLK','🇫'],
-        'ZD8'=>['SHN','🇸🇭'],'C6'=>['BHS','🇧🇸'],'C9'=>['MOZ','🇲'],'D4'=>['CPV','🇨'],
-        'EA8'=>['ESH','🇪'],'EA9'=>['ESH','🇪🇭'],'ZB2'=>['GIB','🇬'],
-        'CT'=>['PRT','🇵'],'CU'=>['PRT','🇵🇹'],'CV'=>['PRT','🇵🇹'],'CW'=>['PRT','🇵🇹'],'CS'=>['PRT','🇵🇹'],'CR'=>['PRT','🇵🇹']
-    ];
-    $cs = strtoupper(trim($callsign));
-    for ($len = 4; $len >= 1; $len--) {
-        $prefix = substr($cs, 0, $len);
-        if (isset($prefixes[$prefix])) return $prefixes[$prefix];
-    }
-    return ['XXX', '🌐'];
-}
 
 function colorizeLog($text) {
     return implode("\n", array_map(function($l) {
@@ -1912,6 +1856,26 @@ function getFlag(callsign){
     return '<span class="flag-emoji">🌐</span>';
 }
 
+// Convierte código ISO de país (ej: 'ES','DE') a bandera usando getFlag()
+function getFlagFromISO(iso) {
+    const isoToPrefix = {
+        'ES':'EA','FR':'F','IT':'I','GB':'G','DE':'DL','US':'K','PT':'CT',
+        'BE':'ON','NL':'PA','AT':'OE','CH':'HB','PL':'SP','CZ':'OK','SK':'OM',
+        'HU':'HA','RO':'YO','GR':'SV','RU':'UA','UA':'UW','JP':'JA','AU':'VK',
+        'ZA':'ZS','BR':'PY','AR':'LW','CA':'VE','CN':'BY','IN':'VU','KR':'HL',
+        'FI':'OH','SE':'SM','NO':'LA','DK':'OZ','LT':'LY','LV':'YL','EE':'ES2',
+        'HR':'9A','SI':'S5','RS':'YT','BG':'LZ','MK':'Z3','AL':'ZA',
+        'LU':'LX','IE':'EI','IS':'TF','CY':'5B','MT':'9H','MX':'XE','CL':'CE',
+        'CO':'HK','VE2':'YV','PE':'OA','EC':'HC','BO':'CP','UY':'CX',
+        'NZ':'ZL','TW':'BV','HK2':'VR','SG':'9V','MY':'9M','TH':'HS','PH':'DU',
+        'ID':'YB','IL':'4X','TR':'TA','SA':'HZ','AE':'A6','QA':'A7',
+        'MA':'CN','EG':'SU','TN':'3V','DZ':'7X','NG':'5N','KE':'5Z'
+    };
+    const prefix = isoToPrefix[iso];
+    if (!prefix) return '<span class="flag-emoji">🌐</span>';
+    return getFlag(prefix + '1');
+}
+
 let S = { active:false, poll:null, logT:null, txT:null, last:null, busy:false, cfgId:null };
 
 function setDot(id, v) {
@@ -2255,7 +2219,7 @@ function tgYsfRenderHosts(list){
     const el=$('tgYsfHostList');
     if(!list.length){ el.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:.5rem;">Sin resultados</div>'; return; }
     el.innerHTML=list.map(h=>{
-        const flag=h.country==='ES'?'🇪🇸 ':h.country?h.country+' ':'';
+        const flag=h.country ? getFlagFromISO(h.country)+' ' : '';
         const nm=h.name||'—';
         const desc=h.desc?' · '+h.desc:'';
         const nmEsc=nm.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
