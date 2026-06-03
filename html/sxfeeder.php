@@ -4,24 +4,20 @@ header('X-Content-Type-Options: nosniff');
 
 /* ========== FUNCIÓN PARA EXTRAER PUERTO WEB DINÁMICO ========== */
 function getWebPortFromConfig($configFile) {
-    // Si no existe el archivo o está vacío, devolver 8080 por defecto
     if (!file_exists($configFile) || filesize($configFile) === 0) {
         return 8080;
     }
     
     $content = file_get_contents($configFile);
     
-    // Si el contenido está vacío o solo tiene espacios, devolver 8080
     if (empty(trim($content))) {
         return 8080;
     }
     
-    // Busca -N seguido opcionalmente de espacio y luego el puerto (número)
     if (preg_match('/-N\s*(\d+)/', $content, $matches)) {
         return (int)$matches[1];
     }
     
-    // Fallback al puerto por defecto si no encuentra el parámetro
     return 8080;
 }
 
@@ -49,7 +45,6 @@ $SVC = $SERVICES[$serviceKey];
 $SYSTEMD = $SVC['systemd'];
 $CONFIG_FILE = $SVC['config'];
 
-// ← Calcula el puerto web dinámico SOLO para ais-catcher
 $WEB_PORT = ($serviceKey === 'ais') ? getWebPortFromConfig($CONFIG_FILE) : null;
 
 /* ================= STATUS ================= */
@@ -120,262 +115,677 @@ if ($action === 'config-save') {
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><?= $SVC['name'] ?> · Ship Control</title>
 
-<title><?= $SVC['name'] ?> Control</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚢</text></svg>">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-
-:root{
---bg:#0a0e14;
---panel:#111720;
---border:#1e2d3d;
---cyan:#00d4ff;
---green:#00ff9f;
---red:#ff4560;
---text:#a8b9cc;
---purple:#bd00ff;
+:root {
+    --bg-primary: #0b1220;
+    --bg-secondary: #111827;
+    --bg-tertiary: #1f2937;
+    --border: #1f2937;
+    --border-light: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --success: #10b981;
+    --success-hover: #059669;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --admin: #8b5cf6;
+    --admin-hover: #7c3aed;
 }
 
-body{
-margin:0;
-background:var(--bg);
-color:var(--text);
-font-family:Rajdhani;
+* { box-sizing: border-box; }
+
+body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    font-size: 14px;
+    background-image:
+        radial-gradient(circle at 15% 10%, rgba(59,130,246,0.08), transparent 40%),
+        radial-gradient(circle at 85% 90%, rgba(139,92,246,0.06), transparent 40%);
+    background-attachment: fixed;
 }
 
-/* HEADER */
-.header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:10px 14px;
-background:var(--panel);
-border-bottom:1px solid var(--border);
-flex-wrap:wrap;
-gap:8px;
+/* TOPBAR */
+.topbar {
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.title{
-font-family:Orbitron;
-color:var(--cyan);
-font-size:13px;
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.3px;
 }
 
-.row{
-display:flex;
-align-items:center;
-gap:8px;
-flex-wrap:wrap;
+.brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: white;
 }
 
-/* SELECT */
-select{
-background:#0d131b;
-color:var(--cyan);
-border:1px solid var(--border);
-padding:4px;
-}
-
-/* BUTTONS */
-.btn{
-background:transparent;
-border:1px solid var(--cyan);
-color:var(--cyan);
-padding:5px 8px;
-cursor:pointer;
-font-size:11px;
-}
-
-.btn:hover{background:#12202b;}
-.btn-red{border-color:var(--red);color:var(--red);}
-.btn-green{border-color:var(--green);color:var(--green);}
-
-/* Botón Admin (Naranja) */
-.btn-admin {
-    border-color: #ff9100;
-    color: #ff9100;
-}
-.btn-admin:hover {
-    background: #3d2300;
-}
-
-/* SWITCH tipo dump1090 */
-.switch{
-position:relative;
-width:52px;
-height:24px;
-display:inline-block;
-}
-
-.switch input{display:none;}
-
-.slider{
-position:absolute;
-inset:0;
-background:#1b2430;
-border:1px solid var(--red);
-cursor:pointer;
-transition:.3s;
-border-radius:2px;
-}
-
-.slider:before{
-content:'';
-position:absolute;
-height:18px;width:18px;
-left:3px;top:2px;
-background:var(--red);
-transition:.3s;
-}
-
-input:checked + .slider{
-border-color:var(--green);
-}
-
-input:checked + .slider:before{
-transform:translateX(26px);
-background:var(--green);
+.topbar-right {
+    display: flex;
+    align-items: center;
 }
 
 /* LAYOUT */
-.container{padding:14px;}
-
-.state{
-font-size:12px;
-min-width:140px;
+.container-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px;
 }
 
-/* PANELS */
-.panel{
-margin-top:10px;
-border:1px solid var(--border);
-background:#0c121a;
-padding:10px;
+/* CARDS */
+.card-panel {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 22px;
+    overflow: hidden;
+    transition: border-color 0.2s;
 }
 
-textarea{
-width:100%;
-height:240px;
-background:#05090d;
-color:#ccc;
-border:1px solid var(--border);
+.card-panel:hover {
+    border-color: var(--border-light);
 }
 
-/* hidden */
-.hidden{display:none;}
+.card-header {
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(31, 41, 55, 0.3);
+}
 
+.card-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.card-header h3 i {
+    color: var(--accent);
+    font-size: 16px;
+}
+
+.card-body {
+    padding: 22px;
+}
+
+/* SELECTOR DE SERVICIO (TABS) */
+.service-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 22px;
+    background: var(--bg-tertiary);
+    padding: 6px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.service-tab {
+    flex: 1;
+    padding: 10px 16px;
+    text-align: center;
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.service-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.03);
+}
+
+.service-tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59,130,246,0.3);
+}
+
+/* BOTONES */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.btn-action:hover {
+    background: #374151;
+    border-color: #4b5563;
+    color: var(--text-primary);
+    transform: translateY(-1px);
+}
+
+.btn-action i { font-size: 14px; }
+
+.btn-primary-act {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+.btn-primary-act:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+    color: white;
+}
+
+.btn-admin {
+    background: var(--admin);
+    border-color: var(--admin);
+    color: white;
+}
+.btn-admin:hover {
+    background: var(--admin-hover);
+    border-color: var(--admin-hover);
+    color: white;
+}
+
+.btn-config {
+    background: rgba(107, 114, 128, 0.15);
+    border-color: rgba(107, 114, 128, 0.35);
+    color: #d1d5db;
+}
+.btn-config:hover {
+    background: rgba(107, 114, 128, 0.25);
+    border-color: #6b7280;
+    color: white;
+}
+
+.btn-log {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: #93c5fd;
+}
+.btn-log:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: var(--accent);
+    color: #bfdbfe;
+}
+
+.btn-phpplus {
+    background: var(--admin);
+    border-color: var(--admin);
+    color: white;
+}
+.btn-phpplus:hover {
+    background: var(--admin-hover);
+    border-color: var(--admin-hover);
+    color: white;
+}
+
+/* SWITCH MODERNO */
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    margin-bottom: 22px;
+}
+
+.switch {
+    position: relative;
+    width: 56px;
+    height: 30px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.switch input { display: none; }
+
+.slider {
+    position: absolute;
+    inset: 0;
+    background: #374151;
+    cursor: pointer;
+    transition: .3s;
+    border-radius: 999px;
+    border: 1px solid #4b5563;
+}
+
+.slider:before {
+    content: '';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    top: 3px;
+    background: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+    background: var(--success);
+    border-color: var(--success);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.switch-info {
+    flex: 1;
+}
+
+.switch-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.switch-status {
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-on { color: #34d399; }
+.status-off { color: #f87171; }
+
+/* INFO GRID */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.info-item {
+    background: var(--bg-tertiary);
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+}
+
+.info-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.info-value {
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* BUTTON GROUPS */
+.btn-group-custom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+/* TERMINAL */
+.terminal-window {
+    background: #0a0f1a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-family: "SF Mono", "Monaco", "Menlo", "Consolas", monospace;
+}
+
+.terminal-header {
+    background: #111827;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.terminal-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.terminal-dots span {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: #374151;
+}
+.terminal-dots span:nth-child(1) { background: #ef4444; }
+.terminal-dots span:nth-child(2) { background: #f59e0b; }
+.terminal-dots span:nth-child(3) { background: #10b981; }
+
+.terminal-body {
+    padding: 16px;
+    color: #10b981;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    height: 420px;
+    overflow-y: auto;
+    margin: 0;
+}
+
+.terminal-body::-webkit-scrollbar { width: 8px; }
+.terminal-body::-webkit-scrollbar-track { background: #0a0f1a; }
+.terminal-body::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+
+/* EDITOR */
+.config-editor {
+    width: 100%;
+    min-height: 300px;
+    background: #0a0f1a;
+    color: #e5e7eb;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    resize: vertical;
+}
+
+.config-editor:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 640px) {
+    .container-main { padding: 16px; }
+    .topbar { padding: 12px 16px; }
+    .card-body { padding: 16px; }
+    .service-tab { font-size: 12px; padding: 8px 10px; }
+}
 </style>
 </head>
 
 <body>
 
-<div class="header">
-
-<div class="title">AIS-CATCHER / SXFEEDER CONTROL</div>
-
-<div class="row">
-
-<select id="svc" onchange="chg()">
-<option value="ais" <?= $serviceKey==='ais'?'selected':'' ?>>AIS-catcher</option>
-<option value="sxfeeder" <?= $serviceKey==='sxfeeder'?'selected':'' ?>>SXFeeder</option>
-</select>
-
-<button class="btn btn-green" onclick="toggleCfg()">CONFIG</button>
-<button class="btn btn-green" onclick="toggleLog()">LOG</button>
-
-<!-- Botones Web -->
-<button class="btn btn-green" onclick="openWeb()">WEB</button>
-<button class="btn btn-admin" onclick="openAdmin()">WEB ADMIN</button>
-
+<!-- TOPBAR -->
+<div class="topbar">
+    <div class="brand">
+        <div class="brand-icon"><i class="bi bi-tsunami"></i></div>
+        <div>
+            Ship <span style="color: var(--text-secondary); font-weight: 400;">· AIS Tracker</span>
+        </div>
+    </div>
+    
+    <div class="topbar-right">
+        <a href="mmdvm.php" class="btn-action btn-phpplus" style="padding: 7px 14px; font-size: 12px;">
+            <i class="bi bi-house-door-fill"></i> Panel PHPPLUS
+        </a>
+    </div>
 </div>
 
-<div class="row">
+<div class="container-main">
 
-<a href="mmdvm.php" class="btn btn-green" style="text-decoration:none;">
-🏠 Panel PHPPLUS
-</a>
+    <!-- SELECTOR DE SERVICIO -->
+    <div class="service-tabs">
+        <a href="?service=ais" class="service-tab <?= $serviceKey==='ais'?'active':'' ?>">
+            <i class="bi bi-broadcast-pin"></i> AIS-catcher
+        </a>
+        <a href="?service=sxfeeder" class="service-tab <?= $serviceKey==='sxfeeder'?'active':'' ?>">
+            <i class="bi bi-diagram-3"></i> SXFeeder
+        </a>
+    </div>
 
-</div>
+    <!-- PANEL PRINCIPAL -->
+    <div class="card-panel">
+        <div class="card-header">
+            <h3><i class="bi bi-sliders"></i> <?= $SVC['name'] ?></h3>
+            <span style="font-size: 12px; color: var(--text-secondary);">
+                <i class="bi bi-clock"></i> <span id="clock"><?= date('d/m/Y H:i') ?></span>
+            </span>
+        </div>
+        <div class="card-body">
 
-</div>
+            <!-- INFO ESTADO -->
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Servicio</div>
+                    <div class="info-value" id="infoStatus">
+                        <i class="bi bi-hourglass-split" style="color: var(--text-secondary);"></i>
+                        <span style="color: var(--text-secondary);">Consultando...</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Autoarranque</div>
+                    <div class="info-value" id="infoEnabled">
+                        <i class="bi bi-hourglass-split" style="color: var(--text-secondary);"></i>
+                        <span style="color: var(--text-secondary);">Consultando...</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Configuración</div>
+                    <div class="info-value">
+                        <i class="bi bi-file-earmark-code" style="color: var(--accent);"></i>
+                        <span style="font-family: monospace; font-size: 12px;"><?= basename($CONFIG_FILE) ?></span>
+                    </div>
+                </div>
+                <?php if ($serviceKey === 'ais'): ?>
+                <div class="info-item">
+                    <div class="info-label">Puerto Web</div>
+                    <div class="info-value">
+                        <i class="bi bi-ethernet" style="color: var(--accent);"></i>
+                        <span style="font-family: monospace;"><?= $WEB_PORT ?></span>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
 
-<div class="container">
+            <!-- SWITCH ON/OFF -->
+            <div class="switch-container">
+                <label class="switch">
+                    <input type="checkbox" id="sw" onchange="toggle()">
+                    <span class="slider"></span>
+                </label>
+                <div class="switch-info">
+                    <div class="switch-label">Estado del servicio</div>
+                    <div class="switch-status" id="state">
+                        <i class="bi bi-hourglass-split"></i> Consultando...
+                    </div>
+                </div>
+            </div>
 
-<div class="row">
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="section-label">Acciones</div>
+            <div class="btn-group-custom" style="margin-bottom: 22px;">
+                <button class="btn-action btn-config" onclick="toggleCfg()">
+                    <i class="bi bi-gear-fill"></i> Configuración
+                </button>
+                <button class="btn-action btn-log" onclick="toggleLog()">
+                    <i class="bi bi-terminal-fill"></i> Ver Logs
+                </button>
+                <?php if ($serviceKey === 'ais'): ?>
+                <button class="btn-action btn-primary-act" onclick="openWeb()">
+                    <i class="bi bi-broadcast-pin"></i> WEB AIS
+                </button>
+                <button class="btn-action btn-admin" onclick="openAdmin()">
+                    <i class="bi bi-shield-lock-fill"></i> WEB ADMIN
+                </button>
+                <?php endif; ?>
+            </div>
 
-<label class="switch">
-<input type="checkbox" id="sw" onchange="toggle()">
-<span class="slider"></span>
-</label>
+        </div>
+    </div>
 
-<div class="state" id="state">—</div>
+    <!-- PANEL CONFIGURACIÓN -->
+    <div id="cfgPanel" class="card-panel hidden">
+        <div class="card-header">
+            <h3><i class="bi bi-file-earmark-code"></i> Editor · <?= basename($CONFIG_FILE) ?></h3>
+            <span style="font-size: 11px; color: var(--text-secondary);">
+                <i class="bi bi-pencil-square"></i> Editando
+            </span>
+        </div>
+        <div class="card-body">
+            <textarea id="cfgTxt" class="config-editor"></textarea>
+            <div style="margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-action btn-primary-act" onclick="saveCfg()">
+                    <i class="bi bi-check2-circle"></i> Guardar cambios
+                </button>
+                <button class="btn-action btn-config" onclick="toggleCfg()">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
 
-</div>
+    <!-- PANEL LOGS -->
+    <div id="logPanel" class="card-panel hidden">
+        <div class="card-header">
+            <h3><i class="bi bi-terminal-fill"></i> Terminal en vivo</h3>
+            <span style="font-size: 11px; color: var(--text-secondary);">
+                <i class="bi bi-journal-text"></i> journalctl · <?= $SYSTEMD ?>
+            </span>
+        </div>
+        <div class="card-body" style="padding: 0;">
+            <div class="terminal-window" style="border-radius: 0; border: none;">
+                <div class="terminal-header">
+                    <div class="terminal-dots"><span></span><span></span><span></span></div>
+                    <span style="margin-left: 8px;">Últimas 80 líneas</span>
+                </div>
+                <pre id="logContent" class="terminal-body">Cargando logs...</pre>
+            </div>
+        </div>
+    </div>
 
-<div id="cfgPanel" class="panel hidden">
-<textarea id="cfgTxt"></textarea>
-<button class="btn btn-green" onclick="saveCfg()">Guardar</button>
-</div>
-
-<pre id="logPanel" class="panel hidden"></pre>
+    <div style="text-align: center; padding: 20px 0 10px; color: var(--text-secondary); font-size: 11px; letter-spacing: 0.5px;">
+        SHIP TRACKER CONTROL PANEL · <?= date('Y') ?>
+    </div>
 
 </div>
 
 <script>
 
 const svc='<?= $serviceKey ?>';
-// Inyectamos el puerto desde PHP (si es null, JS usará 8080)
 const webPort = <?= ($WEB_PORT !== null) ? intval($WEB_PORT) : 'null' ?>;
 
 /* API */
 function api(a,p=null){
-return fetch('?service='+svc+'&action='+a,{
-method:p?'POST':'GET',
-headers:p?{'Content-Type':'application/x-www-form-urlencoded'}:{},
-body:p
-});
+    return fetch('?service='+svc+'&action='+a,{
+        method:p?'POST':'GET',
+        headers:p?{'Content-Type':'application/x-www-form-urlencoded'}:{},
+        body:p
+    });
 }
 
 /* STATUS */
 async function status(){
-const r=await api('status');
-const d=await r.json();
+    const r=await api('status');
+    const d=await r.json();
 
-document.getElementById('sw').checked=d.active;
+    document.getElementById('sw').checked=d.active;
 
-document.getElementById('state').innerHTML =
-d.active
-? '<span style="color:#00ff9f">ACTIVE</span>'
-: '<span style="color:#ff4560">'+d.status.toUpperCase()+'</span>';
+    // Estado principal (switch)
+    document.getElementById('state').innerHTML = d.active
+        ? '<i class="bi bi-check-circle-fill"></i> <span class="status-on">ACTIVO</span>'
+        : '<i class="bi bi-x-circle-fill"></i> <span class="status-off">'+d.status.toUpperCase()+'</span>';
+
+    // Info grid - Servicio
+    document.getElementById('infoStatus').innerHTML = d.active
+        ? '<i class="bi bi-check-circle-fill" style="color:#34d399;"></i> <span style="color:#34d399;">Active</span>'
+        : '<i class="bi bi-x-circle-fill" style="color:#f87171;"></i> <span style="color:#f87171;">'+d.status.charAt(0).toUpperCase()+d.status.slice(1)+'</span>';
+
+    // Info grid - Autoarranque
+    document.getElementById('infoEnabled').innerHTML = d.enabled
+        ? '<i class="bi bi-lightning-charge-fill" style="color:#34d399;"></i> <span style="color:#34d399;">Enabled</span>'
+        : '<i class="bi bi-lightning-charge" style="color:#9ca3af;"></i> <span style="color:#9ca3af;">Disabled</span>';
 }
 
 /* SWITCH */
 async function toggle(){
-if(document.getElementById('sw').checked){
-await api('on');
-}else{
-await api('off');
-}
-status();
-}
-
-/* SERVICE SELECT */
-function chg(){
-location.href='?service='+document.getElementById('svc').value;
+    if(document.getElementById('sw').checked){
+        await api('on');
+    }else{
+        await api('off');
+    }
+    status();
 }
 
-/* WEB AIS ONLY - Puerto Dinámico (Default 8080 si no hay config) */
+/* WEB AIS ONLY - Puerto Dinámico */
 function openWeb(){
     if(svc!=='ais') return alert('SXFeeder no tiene web');
-    // Usar el puerto inyectado desde PHP o fallback a 8080
     const port = (webPort !== null && webPort > 0) ? webPort : 8080;
     window.open('http://'+location.hostname+':'+port,'_blank');
 }
@@ -389,25 +799,22 @@ function openAdmin(){
 /* CONFIG TOGGLE */
 let cfgOpen=false;
 function toggleCfg(){
-cfgOpen=!cfgOpen;
-document.getElementById('cfgPanel').classList.toggle('hidden');
-if(cfgOpen) loadCfg();
+    cfgOpen=!cfgOpen;
+    document.getElementById('cfgPanel').classList.toggle('hidden');
+    if(cfgOpen) loadCfg();
 }
 
 async function loadCfg(){
-const r=await api('config-read');
-const d=await r.json();
-document.getElementById('cfgTxt').value=d.content;
+    const r=await api('config-read');
+    const d=await r.json();
+    document.getElementById('cfgTxt').value=d.content;
 }
 
 /* GUARDAR CONFIG Y RECARGAR */
 async function saveCfg(){
     await api('config-save','content='+encodeURIComponent(document.getElementById('cfgTxt').value));
     
-    // Pequeño delay para asegurar escritura en disco
     setTimeout(() => {
-        // Al recargar, PHP vuelve a leer la config y actualiza webPort
-        // El botón WEB apuntará automáticamente al nuevo puerto
         location.reload();
     }, 500);
 }
@@ -415,14 +822,14 @@ async function saveCfg(){
 /* LOG TOGGLE */
 let logOpen=false;
 function toggleLog(){
-logOpen=!logOpen;
-document.getElementById('logPanel').classList.toggle('hidden');
-if(logOpen) loadLog();
+    logOpen=!logOpen;
+    document.getElementById('logPanel').classList.toggle('hidden');
+    if(logOpen) loadLog();
 }
 
 async function loadLog(){
-const r=await api('log');
-document.getElementById('logPanel').textContent=await r.text();
+    const r=await api('log');
+    document.getElementById('logContent').textContent=await r.text();
 }
 
 /* INIT */
