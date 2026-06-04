@@ -7,6 +7,7 @@
                         cd /home/pi/MMDVMHost
                         curl --fail -o DMRIds.dat -s http://www.pistar.uk/downloads/DMRIds.dat
                         sudo cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2YSF/DMRIds.dat
+                        sudo cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/YSF2DMR/DMRIds.dat
                         
                         echo "*********************************************"
                         echo "         IDS actualizadas correctamente"
