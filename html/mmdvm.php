@@ -646,6 +646,7 @@ if ($action === 'nxdn-transmission') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Panel PHPPLUS REM</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
@@ -913,15 +914,15 @@ button.btn-header { font-family: var(--font-mono); }
 <a href="http://rem-esp.es" target="_blank">
   <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:50px;width:auto;">
 </a>
-<h1>
-    <span style="color:var(--cyan)">SISTEMA</span> 
-    <span style="color:var(--cyan)">DE</span> 
-    <span style="color:var(--cyan)">CONTROL</span> 
-    <span style="color:var(--amber)">Y</span> 
-    <span style="color:var(--amber)">MONITORIZACIÓN</span> 
-    <span style="color:#ff6b9d">PARA</span> 
-    <span style="color:#ff6b9d">RADIOAFICIONADOS</span> 
-    <span style="color:#9b59d4">PHPPlus</span>
+<h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; letter-spacing: 2px;">
+    <span style="color: var(--cyan);">SISTEMA</span>
+    <span style="color: var(--cyan);">DE</span>
+    <span style="color: var(--cyan);">CONTROL</span>
+    <span style="color: var(--green);">Y</span>
+    <span style="color: var(--green);">MONITORIZACIÓN</span>
+    <span style="color: var(--violet);">PARA</span>
+    <span style="color: var(--violet);">RADIOAFICIONADOS</span>
+    <span style="color: var(--amber);">PHPPlus</span>
 </h1>
 </div>
 <div class="ctrl-header-btns">
