@@ -654,7 +654,7 @@ if ($action === 'nxdn-transmission') {
 * { box-sizing: border-box; }
 
 /* body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 1rem; min-height: 100vh; padding: 0; margin: 0; } */
-body {   background-image: url("fractals_14.jpg");
+body {   background-image: url("fractals_15.jpg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover; color: var(--text); font-family: var(--font-ui); font-size: 1rem; min-height: 100vh; padding: 0;
