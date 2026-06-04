@@ -962,7 +962,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
     <button class="btn-header cyan" onclick="xtTtydOpen()">⌨ Terminal</button>
     <a href="extra.php" class="btn-header amber">☰ Menu Extra</a>
-    <a href="dmr2ysf.php" class="btn-header violet">🔄 BRIDGE</a>
+    <a href="bridge.php" class="btn-header violet">🔄 BRIDGE</a>
   
     <button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Opi</button>
 </div>
