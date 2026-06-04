@@ -654,7 +654,7 @@ if ($action === 'nxdn-transmission') {
 * { box-sizing: border-box; }
 
 body {
-  background-image: url("fractals_7.jpg");
+  background-image: url("fractals_1.jpg");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: 100% 100%;
