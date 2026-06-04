@@ -912,7 +912,7 @@ button.btn-header { font-family: var(--font-mono); }
 <header class="ctrl-header">
 <div class="ctrl-header-top">
 <a href="http://rem-esp.es" target="_blank">
-  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:50px;width:auto;">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:70px;width:auto;">
 </a>
 <h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; letter-spacing: 2px;">
     <span style="color: var(--cyan);">SISTEMA</span>
