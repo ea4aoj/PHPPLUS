@@ -653,10 +653,19 @@ if ($action === 'nxdn-transmission') {
 :root { --bg: #0a0e14; --surface: #111720; --border: #1e2d3d; --green: #00ff9f; --green-dim: #00cc7a; --red: #ff4560; --amber: #ffb300; --cyan: #00d4ff; --violet: #b57aff; --text: #a8b9cc; --text-dim: #4a5568; --font-mono: 'Share Tech Mono', monospace; --font-ui: 'Rajdhani', sans-serif; --font-orb: 'Orbitron', monospace; }
 * { box-sizing: border-box; }
 
-body {   background-image: url("fractals_7.jpg");
+body {
+  background-image: url("fractals_7.jpg");
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover; color: var(--text); font-family: var(--font-ui); font-size: 1rem; min-height: 100vh; padding: 0;
+  background-position: center center;
+  background-size: contain;
+  background-color: #000;
+
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  min-height: 100vh;
+  padding: 0;
+}
 
 .ctrl-header { border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; flex-direction: column; align-items: center; gap: .6rem; background: var(--surface); }
 .ctrl-header-top { display: flex; align-items: center; gap: .8rem; }
