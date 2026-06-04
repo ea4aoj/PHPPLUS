@@ -961,19 +961,21 @@ button.btn-header { font-family: var(--font-mono); }
         <span class="station-meta-value" id="siModel" style="color:var(--violet);font-size:.7rem;white-space:nowrap;"><?php echo htmlspecialchars($modelShort); ?></span>
     </div>
 </div>
-<div class="status-bar">
-<div class="status-item"><div class="dot" id="dot-mosquitto"></div><span>Mosquitto</span></div>
-<div class="status-item"><div class="dot" id="dot-mmdvm"></div><span>MMDVMHost</span></div>
-<div class="status-item"><div class="dot" id="dot-gateway"></div><span>DMRGateway</span></div>
-<div class="section-divider"></div>
-<div class="status-item"><div class="dot" id="dot-mmdvmysf"></div><span style="color:#26c6da">MMDVMHost YSF</span></div>
-<div class="status-item"><div class="dot" id="dot-ysf"></div><span style="color:var(--violet)">YSFGateway</span></div>
-<div class="section-divider"></div>
-<div class="status-item"><div class="dot" id="dot-dstarmmd"></div><span style="color:#00e5ff">MMDVMDStar</span></div>
-<div class="status-item"><div class="dot" id="dot-dstargw"></div><span style="color:#00e5ff">DStarGateway</span></div>
-<div class="section-divider"></div>
-<div class="status-item"><div class="dot" id="dot-nxdnmmd"></div><span style="color:#ffd700">MMDVMHost NXDN</span></div>
-<div class="status-item"><div class="dot" id="dot-nxdngw"></div><span style="color:#ffd700">NXDNGateway</span></div>
+<div class="station-card" style="padding:1rem 2rem 1rem 3.0rem;">
+    <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;justify-content:center;">
+        <div class="status-item"><div class="dot" id="dot-mosquitto"></div><span>MOSQUITTO</span></div>
+        <div class="status-item"><div class="dot" id="dot-mmdvm"></div><span>MMDVMHOST</span></div>
+        <div class="status-item"><div class="dot" id="dot-gateway"></div><span>DMRGATEWAY</span></div>
+        <div class="section-divider" style="height:30px;"></div>
+        <div class="status-item"><div class="dot" id="dot-mmdvmysf"></div><span style="color:#26c6da;text-transform:uppercase;">MMDVMHOST YSF</span></div>
+        <div class="status-item"><div class="dot" id="dot-ysf"></div><span style="color:var(--violet);text-transform:uppercase;">YSFGATEWAY</span></div>
+        <div class="section-divider" style="height:30px;"></div>
+        <div class="status-item"><div class="dot" id="dot-dstarmmd"></div><span style="color:#00e5ff;text-transform:uppercase;">MMDVMDSTAR</span></div>
+        <div class="status-item"><div class="dot" id="dot-dstargw"></div><span style="color:#00e5ff;text-transform:uppercase;">DSTARGATEWAY</span></div>
+        <div class="section-divider" style="height:30px;"></div>
+        <div class="status-item"><div class="dot" id="dot-nxdnmmd"></div><span style="color:#ffd700;text-transform:uppercase;">MMDVMHOST NXDN</span></div>
+        <div class="status-item"><div class="dot" id="dot-nxdngw"></div><span style="color:#ffd700;text-transform:uppercase;">NXDNGATEWAY</span></div>
+    </div>
 </div>
 <div class="controls-section">
   <div class="service-card">
