@@ -657,8 +657,7 @@ body {
   background-image: url("fractals_7.jpg");
   background-repeat: no-repeat;
   background-position: center center;
-  background-size: contain;
-  background-color: #000;
+  background-size: auto;
 
   color: var(--text);
   font-family: var(--font-ui);
