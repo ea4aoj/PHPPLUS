@@ -911,9 +911,18 @@ button.btn-header { font-family: var(--font-mono); }
 <header class="ctrl-header">
 <div class="ctrl-header-top">
 <a href="http://rem-esp.es" target="_blank">
-  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:40px;width:auto;">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:60px;width:auto;">
 </a>
-<h1>SISTEMA DE CONTROL Y MONITORIZACIÓN PARA RADIOAFICIONADOS PHPPlus</h1>
+<h1>
+    <span style="color:var(--cyan)">SISTEMA</span> 
+    <span style="color:var(--green)">DE</span> 
+    <span style="color:var(--amber)">CONTROL</span> 
+    <span style="color:var(--violet)">Y</span> 
+    <span style="color:#00e5ff">MONITORIZACIÓN</span> 
+    <span style="color:#ff6b9d">PARA</span> 
+    <span style="color:#ffd700">RADIOAFICIONADOS</span> 
+    <span style="color:#9b59d4">PHPPlus</span>
+</h1>
 </div>
 <div class="ctrl-header-btns">
     <a href="editor_general_config.php" class="btn-header green"> 📄 editor general </a>
