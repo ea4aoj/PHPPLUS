@@ -115,9 +115,7 @@
                         Bridge YSF ↔ DMR · Puente entre redes Fusion y DMR
                     </p>
                     
-                    <!-- BOTÓN MODIFICADO: Abre el modal en lugar de navegar -->
-                    <!-- CUANDO ESTÉ LISTO: Cambia href="#" por href="/ysf2dmr.php" y quita data-bs-toggle y data-bs-target -->
-                    <a href="#" class="btn btn-info btn-sm mt-2 text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#modalProximamente">
+                    <a href="/ysf2dmr.php"  class="btn btn-info btn-sm mt-2 text-dark fw-bold">
                         <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
                     </a>
                 </div>
@@ -127,26 +125,6 @@
     </div>
 </div>
 
-<!-- MODAL PRÓXIMAMENTE (YSF2DMR) -->
-<div class="modal fade" id="modalProximamente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border border-info shadow-lg" style="box-shadow: 0 0 25px rgba(13, 202, 240, 0.25) !important;">
-            <div class="modal-header border-bottom-0 justify-content-center pb-0 position-relative">
-                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="bi bi-rocket-takeoff-fill display-1 text-info mb-3 animate-float"></i>
-                <h3 class="text-white fw-bold mb-2">¡Próximamente!</h3>
-                <p class="text-white-50 mb-0">El panel de control <strong class="text-info">YSF2DMR</strong> está en desarrollo.<br>¡Vuelve muy pronto!</p>
-            </div>
-            <div class="modal-footer border-top-0 justify-content-center pb-4">
-                <button type="button" class="btn btn-outline-info btn-sm px-4" data-bs-dismiss="modal">
-                    <i class="bi bi-check-lg me-1"></i>Entendido
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
