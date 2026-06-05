@@ -28,7 +28,7 @@ define('PID_Y2D',     '/tmp/YSF2DMR.pid');
 
 // ── Logs en vivo ──
 define('LOG_MMDVM',   '/tmp/MMDVMYSF2DMR.log');
-define('LOG_Y2D',     '/tmp/YSF2DMR.log'); // <-- Este es el que captura el tráfico de estaciones
+define('LOG_Y2D',     '/tmp/YSF2DMR.log');
 
 $CONFIG_FILES = [
     'mmdvm'   => INI_MMDVM,
@@ -84,7 +84,7 @@ function lookupCall($callsign) {
 // 🌍 Bandera por prefijo de callsign
 function getFlagInfo($callsign) {
     $prefixes = [
-        'EA'=>['ESP','🇪🇸'],'EB'=>['ESP','🇪'],'EC'=>['ESP','🇸'],'ED'=>['ESP','🇪🇸'],'EE'=>['ESP','🇪🇸'],'EF'=>['ESP','🇪🇸'],
+        'EA'=>['ESP','🇪🇸'],'EB'=>['ESP','🇪🇸'],'EC'=>['ESP','🇪🇸'],'ED'=>['ESP','🇪🇸'],'EE'=>['ESP','🇪🇸'],'EF'=>['ESP','🇪🇸'],
         'F'=>['FRA','🇫🇷'],'FB'=>['FRA','🇫🇷'],'FC'=>['FRA','🇫🇷'],'FD'=>['FRA','🇫🇷'],'FE'=>['FRA','🇫🇷'],'FF'=>['FRA','🇫🇷'],
         'I'=>['ITA','🇮🇹'],'IZ'=>['ITA','🇮🇹'],'IW'=>['ITA','🇮🇹'],'IV'=>['ITA','🇮🇹'],'IX'=>['ITA','🇮🇹'],
         'G'=>['GBR','🇬🇧'],'M'=>['GBR','🇬🇧'],'2E'=>['GBR','🇬🇧'],'M6'=>['GBR','🇬🇧'],'M7'=>['GBR','🇬🇧'],
@@ -94,42 +94,37 @@ function getFlagInfo($callsign) {
         'OE'=>['AUT','🇦🇹'],
         'HB'=>['CHE','🇨🇭'],'HE'=>['CHE','🇨🇭'],
         'LY'=>['LTU','🇱🇹'],'ES'=>['EST','🇪🇪'],'YL'=>['LVA','🇱🇻'],
-        'SP'=>['POL','🇵'],'SQ'=>['POL','🇱'],'SN'=>['POL','🇵'],'SO'=>['POL','🇱'],
-        'OK'=>['CZE','🇨'],'OM'=>['SVK','🇸🇰'],'HA'=>['HUN','🇭🇺'],
-        'YO'=>['ROU','🇷🇴'],'YR'=>['ROU','🇷'],
+        'SP'=>['POL','🇵🇱'],'SQ'=>['POL','🇵🇱'],'SN'=>['POL','🇵🇱'],'SO'=>['POL','🇵🇱'],
+        'OK'=>['CZE','🇨🇿'],'OM'=>['SVK','🇸🇰'],'HA'=>['HUN','🇭🇺'],
+        'YO'=>['ROU','🇷🇴'],'YR'=>['ROU','🇷🇴'],
         'SV'=>['GRC','🇬🇷'],'SW'=>['GRC','🇬🇷'],'SX'=>['GRC','🇬🇷'],'SY'=>['GRC','🇬🇷'],'SZ'=>['GRC','🇬🇷'],
-        'UA'=>['RUS','🇷'],'UB'=>['RUS','🇷'],'UC'=>['RUS','🇷🇺'],'UD'=>['RUS','🇷'],'UE'=>['RUS','🇷🇺'],
-        'UW'=>['UKR','🇺🇦'],'UX'=>['UKR','🇺'],'UY'=>['UKR','🇺'],'UZ'=>['UKR','🇺🇦'],
-        'K'=>['USA','🇺'],'N'=>['USA','🇸'],'W'=>['USA','🇺'],'AA'=>['USA','🇸'],'AB'=>['USA','🇺'],
-        'VE'=>['VEN','🇻'],'YV'=>['VEN','🇻🇪'],
-        'PY'=>['BRA','🇧🇷'],'PU'=>['BRA','🇧'],'PP'=>['BRA','🇷'],'PQ'=>['BRA','🇧🇷'],'PR'=>['BRA','🇧'],'PS'=>['BRA','🇷'],'PT'=>['BRA','🇧🇷'],
-        'CE'=>['CHL','🇨'],'CA'=>['CHL','🇨🇱'],'CD'=>['CHL','🇨🇱'],
-        'CX'=>['URY','🇺'],'CW'=>['URY','🇺'],
-        'LV'=>['ARG','🇦'],'LU'=>['ARG','🇷'],'LW'=>['ARG','🇦🇷'],'LX'=>['ARG','🇦🇷'],
-        'HC'=>['ECU','🇪'],'HD'=>['ECU','🇪🇨'],
-        'HK'=>['COL','🇨🇴'],'HJ'=>['COL','🇨🇴'],'5J'=>['COL','🇨🇴'],'5K'=>['COL','🇨🇴'],
+        'UA'=>['RUS','🇷🇺'],'UB'=>['RUS','🇷🇺'],'UC'=>['RUS','🇷🇺'],'UD'=>['RUS','🇷🇺'],'UE'=>['RUS','🇷🇺'],
+        'UW'=>['UKR','🇺🇦'],'UX'=>['UKR','🇺🇦'],'UY'=>['UKR','🇺🇦'],'UZ'=>['UKR','🇺🇦'],
+        'K'=>['USA','🇺🇸'],'N'=>['USA','🇺🇸'],'W'=>['USA','🇺🇸'],'AA'=>['USA','🇺🇸'],'AB'=>['USA','🇺🇸'],
+        'VE'=>['CAN','🇨🇦'],'YV'=>['VEN','🇻🇪'],
+        'PY'=>['BRA','🇧🇷'],'PU'=>['BRA','🇧🇷'],'PP'=>['BRA','🇧🇷'],'PQ'=>['BRA','🇧🇷'],'PR'=>['BRA','🇧🇷'],'PS'=>['BRA','🇧🇷'],'PT'=>['BRA','🇧🇷'],
+        'CE'=>['CHL','🇨🇱'],'CA'=>['CHL','🇨🇱'],'CD'=>['CHL','🇨🇱'],
+        'LV'=>['ARG','🇦🇷'],'LU'=>['ARG','🇦🇷'],'LW'=>['ARG','🇦🇷'],'LX'=>['ARG','🇦🇷'],
+        'HC'=>['ECU','🇪🇨'],'HD'=>['ECU','🇪🇨'],
+        'HK'=>['COL','🇨🇴'],'HJ'=>['COL','🇨🇴'],
         'TI'=>['CRI','🇨🇷'],'TE'=>['CRI','🇨🇷'],
         'CP'=>['BOL','🇧🇴'],
-        'JA'=>['JPN','🇯🇵'],'JB'=>['JPN','🇯🇵'],'JC'=>['JPN','🇯🇵'],'JD'=>['JPN','🇯🇵'],'JE'=>['JPN','🇯'],
+        'JA'=>['JPN','🇯🇵'],'JB'=>['JPN','🇯🇵'],'JC'=>['JPN','🇯🇵'],'JD'=>['JPN','🇯🇵'],'JE'=>['JPN','🇯🇵'],
         'BV'=>['TWN','🇹🇼'],'BU'=>['TWN','🇹🇼'],
-        'VR'=>['HKG','🇭'],'VS'=>['HKG','🇭🇰'],
+        'VR'=>['HKG','🇭🇰'],'VS'=>['HKG','🇭🇰'],
         'XX'=>['MAC','🇲🇴'],
-        'HL'=>['KOR','🇰'],'DS'=>['KOR','🇰🇷'],'DT'=>['KOR','🇰🇷'],'DU'=>['KOR','🇰'],
-        'BY'=>['CHN','🇨'],'BA'=>['CHN','🇨🇳'],'BD'=>['CHN','🇨🇳'],
+        'HL'=>['KOR','🇰🇷'],'DS'=>['KOR','🇰🇷'],'DT'=>['KOR','🇰🇷'],'DU'=>['KOR','🇰🇷'],
+        'BY'=>['CHN','🇨🇳'],'BA'=>['CHN','🇨🇳'],'BD'=>['CHN','🇨🇳'],
         'VU'=>['IND','🇮🇳'],'AT'=>['IND','🇮🇳'],'AU'=>['IND','🇮🇳'],
-        'AP'=>['PAK','🇵🇰'],'A2'=>['BWA','🇧'],'A3'=>['TON','🇹🇴'],'A4'=>['OMN','🇴🇲'],'A5'=>['BTN','🇧🇹'],'A6'=>['ARE','🇦🇪'],'A7'=>['QAT','🇶🇦'],'A9'=>['BHR','🇧'],
-        '4X'=>['ISR','🇮'],'4Z'=>['ISR','🇮🇱'],
-        'ZS'=>['ZAF','🇿'],'ZT'=>['ZAF','🇿🇦'],'ZU'=>['ZAF','🇿'],
+        'AP'=>['PAK','🇵🇰'],
+        '4X'=>['ISR','🇮🇱'],'4Z'=>['ISR','🇮🇱'],
+        'ZS'=>['ZAF','🇿🇦'],'ZT'=>['ZAF','🇿🇦'],'ZU'=>['ZAF','🇿🇦'],
         'VK'=>['AUS','🇦🇺'],'VH'=>['AUS','🇦🇺'],'VI'=>['AUS','🇦🇺'],
-        'ZL'=>['NZL','🇳🇿'],'ZM'=>['NZL','🇳'],
-        '9A'=>['HRV','🇭🇷'],'S5'=>['SVN','🇸🇮'],'T7'=>['BIH','🇧'],'E7'=>['BIH','🇧'],
-        'YT'=>['SRB','🇷🇸'],'YU'=>['SRB','🇷'],'Z3'=>['MKD','🇲'],'ZA'=>['ALB','🇦'],
-        'PZ'=>['SUR','🇸🇷'],'8P'=>['BRB','🇧'],'9Y'=>['TTO','🇹'],'9Z'=>['TTO','🇹🇹'],
-        'J6'=>['LCA','🇱'],'J7'=>['DMA','🇩'],'J8'=>['GRD','🇬'],
-        'VP2'=>['AIA','🇦'],'VP5'=>['TCA','🇹'],'VP8'=>['FLK','🇫'],
-        'ZD8'=>['SHN','🇸🇭'],'C6'=>['BHS','🇧🇸'],'C9'=>['MOZ','🇲'],'D4'=>['CPV','🇨'],
-        'EA8'=>['ESH','🇪'],'EA9'=>['ESH','🇪🇭'],'ZB2'=>['GIB','🇬'],
-        'CT'=>['PRT','🇵'],'CU'=>['PRT','🇵🇹'],'CV'=>['PRT','🇵🇹'],'CW'=>['PRT','🇵🇹'],'CS'=>['PRT','🇵🇹'],'CR'=>['PRT','🇵🇹']
+        'ZL'=>['NZL','🇳🇿'],'ZM'=>['NZL','🇳🇿'],
+        '9A'=>['HRV','🇭🇷'],'S5'=>['SVN','🇸🇮'],
+        'YT'=>['SRB','🇷🇸'],'YU'=>['SRB','🇷🇸'],
+        'CT'=>['PRT','🇵🇹'],'CU'=>['PRT','🇵🇹'],'CS'=>['PRT','🇵🇹'],'CR'=>['PRT','🇵🇹'],
+        'EA8'=>['ESP','🇪🇸'],'EA9'=>['ESP','🇪🇸'],
     ];
     $cs = strtoupper(trim($callsign));
     for ($len = 4; $len >= 1; $len--) {
@@ -144,7 +139,7 @@ function colorizeLog($text) {
         $ll = strtolower($l);
         if (preg_match('/error|fail|abort|exception|denied|segfault/i', $ll)) return '<span class="log-err">'.htmlspecialchars($l).'</span>';
         if (preg_match('/warn|warning|timeout/i', $ll)) return '<span class="log-warn">'.htmlspecialchars($l).'</span>';
-        if (preg_match('/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped/i', $ll)) return '<span class="log-ok">'.htmlspecialchars($l).'</span>';
+        if (preg_match('/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped|received|header|src/i', $ll)) return '<span class="log-ok">'.htmlspecialchars($l).'</span>';
         return '<span class="log-info">'.htmlspecialchars($l).'</span>';
     }, explode("\n", $text)));
 }
@@ -169,7 +164,6 @@ if ($action === 'status') {
             }
         }
     }
-    // Si los procesos están activos pero el fichero dice off (o no existe), actualizamos a on
     if ($bridge_active && $state_on !== true) {
         saveState('ysf2dmr', 'on');
         $state_on = true;
@@ -226,7 +220,7 @@ if ($action === 'logs') {
     header('Content-Type: application/json');
     echo json_encode([
         'mmdvm'   => htmlspecialchars(tailLive(LOG_MMDVM, $n) ?: ''),
-        'ysf2dmr' => htmlspecialchars(tailLive(LOG_Y2D, $n) ?: '') // <-- Se devuelven AMBOS logs para las terminales
+        'ysf2dmr' => htmlspecialchars(tailLive(LOG_Y2D, $n) ?: '')
     ]);
     exit;
 }
@@ -266,139 +260,106 @@ if ($action === 'restart-svc') {
     header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
 
-// ── Transmisión y Last Heard (LEE DEL LOG DE YSF2DMR) ──
+// ── Transmisión y Last Heard ──
+// Lee del LOG de YSF2DMR. Dos sentidos:
+//
+// YSF → DMR (tú pisas el walkie):
+//   M: ... Received YSF Header: Src: EA3EIZ    Dst: *****E55Bo
+//   M: ... DMR ID of EA3EIZ: 2143206, DstID: TG 9
+//   M: ... YSF received end of voice transmission, 1.1 seconds
+//
+// DMR → YSF (alguien del lado DMR habla hacia ti):
+//   M: ... DMR audio received from EA4AOJ to TG 9
+//   M: ... DMR audio late entry received from 4374 to TG 9   ← puede ser ID numérico
+//   M: ... DMR received end of voice transmission, 6.5 seconds
 if ($action === 'transmission') {
     $log = tailLive(LOG_Y2D, 5000);
-    
+
     if (empty(trim($log))) {
         header('Content-Type: application/json');
         $cached = _loadLastHeardCache(5, 300, '/tmp/ysf2dmr_lastheard.json', true);
         echo json_encode(['state'=>['active'=>false], 'lastHeard'=>$cached, 'vu'=>['slot1'=>0]]);
         exit;
     }
-    
+
     $lines = explode("\n", $log);
-    $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'-','time'=>'','source'=>'DMR','duration'=>'','loss'=>''];
-    $namesMap = [];
-    
-    // Mapa de nombres (por si el log los incluye)
-    foreach ($lines as $line) {
-        if (preg_match('/(\d{2}:\d{2}:\d{2}).*FindWithName\s*=\s*([A-Z0-9]+)\s+(.+)/i', $line, $m)) {
-            $namesMap[strtoupper(trim($m[2]))] = trim($m[3]);
-        }
-    }
-    
-    $getName = function($cs) use ($namesMap) {
-        // Si es un ID numérico (ej: 4374), intentar resolverlo como DMR ID
-        if (ctype_digit($cs)) {
-            $datFiles = ['/home/pi/MMDVMHost/DMRIds.dat', '/etc/DMRIds.dat', '/usr/local/etc/DMRIds.dat'];
-            foreach ($datFiles as $f) {
-                if (!file_exists($f)) continue;
-                $row = trim(shell_exec("awk -F'\t' '{if (\$1==\"".$cs."\") {print \$1\"\t\"\$2\"\t\"\$3; exit}}' ".escapeshellarg($f)." 2>/dev/null"));
-                if ($row !== '') {
-                    $parts = explode("\t", $row);
-                    return trim($parts[2] ?? '');
-                }
-            }
-            return '';
-        }
-        $name = $namesMap[$cs] ?? '';
-        if (!$name) {
-            $lookup = lookupCall($cs);
-            $name = $lookup['name'] ?? '';
-        }
-        return $name;
-    };
-    
-    // Resolver callsign: si es numérico, buscarlo en DMRIds.dat
-    $resolveCallsign = function($idOrCs) use ($getName) {
-        if (ctype_digit($idOrCs)) {
-            $datFiles = ['/home/pi/MMDVMHost/DMRIds.dat', '/etc/DMRIds.dat', '/usr/local/etc/DMRIds.dat'];
-            foreach ($datFiles as $f) {
-                if (!file_exists($f)) continue;
-                $row = trim(shell_exec("awk -F'\t' '{if (\$1==\"".$idOrCs."\") {print \$1\"\t\"\$2\"\t\"\$3; exit}}' ".escapeshellarg($f)." 2>/dev/null"));
-                if ($row !== '') {
-                    $parts = explode("\t", $row);
-                    return strtoupper(trim($parts[1] ?? $idOrCs));
-                }
+    $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','slot'=>'-','time'=>'','source'=>'YSF','duration'=>'','loss'=>''];
+
+    // Resuelve ID numérico DMR → callsign
+    $resolveCallsign = function($idOrCs) {
+        if (!ctype_digit($idOrCs)) return strtoupper($idOrCs);
+        $datFiles = ['/home/pi/MMDVMHost/DMRIds.dat', '/etc/DMRIds.dat', '/usr/local/etc/DMRIds.dat'];
+        foreach ($datFiles as $f) {
+            if (!file_exists($f)) continue;
+            $row = trim(shell_exec("awk -F'\t' '{if (\$1==\"".$idOrCs."\") {print \$1\"\t\"\$2\"\t\"\$3; exit}}' ".escapeshellarg($f)." 2>/dev/null"));
+            if ($row !== '') {
+                $parts = explode("\t", $row);
+                return strtoupper(trim($parts[1] ?? $idOrCs));
             }
         }
         return strtoupper($idOrCs);
     };
-    
-    $maxEntries = 5;
-    $cacheFile = '/tmp/ysf2dmr_lastheard.json';
-    $cacheTTL = 300;
-    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false);
-    
-    $newEntries = [];
-    $activeTx = null; // Transmisión actualmente en curso
-    
-    foreach ($lines as $line) {
-        // INICIO: "DMR audio received from EA4AOJ to TG 9" o "DMR audio late entry received from 4374 to TG 9"
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+.*DMR audio (?:late entry )?received from\s+([A-Z0-9]+)\s+to\s+TG\s+(\d+)/i', $line, $m)) {
-            $rawId = strtoupper(trim($m[2]));
-            $callsign = $resolveCallsign($rawId);
-            $tg = $m[3];
-            $time = $m[1];
-            
-            $activeTx = [
-                'callsign' => $callsign,
-                'rawId'    => $rawId,
-                'name'     => $getName($rawId),
-                'tg'       => $tg,
-                'time'     => $time,
-                'source'   => 'DMR',
-                'status'   => 'TX',
-                'duration' => '',
-                'loss'     => ''
-            ];
-            
-            // Añadir/actualizar en newEntries
-            $key = $callsign.'-'.$tg;
-            $foundIndex = null;
-            foreach ($newEntries as $i => $entry) {
-                if (($entry['callsign'].'-'.$entry['tg']) === $key) {
-                    $foundIndex = $i;
+
+    $getName = function($cs) {
+        $lookup = lookupCall($cs);
+        return $lookup['name'] ?? '';
+    };
+
+    $addOrUpdate = function($entry) use (&$newEntries) {
+        $key = $entry['callsign'].'-'.$entry['tg'];
+        foreach ($newEntries as $i => $e) {
+            if (($e['callsign'].'-'.$e['tg']) === $key) { unset($newEntries[$i]); break; }
+        }
+        $newEntries[] = $entry;
+    };
+
+    $closeActiveTx = function($duration) use (&$activeTx, &$newEntries, &$pendingCallsign, &$pendingTime) {
+        if ($activeTx !== null) {
+            $key = $activeTx['callsign'].'-'.$activeTx['tg'];
+            foreach ($newEntries as $i => $e) {
+                if (($e['callsign'].'-'.$e['tg']) === $key) {
+                    $newEntries[$i]['duration'] = $duration;
+                    $newEntries[$i]['status']   = 'END';
+                    $updated = $newEntries[$i];
+                    unset($newEntries[$i]);
+                    $newEntries[] = $updated;
                     break;
                 }
             }
-            if ($foundIndex !== null) unset($newEntries[$foundIndex]);
-            $newEntries[] = $activeTx;
+            $activeTx = null;
         }
-        
-        // FIN: "DMR received end of voice transmission, 3.6 seconds"
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+.*DMR received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
-            $time = $m[1];
-            $duration = $m[2].'s';
-            
-            if ($activeTx !== null) {
-                $key = $activeTx['callsign'].'-'.$activeTx['tg'];
-                $foundIndex = null;
-                foreach ($newEntries as $i => $entry) {
-                    if (($entry['callsign'].'-'.$entry['tg']) === $key) {
-                        $foundIndex = $i;
-                        break;
-                    }
-                }
-                if ($foundIndex !== null) {
-                    $newEntries[$foundIndex]['duration'] = $duration;
-                    $newEntries[$foundIndex]['status'] = 'END';
-                    $updated = $newEntries[$foundIndex];
-                    unset($newEntries[$foundIndex]);
-                    $newEntries[] = $updated;
-                }
-                $activeTx = null;
-            }
+        $pendingCallsign = null;
+        $pendingTime     = null;
+    };
+
+    $maxEntries    = 5;
+    $cacheFile     = '/tmp/ysf2dmr_lastheard.json';
+    $cacheTTL      = 300;
+    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false);
+
+    $newEntries      = [];
+    $activeTx        = null;
+    $pendingCallsign = null;
+    $pendingTime     = null;
+
+    foreach ($lines as $line) {
+
+        // ── YSF→DMR PASO 1: cabecera YSF con callsign origen ──
+        // "Received YSF Header: Src: EA3EIZ    Dst: *****E55Bo"
+        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+Received YSF Header:\s+Src:\s+([A-Z0-9]+)\s/i', $line, $m)) {
+            $pendingCallsign = strtoupper(trim($m[2]));
+            $pendingTime     = $m[1];
         }
-        
-        // SOPORTE PARA TRÁFICO YSF → DMR (por si acaso aparece)
-        // Formato esperado: "YSF audio received from [CALLSIGN] ..." o similar
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+.*YSF (?:audio )?(?:late entry )?received from\s+([A-Z0-9]+)\s+to\s+(?:TG\s+)?(\d+)/i', $line, $m)) {
-            $callsign = strtoupper(trim($m[2]));
-            $tg = $m[3];
-            $time = $m[1];
-            
+
+        // ── YSF→DMR PASO 2: TG asociado al header anterior ──
+        // "DMR ID of EA3EIZ: 2143206, DstID: TG 9"
+        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR ID of ([A-Z0-9]+):\s*\d+,\s*DstID:\s*TG\s*(\d+)/i', $line, $m)) {
+            $callsign = $pendingCallsign ?? strtoupper(trim($m[2]));
+            $tg       = $m[3];
+            $time     = $pendingTime ?? $m[1];
+            $pendingCallsign = null;
+            $pendingTime     = null;
+
             $activeTx = [
                 'callsign' => $callsign,
                 'name'     => $getName($callsign),
@@ -409,35 +370,44 @@ if ($action === 'transmission') {
                 'duration' => '',
                 'loss'     => ''
             ];
-            
-            $key = $callsign.'-'.$tg;
-            $foundIndex = null;
-            foreach ($newEntries as $i => $entry) {
-                if (($entry['callsign'].'-'.$entry['tg']) === $key) { $foundIndex = $i; break; }
-            }
-            if ($foundIndex !== null) unset($newEntries[$foundIndex]);
-            $newEntries[] = $activeTx;
+            $addOrUpdate($activeTx);
         }
-        
-        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+.*YSF received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
-            if ($activeTx !== null) {
-                $key = $activeTx['callsign'].'-'.$activeTx['tg'];
-                $foundIndex = null;
-                foreach ($newEntries as $i => $entry) {
-                    if (($entry['callsign'].'-'.$entry['tg']) === $key) { $foundIndex = $i; break; }
-                }
-                if ($foundIndex !== null) {
-                    $newEntries[$foundIndex]['duration'] = $m[2].'s';
-                    $newEntries[$foundIndex]['status'] = 'END';
-                    $updated = $newEntries[$foundIndex];
-                    unset($newEntries[$foundIndex]);
-                    $newEntries[] = $updated;
-                }
-                $activeTx = null;
-            }
+
+        // ── YSF→DMR PASO 3: fin de transmisión YSF ──
+        // "YSF received end of voice transmission, 1.1 seconds"
+        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+YSF received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
+            $closeActiveTx($m[2].'s');
+        }
+
+        // ── DMR→YSF INICIO: audio DMR entrante (callsign o ID numérico) ──
+        // "DMR audio received from EA4AOJ to TG 9"
+        // "DMR audio late entry received from 4374 to TG 9"
+        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR audio (?:late entry )?received from\s+([A-Z0-9]+)\s+to\s+TG\s*(\d+)/i', $line, $m)) {
+            $rawId    = trim($m[2]);
+            $callsign = $resolveCallsign($rawId);
+            $tg       = $m[3];
+            $time     = $m[1];
+
+            $activeTx = [
+                'callsign' => $callsign,
+                'name'     => $getName($callsign),
+                'tg'       => $tg,
+                'time'     => $time,
+                'source'   => 'DMR',
+                'status'   => 'TX',
+                'duration' => '',
+                'loss'     => ''
+            ];
+            $addOrUpdate($activeTx);
+        }
+
+        // ── DMR→YSF FIN: fin de transmisión DMR ──
+        // "DMR received end of voice transmission, 6.5 seconds"
+        if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
+            $closeActiveTx($m[2].'s');
         }
     }
-    
+
     // Fusionar con caché
     $merged = $cachedEntries;
     foreach ($newEntries as $new) {
@@ -449,7 +419,7 @@ if ($action === 'transmission') {
         if ($foundIndex !== null) {
             if ($new['duration'] && !$merged[$foundIndex]['duration']) {
                 $merged[$foundIndex]['duration'] = $new['duration'];
-                $merged[$foundIndex]['loss'] = $new['loss'];
+                $merged[$foundIndex]['loss']     = $new['loss'] ?? '';
             }
             $temp = $merged[$foundIndex];
             unset($merged[$foundIndex]);
@@ -458,13 +428,13 @@ if ($action === 'transmission') {
             $merged[] = $new;
         }
     }
-    
+
     if (count($merged) > $maxEntries) {
         $merged = array_slice($merged, -$maxEntries);
     }
     $lastHeard = array_values($merged);
     _saveLastHeardCache($lastHeard, $cacheFile);
-    
+
     // Estado activo: si hay una transmisión sin cerrar
     if ($activeTx !== null) {
         $state = [
@@ -479,12 +449,12 @@ if ($action === 'transmission') {
             'loss'     => ''
         ];
     }
-    
+
     $vu = ['slot1'=>0];
     if ($state['active']) {
         $vu['slot1'] = 30 + rand(0, 70);
     }
-    
+
     header('Content-Type: application/json');
     echo json_encode(['state'=>$state, 'lastHeard'=>$lastHeard, 'vu'=>$vu]);
     exit;
@@ -497,12 +467,12 @@ function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/
     if (!file_exists($cacheFile)) return [];
     $data = @json_decode(file_get_contents($cacheFile), true);
     if (!$data || !is_array($data['entries'] ?? null)) return [];
-    
+
     $now = time();
     $valid = array_filter($data['entries'], function($e) use ($now, $ttlSeconds) {
         return ($now - ($e['_ts'] ?? 0)) < $ttlSeconds;
     });
-    
+
     if ($stableOrder) {
         $valid = array_values($valid);
     } else {
@@ -713,7 +683,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
                     </div>
                     <div class="vu-value" id="vu1Val">0%</div>
                 </div>
-                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad </div>
+                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad</div>
                 <div class="vu-meter" style="visibility:hidden;">
                     <div class="vu-label">Slot 2</div>
                     <div class="vu-track">
@@ -802,16 +772,16 @@ const api = async (a, p={}, m='GET') => {
 const _winOS = /Windows/i.test(navigator.userAgent);
 const _TBASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
 const _FLAGS = [
-    {re:/^E[ABCDEFGH][1-9]/, e:'🇪🇸', t:'1f1ea-1f1f8'}, {re:/^C[TUQ]/, e:'🇵', t:'1f1f5-1f1f9'}, {re:/^F[A-Z]/, e:'🇫', t:'1f1eb-1f1f7'},
+    {re:/^E[ABCDEFGH][1-9]/, e:'🇪🇸', t:'1f1ea-1f1f8'}, {re:/^C[TUQ]/, e:'🇵🇹', t:'1f1f5-1f1f9'}, {re:/^F[A-Z]/, e:'🇫🇷', t:'1f1eb-1f1f7'},
     {re:/^I[0-9]|^IK|^IW|^IZ/, e:'🇮🇹', t:'1f1ee-1f1f9'}, {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/, e:'🇬🇧', t:'1f1ec-1f1e7'},
-    {re:/^D[A-R]|^Y[2-9]/, e:'🇩🇪', t:'1f1e9-1f1ea'}, {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/, e:'🇺', t:'1f1fa-1f1f8'},
-    {re:/^VE|^VA|^VO|^VY/, e:'🇨', t:'1f1e8-1f1e6'}, {re:/^PY|^PU|^PV|^PW|^PX/, e:'🇧', t:'1f1e7-1f1f7'},
-    {re:/^LU|^LV|^LW|^LX/, e:'🇦', t:'1f1e6-1f1f7'}, {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/, e:'🇯🇵', t:'1f1ef-1f1f5'},
-    {re:/^VK/, e:'🇦', t:'1f1e6-1f1fa'}, {re:/^ZS|^ZT|^ZU/, e:'🇿🇦', t:'1f1ff-1f1e6'}, {re:/^OH|^OG/, e:'🇫🇮', t:'1f1eb-1f1ee'},
-    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/, e:'🇳', t:'1f1f3-1f1f1'}, {re:/^HB/, e:'🇨', t:'1f1e8-1f1ed'},
-    {re:/^OE/, e:'🇦🇹', t:'1f1e6-1f1f9'}, {re:/^SP|^SQ|^SR|^HF/, e:'🇵', t:'1f1f5-1f1f1'},
-    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/, e:'🇷', t:'1f1f7-1f1fa'}, {re:/^SV|^SW|^SX|^SY|^SZ/, e:'🇬', t:'1f1ec-1f1f7'},
-    {re:/^LY/, e:'🇱', t:'1f1f1-1f1f9'}, {re:/^9A/, e:'🇭🇷', t:'1f1ed-1f1f7'},
+    {re:/^D[A-R]|^Y[2-9]/, e:'🇩🇪', t:'1f1e9-1f1ea'}, {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/, e:'🇺🇸', t:'1f1fa-1f1f8'},
+    {re:/^VE|^VA|^VO|^VY/, e:'🇨🇦', t:'1f1e8-1f1e6'}, {re:/^PY|^PU|^PV|^PW|^PX/, e:'🇧🇷', t:'1f1e7-1f1f7'},
+    {re:/^LU|^LV|^LW|^LX/, e:'🇦🇷', t:'1f1e6-1f1f7'}, {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/, e:'🇯🇵', t:'1f1ef-1f1f5'},
+    {re:/^VK/, e:'🇦🇺', t:'1f1e6-1f1fa'}, {re:/^ZS|^ZT|^ZU/, e:'🇿🇦', t:'1f1ff-1f1e6'}, {re:/^OH|^OG/, e:'🇫🇮', t:'1f1eb-1f1ee'},
+    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/, e:'🇳🇱', t:'1f1f3-1f1f1'}, {re:/^HB/, e:'🇨🇭', t:'1f1e8-1f1ed'},
+    {re:/^OE/, e:'🇦🇹', t:'1f1e6-1f1f9'}, {re:/^SP|^SQ|^SR|^HF/, e:'🇵🇱', t:'1f1f5-1f1f1'},
+    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/, e:'🇷🇺', t:'1f1f7-1f1fa'}, {re:/^SV|^SW|^SX|^SY|^SZ/, e:'🇬🇷', t:'1f1ec-1f1f7'},
+    {re:/^LY/, e:'🇱🇹', t:'1f1f1-1f1f9'}, {re:/^9A/, e:'🇭🇷', t:'1f1ed-1f1f7'},
 ];
 
 function getFlag(callsign){
@@ -899,29 +869,29 @@ async function fetchTransmission() {
         if (d.active && d.callsign) {
             const flag = getFlag(d.callsign);
             const nameHtml = d.name ? `<span class="tx-name">(${esc(d.name)})</span>` : '';
-            const sourceBadge = `<span class="tx-src ${d.source==='RF'?'rf':'net'}">${d.source||'—'}</span>`;
-            const metaHtml = `<div class="tx-meta">${sourceBadge}<span class="tx-dest">→ TG ${d.tg||'—'}</span>${d.duration ? `<span class="tx-time">⏱ ${esc(d.duration)}</span>` : ''}${d.loss ? `<span class="tx-time">📉 ${esc(d.loss)}</span>` : ''}<span class="tx-time">${esc(d.time||'')}</span></div>`;
+            const sourceBadge = `<span class="tx-src net">${d.source||'YSF'}</span>`;
+            const metaHtml = `<div class="tx-meta">${sourceBadge}<span class="tx-dest">→ TG ${d.tg||'—'}</span>${d.duration ? `<span class="tx-time">⏱ ${esc(d.duration)}</span>` : ''}<span class="tx-time">${esc(d.time||'')}</span></div>`;
             txCenter.innerHTML = `<div class="tx-info"><div class="tx-callsign"><span class="tx-flag">${flag}</span>${esc(d.callsign)} ${nameHtml}</div>${metaHtml}</div>`;
         } else {
-            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad </div>';
+            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad</div>';
         }
         if (r.vu) { updateVU(1, r.vu.slot1||0); updateVU(2, r.vu.slot2||0); }
-        
+
         const tbody = $('lhBody');
         const list = r.lastHeard || [];
         if (list.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';
         } else {
-            tbody.innerHTML = list.map(r => {
+            tbody.innerHTML = list.slice().reverse().map(r => {
                 const flag = getFlag(r.callsign);
                 const isTx = d.active && r.callsign === d.callsign && r.tg === d.tg;
-                const durLoss = (r.duration || r.loss) ? `<small style="color:var(--text-dim)">(${r.duration||''} ${r.loss||''})</small>` : '';
+                const durLoss = r.duration ? `<small style="color:var(--text-dim)">(${r.duration})</small>` : '';
                 return `<tr class="${isTx?'tx-row':''}">
                     <td><span class="lh-cs"><span class="lh-flag">${flag}</span>${esc(r.callsign)}</span></td>
                     <td>${esc(r.name||'—')}</td>
                     <td>TG ${esc(r.tg||'—')}</td>
                     <td>${esc(r.time||'—')}</td>
-                    <td><span class="tx-src ${r.source==='RF'?'rf':'net'}">${r.source||'—'}</span> ${durLoss}</td>
+                    <td><span class="tx-src net">${r.source||'YSF'}</span> ${durLoss}</td>
                 </tr>`;
             }).join('');
         }
@@ -948,7 +918,7 @@ async function openCfg(id) {
     msg.style.display='none'; a.disabled=true; m.classList.add('open');
     try {
         const d=await api('cfg-read',{id},'POST');
-        if(d.ok){ p.textContent=d.path; a.value=d.content; a.disabled=false; a.focus(); } 
+        if(d.ok){ p.textContent=d.path; a.value=d.content; a.disabled=false; a.focus(); }
         else { p.textContent='Error'; msg.className='m-msg err'; msg.textContent='✖ '+d.msg; msg.style.display='block'; }
     } catch(e){ msg.className='m-msg err'; msg.textContent='✖ '+e.message; msg.style.display='block'; }
 }
@@ -972,7 +942,7 @@ function colorizeLog(text) {
         const ll = l.toLowerCase();
         if (/error|fail|abort|exception|denied|segfault/i.test(ll)) return `<span class="log-err">${l}</span>`;
         if (/warn|warning|timeout/i.test(ll)) return `<span class="log-warn">${l}</span>`;
-        if (/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped/i.test(ll)) return `<span class="log-ok">${l}</span>`;
+        if (/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped|received|header|src/i.test(ll)) return `<span class="log-ok">${l}</span>`;
         return `<span class="log-info">${l}</span>`;
     }).join('\n');
 }
