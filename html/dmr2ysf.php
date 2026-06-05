@@ -241,42 +241,15 @@ if ($action === 'status') {
     $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
     $d2y = checkPid(PID_D2Y, 'DMR2YSF');
     $ysf = checkPid(PID_YSFGW, 'YSFGateway');
-    $bridge_active = ($mmd==='active' && $d2y==='active' && $ysf==='active');
-
-    // Leer el estado persistente del fichero.
-    // IMPORTANTE: este bloque SOLO LEE, nunca escribe off automáticamente.
-    // El off solo lo escribe el botón stop o el script de parada.
-    // Así el servicio puede arrancar los procesos sin que el poll lo revierta.
-    $state_on = null;
-    $state_file = '/var/lib/mmdvm-state';
-    if (file_exists($state_file)) {
-        foreach (file($state_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
-            if (strpos($ln, 'dmr2ysf=') === 0) {
-                $state_on = (trim(substr($ln, 8)) === 'on');
-                break;
-            }
-        }
-    }
-    // Si los procesos están activos pero el fichero dice off (o no existe),
-    // actualizamos a on para que quede en consonancia.
-    if ($bridge_active && $state_on !== true) {
-        saveState('dmr2ysf', 'on');
-        $state_on = true;
-    }
-
     $perms = [];
     foreach ($CONFIG_FILES as $k => $p) {
         $perms[$k] = ['exists' => file_exists($p), 'writable' => is_writable($p)];
     }
     header('Content-Type: application/json');
     echo json_encode([
-        'mmdvm'         => $mmd,
-        'dmr2ysf'       => $d2y,
-        'ysfgateway'    => $ysf,
-        'bridge_active' => $bridge_active,
-        'state_on'      => $state_on,
-        'perms'         => $perms,
-        'ts'            => time()
+        'mmdvm' => $mmd, 'dmr2ysf' => $d2y, 'ysfgateway' => $ysf,
+        'bridge_active' => ($mmd==='active' && $d2y==='active' && $ysf==='active'),
+        'perms' => $perms, 'ts' => time()
     ]);
     exit;
 }
@@ -284,20 +257,9 @@ if ($action === 'status') {
 if ($action === 'start') {
     saveState('dmr2ysf', 'on');
     $out = shell_exec('sudo ' . START_SCRIPT . ' 2>&1');
-    // Esperar hasta 10s a que los procesos estén realmente activos
-    $ok = false;
-    for ($i = 0; $i < 5; $i++) {
-        sleep(2);
-        $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2YSF');
-        $d2y = checkPid(PID_D2Y, 'DMR2YSF');
-        $ysf = checkPid(PID_YSFGW, 'YSFGateway');
-        if ($mmd === 'active' && $d2y === 'active' && $ysf === 'active') {
-            $ok = true;
-            break;
-        }
-    }
+    sleep(4);
     header('Content-Type: application/json');
-    echo json_encode(['ok' => $ok, 'msg' => $ok ? 'Puente iniciado' : 'Puente iniciado (procesos aún arrancando)', 'log' => trim($out) ?: 'Sin salida']);
+    echo json_encode(['ok'=>true, 'msg'=>'Puente iniciado', 'log'=>trim($out)?:'Sin salida']);
     exit;
 }
 
@@ -1608,6 +1570,9 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 #tgYsfModal .tg-host-ctry {
     color: var(--text-dim);
@@ -1637,6 +1602,18 @@ body {
     color: var(--red);
     border-color: var(--red);
     background: rgba(255,69,96,0.1);
+}
+
+#tgYsfModal .flag-emoji-img {
+    height: 1.2em;
+    width: auto;
+    vertical-align: middle;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+#tgYsfModal .flag-emoji {
+    font-size: 1.1em;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 .footer {
@@ -1872,7 +1849,7 @@ const api = async (a, p={}, m='GET') => {
     return r.json();
 };
 
-// 🌍 Sistema de banderas
+// 🌍 Sistema de banderas (callsign -> prefijo)
 const _winOS = /Windows/i.test(navigator.userAgent);
 const _TBASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
 const _FLAGS = [
@@ -1908,6 +1885,47 @@ function getFlag(callsign){
             if(_winOS) return '<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
             return '<span class="flag-emoji">'+p.e+'</span>';
         }
+    }
+    return '<span class="flag-emoji">🌐</span>';
+}
+
+// 🌍 NUEVO: Sistema de banderas por código de país ISO (para el editor de salas)
+// Replica la misma lógica de getFlag (Twemoji en Windows, emoji nativo en el resto)
+const _COUNTRY_FLAGS = {
+    'ES':{e:'🇪🇸',t:'1f1ea-1f1f8'},'PT':{e:'🇵🇹',t:'1f1f5-1f1f9'},'FR':{e:'🇫🇷',t:'1f1eb-1f1f7'},
+    'IT':{e:'🇮🇹',t:'1f1ee-1f1f9'},'GB':{e:'🇬🇧',t:'1f1ec-1f1e7'},'DE':{e:'🇩🇪',t:'1f1e9-1f1ea'},
+    'US':{e:'🇺🇸',t:'1f1fa-1f1f8'},'CA':{e:'🇨🇦',t:'1f1e8-1f1e6'},'BR':{e:'🇧🇷',t:'1f1e7-1f1f7'},
+    'AR':{e:'🇦🇷',t:'1f1e6-1f1f7'},'JP':{e:'🇯🇵',t:'1f1ef-1f1f5'},'AU':{e:'🇦🇺',t:'1f1e6-1f1fa'},
+    'ZA':{e:'🇿🇦',t:'1f1ff-1f1e6'},'FI':{e:'🇫🇮',t:'1f1eb-1f1ee'},'NL':{e:'🇳🇱',t:'1f1f3-1f1f1'},
+    'CH':{e:'🇨🇭',t:'1f1e8-1f1ed'},'AT':{e:'🇦🇹',t:'1f1e6-1f1f9'},'PL':{e:'🇵🇱',t:'1f1f5-1f1f1'},
+    'RU':{e:'🇷🇺',t:'1f1f7-1f1fa'},'GR':{e:'🇬🇷',t:'1f1ec-1f1f7'},'LT':{e:'🇱🇹',t:'1f1f1-1f1f9'},
+    'HR':{e:'🇭🇷',t:'1f1ed-1f1f7'},'BE':{e:'🇧🇪',t:'1f1e7-1f1ea'},'IE':{e:'🇮🇪',t:'1f1ee-1f1ea'},
+    'SE':{e:'🇸🇪',t:'1f1f8-1f1ea'},'NO':{e:'🇳🇴',t:'1f1f3-1f1f4'},'DK':{e:'🇩🇰',t:'1f1e9-1f1f0'},
+    'CZ':{e:'🇨🇿',t:'1f1e8-1f1ff'},'SK':{e:'🇸🇰',t:'1f1f8-1f1f0'},'HU':{e:'🇭🇺',t:'1f1ed-1f1fa'},
+    'RO':{e:'🇷🇴',t:'1f1f7-1f1f4'},'BG':{e:'🇧🇬',t:'1f1e7-1f1ec'},'SI':{e:'🇸🇮',t:'1f1f8-1f1ee'},
+    'UA':{e:'🇺🇦',t:'1f1fa-1f1e6'},'TR':{e:'🇹🇷',t:'1f1f9-1f1f7'},'IN':{e:'🇮🇳',t:'1f1ee-1f1f3'},
+    'CN':{e:'🇨🇳',t:'1f1e8-1f1f3'},'KR':{e:'🇰🇷',t:'1f1f0-1f1f7'},'MX':{e:'🇲🇽',t:'1f1f2-1f1fd'},
+    'CO':{e:'🇨🇴',t:'1f1e8-1f1f4'},'CL':{e:'🇨🇱',t:'1f1e8-1f1f1'},'PE':{e:'🇵🇪',t:'1f1f5-1f1ea'},
+    'VE':{e:'🇻🇪',t:'1f1fb-1f1ea'},'EC':{e:'🇪🇨',t:'1f1ea-1f1e8'},'UY':{e:'🇺🇾',t:'1f1fa-1f1fe'},
+    'BO':{e:'🇧🇴',t:'1f1e7-1f1f4'},'EE':{e:'🇪🇪',t:'1f1ea-1f1ea'},'LV':{e:'🇱🇻',t:'1f1f1-1f1fb'},
+    'RS':{e:'🇷🇸',t:'1f1f7-1f1f8'},'BA':{e:'🇧🇦',t:'1f1e7-1f1e6'},'MK':{e:'🇲🇰',t:'1f1f2-1f1f0'},
+    'AL':{e:'🇦🇱',t:'1f1e6-1f1f1'},'IL':{e:'🇮🇱',t:'1f1ee-1f1f1'},'PK':{e:'🇵🇰',t:'1f1f5-1f1f0'},
+    'TH':{e:'🇹🇭',t:'1f1f9-1f1ed'},'NZ':{e:'🇳🇿',t:'1f1f3-1f1ff'},'TW':{e:'🇹🇼',t:'1f1f9-1f1fc'},
+    'HK':{e:'🇭🇰',t:'1f1ed-1f1f0'},'SG':{e:'🇸🇬',t:'1f1f8-1f1ec'},'MY':{e:'🇲🇾',t:'1f1f2-1f1fe'},
+    'PH':{e:'🇵🇭',t:'1f1f5-1f1ed'},'ID':{e:'🇮🇩',t:'1f1ee-1f1e9'},'CR':{e:'🇨🇷',t:'1f1e8-1f1f7'},
+    'GT':{e:'🇬🇹',t:'1f1ec-1f1f9'},'HN':{e:'🇭🇳',t:'1f1ed-1f1f3'},'NI':{e:'🇳🇮',t:'1f1f3-1f1ee'},
+    'PA':{e:'🇵🇦',t:'1f1f5-1f1e6'},'DO':{e:'🇩🇴',t:'1f1e9-1f1f4'},'CU':{e:'🇨🇺',t:'1f1e8-1f1fa'},
+    'IS':{e:'🇮🇸',t:'1f1ee-1f1f8'},'CY':{e:'🇨🇾',t:'1f1e8-1f1fe'},'MT':{e:'🇲🇹',t:'1f1f2-1f1f9'},
+    'LU':{e:'🇱🇺',t:'1f1f1-1f1fa'}
+};
+
+function getCountryFlag(country){
+    if(!country) return '<span class="flag-emoji">🌐</span>';
+    const c = country.toUpperCase().trim();
+    const f = _COUNTRY_FLAGS[c];
+    if(f){
+        if(_winOS) return '<img class="flag-emoji-img" src="'+_TBASE+f.t+'.png" alt="">';
+        return '<span class="flag-emoji">'+f.e+'</span>';
     }
     return '<span class="flag-emoji">🌐</span>';
 }
@@ -1950,27 +1968,17 @@ async function status() {
         setDot('dot-mmd', d.mmdvm);
         setDot('dot-d2y', d.dmr2ysf);
         setDot('dot-ysf', d.ysfgateway);
-
-        // state_on es la fuente de verdad: lo escribe el botón start/stop
-        // y los scripts externos. bridge_active solo refleja si los PIDs existen.
-        // Usamos state_on para el toggle y bridge_active para los pilotos.
-        // Así si el servicio arranca los procesos sin pasar por el botón,
-        // el toggle se pone verde en el siguiente poll.
-        const desiredOn = (d.state_on !== null && d.state_on !== undefined)
-            ? !!d.state_on
-            : !!d.bridge_active;
-
-        // Sincronizar siempre mientras no haya operación manual en curso
-        if (!S.busy) {
-            setToggle(desiredOn, false);
+        const newActive = d.bridge_active;
+        if (!S.busy && newActive !== S.active) {
+            setToggle(newActive, false);
         }
-        S.active = desiredOn;
-        $('ts').textContent = fmtT(d.ts);
-        document.querySelectorAll('.btn-cfg').forEach(btn => {
-            const id = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-            if (d.perms[id]) btn.classList.toggle('muted', !d.perms[id].writable);
+        S.active = newActive;
+        $('ts').textContent=fmtT(d.ts);
+        document.querySelectorAll('.btn-cfg').forEach(btn=>{
+            const id=btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+            if(d.perms[id]) btn.classList.toggle('muted', !d.perms[id].writable);
         });
-    } catch(e) { console.warn('status err', e); }
+    } catch(e){ console.warn('status err',e); }
 }
 
 async function refreshLogs() {
@@ -2066,9 +2074,7 @@ async function toggle(chk) {
         const res = await api(target ? 'start' : 'stop', {}, 'POST');
         if (!res.ok) { alert('❌ ' + res.msg); setToggle(!target, false); return; }
         await new Promise(r => setTimeout(r, 2500));
-        S.busy = false;
         await status(); fetchLogs();
-        setToggle(target, false);
         if (target === false) ['lMmd','lD2Y','lYsf'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
     } catch (e) { console.error(e); setToggle(!target, false); alert('⚠️ Error: ' + e.message); }
 }
@@ -2253,18 +2259,19 @@ function tgYsfFilterHosts(q){
     ));
 }
 
+// ✅ MODIFICADO: Ahora usa getCountryFlag() igual que getFlag() en LastHeard/Tx
 function tgYsfRenderHosts(list){
     const el=$('tgYsfHostList');
     if(!list.length){ el.innerHTML='<div style="color:var(--text-dim);text-align:center;padding:.5rem;">Sin resultados</div>'; return; }
     el.innerHTML=list.map(h=>{
-        const flag=h.country==='ES'?'🇪🇸 ':h.country?h.country+' ':'';
+        const flag = getCountryFlag(h.country);
         const nm=h.name||'—';
         const desc=h.desc?' · '+h.desc:'';
         const nmEsc=nm.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
         return `<div class="tg-host-item" onclick="tgYsfSelectHost(${h.id},'${nmEsc}')">
             <span class="tg-host-id">${h.id}</span>
-            <span class="tg-host-name">${flag}${esc(nm)}${esc(desc)}</span>
-            <span class="tg-host-ctry">${h.country}</span>
+            <span class="tg-host-name">${flag} ${esc(nm)}${esc(desc)}</span>
+            <span class="tg-host-ctry">${h.country||''}</span>
         </div>`;
     }).join('');
 }
