@@ -1,4 +1,6 @@
 #!/bin/bash
+sudo chmod 777 -R /home/pi/MMDVMHost
+sudo chmod 777 -R /home/pi/MMDVM_CM
 ZIPPATH="/tmp/Copia_PHPPLUS.zip"
 rm -f "$ZIPPATH"
 
