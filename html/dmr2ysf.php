@@ -2074,7 +2074,9 @@ async function toggle(chk) {
         const res = await api(target ? 'start' : 'stop', {}, 'POST');
         if (!res.ok) { alert('❌ ' + res.msg); setToggle(!target, false); return; }
         await new Promise(r => setTimeout(r, 2500));
-        await status(); fetchLogs();
+        await status();
+        setToggle(target, false);  // ← AÑADE ESTA LÍNEA
+        fetchLogs();
         if (target === false) ['lMmd','lD2Y','lYsf'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
     } catch (e) { console.error(e); setToggle(!target, false); alert('⚠️ Error: ' + e.message); }
 }
