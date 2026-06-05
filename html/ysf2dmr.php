@@ -335,7 +335,7 @@ if ($action === 'transmission') {
     $maxEntries    = 5;
     $cacheFile     = '/tmp/ysf2dmr_lastheard.json';
     $cacheTTL      = 300;
-    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, false);
+    $cachedEntries = _loadLastHeardCache($maxEntries, $cacheTTL, $cacheFile, true);
 
     $newEntries      = [];
     $activeTx        = null;
@@ -477,7 +477,7 @@ function _loadLastHeardCache($maxEntries = 5, $ttlSeconds = 300, $cacheFile = '/
         $valid = array_values($valid);
     } else {
         usort($valid, function($a, $b) {
-            return ($b['_ts'] ?? 0) - ($a['_ts'] ?? 0);
+            return ($a['_ts'] ?? 0) - ($b['_ts'] ?? 0);
         });
         $valid = array_values($valid);
     }
@@ -882,7 +882,7 @@ async function fetchTransmission() {
         if (list.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';
         } else {
-            tbody.innerHTML = list.slice().reverse().map(r => {
+            tbody.innerHTML = list.map(r => {
                 const flag = getFlag(r.callsign);
                 const isTx = d.active && r.callsign === d.callsign && r.tg === d.tg;
                 const durLoss = r.duration ? `<small style="color:var(--text-dim)">(${r.duration})</small>` : '';
