@@ -46,15 +46,6 @@
         .card:hover {
             transform: scale(1.02);
         }
-
-        /* Animación flotante para el modal */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
-        }
-        .animate-float {
-            animation: float 3s ease-in-out infinite;
-        }
     </style>
 </head>
 
@@ -88,7 +79,7 @@
     <div class="row g-3 justify-content-center">
 
         <!-- DMR2YSF -->
-        <div class="col-12 col-sm-6 col-lg-5">
+        <div class="col-12 col-sm-6 col-lg-4">
             <div class="card bg-secondary border-0 h-100">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
@@ -105,7 +96,7 @@
         </div>
 
         <!-- YSF2DMR -->
-        <div class="col-12 col-sm-6 col-lg-5">
+        <div class="col-12 col-sm-6 col-lg-4">
             <div class="card bg-secondary border-0 h-100">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
@@ -122,9 +113,53 @@
             </div>
         </div>
 
+        <!-- DMR2NXDN -->
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card bg-secondary border-0 h-100">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-broadcast-pin me-2" style="color:#ffa500;"></i>DMR2NXDN
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Bridge DMR ↔ NXDN · Puente entre redes DMR y NXDN
+                    </p>
+                    <button type="button" class="btn btn-warning btn-sm mt-2 text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#proximamenteModal">
+                        <i class="bi bi-hourglass-split me-1"></i>Próximamente
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
+<!-- Modal Próximamente -->
+<div class="modal fade" id="proximamenteModal" tabindex="-1" aria-labelledby="proximamenteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-warning">
+            <div class="modal-header border-warning">
+                <h5 class="modal-title" id="proximamenteModalLabel">
+                    <i class="bi bi-rocket-takeoff me-2" style="color:#ffa500;"></i>
+                    DMR2NXDN
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <i class="bi bi-tools" style="font-size: 3rem; color:#ffa500;"></i>
+                <p class="mt-3 mb-0">
+                    <strong>¡En construcción!</strong><br>
+                    Este bridge está en desarrollo.<br>
+                    Vuelve pronto para ver la novedad. 🚀
+                </p>
+            </div>
+            <div class="modal-footer border-warning">
+                <button type="button" class="btn btn-warning text-dark fw-bold" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
