@@ -481,7 +481,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
 
 <div class="footer">
     <i class="bi bi-radio me-2"></i>
-    REM-ESP · EA4RCR · <a href="http://rem-esp.es" target="_blank">rem-esp.es</a>
+    Bridge Cards REM 2026 | <a href="http://rem-esp.es" target="_blank">rem-esp.es</a>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
