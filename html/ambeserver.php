@@ -15,7 +15,7 @@ $cronCmd = "@reboot sleep 10 && cd $baseDir && nohup $binary "
     . "-s \$(grep '^velocidad=' $iniFile | cut -d= -f2) "
     . "-i \$(grep '^puerto=' $iniFile | cut -d= -f2) "
     . "-p \$(grep '^puertonet=' $iniFile | cut -d= -f2) "
-    . ">> $logFile 2>&1 & ; echo \$(pgrep -f AMBEserver | head -n1) > $pidFile";
+    . ">> $logFile 2>&1 & sleep 2 && echo \$(pgrep -x AMBEserver | head -n1) > $pidFile";
 
 /* =========================================================
    FUNCIONES
