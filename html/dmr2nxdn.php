@@ -662,7 +662,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
             <span class="t-status" id="sts">OFF</span>
         </div>
         <div style="font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin:.8rem 0 1.2rem;padding:.8rem;background:rgba(0,0,0,0.2);border-radius:6px;border-left:3px solid var(--violet);">
-            <span style="color:var(--cyan);">ℹ️</span> <strong>Arquitectura:</strong> MMDVMHost ⇄ DMR2NXDN ⇄ NXDNGateway (Conversor directo, sin mapeo de TGs)
+            <span style="color:var(--cyan);">ℹ️</span> <strong>Arquitectura:</strong> MMDVMHost ⇄ DMR2NXDN ⇄ NXDNGateway (Conversor directo, con mapeo de TGs - TG DMR <> SALA NXDN )
         </div>
         <div class="cfg-row">
             <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMNXDN.ini</button>
