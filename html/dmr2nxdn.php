@@ -18,18 +18,18 @@ define('START_SCRIPT', '/usr/local/bin/dmr2nxdn-start.sh');
 define('STOP_SCRIPT',  '/usr/local/bin/dmr2nxdn-stop.sh');
 
 // ── Archivos de Configuración ──
-define('INI_MMDVM',    '/home/pi/MMDVMHost/MMDVMNXDN.ini');
+define('INI_MMDVM',    '/home/pi/MMDVMHost/MMDVMDMR2NXDN.ini');
 define('INI_DMR2NXDN', '/home/pi/MMDVM_CM/DMR2NXDN/DMR2NXDN.ini');
 define('INI_NXDNGW',   '/home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini');
 define('XDN_HOSTS',    '/home/pi/NXDNClients/NXDNGateway/XDNHosts.json');
 
 // ── Archivos PID ──
-define('PID_MMDVM',  '/tmp/MMDVMNXDN.pid');
+define('PID_MMDVM',  '/tmp/MMDVMDMR2NXDN.pid');
 define('PID_D2N',    '/tmp/DMR2NXDN.pid');
 define('PID_NXDNGW', '/tmp/NXDNGateway.pid');
 
 // ── Logs en vivo ──
-define('LOG_MMDVM',  '/tmp/MMDVMNXDN.log');
+define('LOG_MMDVM',  '/tmp/MMDVMDMR2NXDN.log');
 define('LOG_D2N',    '/tmp/DMR2NXDN.log');
 define('LOG_NXDNGW', '/tmp/NXDNGateway.log');
 
@@ -191,7 +191,7 @@ if ($action === 'nxdn-set-room') {
 }
 
 if ($action === 'status') {
-    $mmd = checkPid(PID_MMDVM, 'MMDVMNXDN');
+    $mmd = checkPid(PID_MMDVM, 'MMDVMDMR2NXDN');
     $d2n = checkPid(PID_D2N, 'DMR2NXDN');
     $nxdn = checkPid(PID_NXDNGW, 'NXDNGateway');
     $perms = [];
@@ -646,7 +646,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 
 <main class="container">
     <div class="status-bar">
-        <div class="s-item"><span class="s-dot" id="dot-mmd"></span><span class="s-label">MMDVMNXDN:</span><span class="s-val" id="val-mmd">—</span></div>
+        <div class="s-item"><span class="s-dot" id="dot-mmd"></span><span class="s-label">MMDVMDMR2NXDN:</span><span class="s-val" id="val-mmd">—</span></div>
         <div class="s-item"><span class="s-dot" id="dot-d2n"></span><span class="s-label">DMR2NXDN:</span><span class="s-val" id="val-d2n">—</span></div>
         <div class="s-item"><span class="s-dot" id="dot-nxdn"></span><span class="s-label">NXDNGateway:</span><span class="s-val" id="val-nxdn">—</span></div>
         <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem;">
@@ -665,7 +665,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
             <span style="color:var(--cyan);">ℹ️</span> <strong>Arquitectura:</strong> MMDVMHost ⇄ DMR2NXDN ⇄ NXDNGateway (Conversor directo, con mapeo de TGs - TG DMR <> SALA NXDN )
         </div>
         <div class="cfg-row">
-            <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMNXDN.ini</button>
+            <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMDMR2NXDN.ini</button>
             <button class="btn-cfg" onclick="openCfg('dmr2nxdn')">📄 DMR2NXDN.ini</button>
             <button class="btn-cfg" onclick="openCfg('nxdn')">📄 NXDNGateway.ini</button>
             <button class="btn-cfg" onclick="openRoomModal()" style="border-color:var(--green);color:var(--green);">📡 Selector de Sala NXDN</button>
@@ -701,7 +701,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
 
     <div class="logs">
         <div class="l-panel">
-            <div class="l-head"><span class="l-title">📋 MMDVMNXDN</span><div class="l-actions"><button class="btn-log" onclick="refreshLogs()" title="Actualizar">🔄</button><button class="btn-log" onclick="clearLog('lMmd')" title="Limpiar">🗑</button></div></div>
+            <div class="l-head"><span class="l-title">📋 MMDVMDMR2NXDN</span><div class="l-actions"><button class="btn-log" onclick="refreshLogs()" title="Actualizar">🔄</button><button class="btn-log" onclick="clearLog('lMmd')" title="Limpiar">🗑</button></div></div>
             <div class="l-out" id="lMmd">Esperando…</div>
         </div>
         <div class="l-panel">
