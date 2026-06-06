@@ -30,7 +30,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
             isProcessRunningByPid('/tmp/YSF2DMR.pid', 'YSF2DMR')
         ),
         'dmr2nxdn' => (
-            isProcessRunningByPid('/tmp/MMDVMNXDN.pid', 'MMDVMNXDN') &&
+            isProcessRunningByPid('/tmp/MMDVMDMR2NXDN.pid', 'MMDVMDMR2NXDN') &&
             isProcessRunningByPid('/tmp/DMR2NXDN.pid', 'DMR2NXDN') &&
             isProcessRunningByPid('/tmp/NXDNGateway.pid', 'NXDNGateway')
         )
