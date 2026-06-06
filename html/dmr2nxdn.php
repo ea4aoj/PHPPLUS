@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// dmr2nxdn_panel.php - Control de puente DMR ⇄ NXDN by EA4AOJ
+// dmr2nxdn.php - Control de puente DMR ⇄ NXDN by EA4AOJ
 // =============================================================
 
 if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
@@ -158,11 +158,19 @@ if ($action === 'nxdn-set-room') {
         $iniPath = INI_NXDNGW;
         if (file_exists($iniPath) && is_writable($iniPath)) {
             $content = file_get_contents($iniPath);
-            if (preg_match('/(DefaultRoom\s*=\s*)\d+/i', $content)) {
-                $content = preg_replace('/(DefaultRoom\s*=\s*)\d+/i', '${1}' . $roomId, $content);
+            
+            if (preg_match('/^\s*#?\s*Static\s*=.*/im', $content)) {
+                $content = preg_replace('/^\s*#?\s*Static\s*=.*/im', 'Static=' . $roomId, $content);
+            } else {
+                $content = preg_replace('/(\[Network\])/i', "$1\nStatic=$roomId", $content);
+            }
+            
+            if (preg_match('/^\s*#?\s*DefaultRoom\s*=.*/im', $content)) {
+                $content = preg_replace('/^\s*#?\s*DefaultRoom\s*=.*/im', 'DefaultRoom=' . $roomId, $content);
             } else {
                 $content = preg_replace('/(\[Network\])/i', "$1\nDefaultRoom=$roomId", $content);
             }
+            
             file_put_contents($iniPath, $content);
             
             shell_exec('sudo ' . STOP_SCRIPT . ' >/dev/null 2>&1');
@@ -170,7 +178,7 @@ if ($action === 'nxdn-set-room') {
             shell_exec('sudo ' . START_SCRIPT . ' >/dev/null 2>&1');
             
             header('Content-Type: application/json');
-            echo json_encode(['ok'=>true, 'msg'=>"Sala $roomId aplicada y servicios reiniciados."]);
+            echo json_encode(['ok'=>true, 'msg'=>"Sala $roomId aplicada en 'Static' y 'DefaultRoom', servicios reiniciados."]);
         } else {
             header('Content-Type: application/json');
             echo json_encode(['ok'=>false, 'msg'=>'No se pudo escribir en el fichero .ini']);
@@ -724,20 +732,14 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
     <div class="m-box">
         <div class="room-header">📡 Selector de Sala NXDN</div>
         <div class="room-sub">Selecciona una sala para conectar el gateway. Se actualizará NXDNGateway.ini y se reiniciarán los servicios.</div>
-        
         <div class="room-search">
             <input type="text" id="roomSearch" placeholder="🔍 Buscar por ID, nombre o país…" oninput="filterRooms(this.value)">
         </div>
-        
         <div class="room-table-wrap">
-            <div class="room-table-head">
-                <span>ID</span><span>Nombre / Sponsor</span><span>País</span>
-            </div>
+            <div class="room-table-head"><span>ID</span><span>Nombre / Sponsor</span><span>País</span></div>
             <div id="roomRows" class="room-rows"></div>
         </div>
-        
         <div id="roomMsg" class="room-msg"></div>
-        
         <div class="m-acts">
             <button class="btn-act stop" onclick="closeRoomModal()">✖ Cerrar</button>
             <button class="btn-act start" id="btnApplyRoom" onclick="applyRoom()" disabled>✅ Aplicar Sala y Reiniciar</button>
@@ -871,11 +873,28 @@ async function refreshLogs() {
         const d = await api('logs', {lines:80});
         const panels = {lMmd: d.mmdvm, lD2N: d.dmr2nxdn, lNxdn: d.nxdn};
         for(let [id, txt] of Object.entries(panels)) {
-            const el = $(id); const atBot = el.scrollHeight - el.clientHeight <= el.scrollTop + 20;
+            const el = $(id);
+            const atBot = el.scrollHeight - el.clientHeight <= el.scrollTop + 20;
             el.innerHTML = txt ? colorizeLog(txt) : '<span class="log-info">Sin salida en vivo</span>';
             if(atBot) el.scrollTop = el.scrollHeight;
         }
-    } catch(e) { console.warn('logs err', e); }
+    } catch(e) {
+        console.warn('logs err', e);
+        alert('⚠️ Error al actualizar logs: ' + e.message);
+    }
+}
+
+async function fetchLogs() {
+    try {
+        const d = await api('logs',{lines:80});
+        const panels = {lMmd: d.mmdvm, lD2N: d.dmr2nxdn, lNxdn: d.nxdn};
+        for(let [id, txt] of Object.entries(panels)) {
+            const el = $(id);
+            const atBot = el.scrollHeight - el.clientHeight <= el.scrollTop + 20;
+            el.innerHTML = txt ? colorizeLog(txt) : '<span class="log-info">Sin salida en vivo</span>';
+            if(atBot) el.scrollTop = el.scrollHeight;
+        }
+    } catch(e){ console.warn('logs err',e); }
 }
 
 async function fetchTransmission() {
@@ -914,40 +933,19 @@ async function fetchTransmission() {
     } catch(e){ console.warn('tx err',e); }
 }
 
-// ✅ FUNCIÓN TOGGLE CORREGIDA: Limpieza total e inmediata al detener
+// ✅ FUNCIÓN TOGGLE IDÉNTICA A TU DMR2YSF
 async function toggle(chk) {
-    const target = chk.checked; 
+    const target = chk.checked;
     setToggle(target, true);
     try {
         const res = await api(target ? 'start' : 'stop', {}, 'POST');
-        if (!res.ok) { 
-            alert('❌ ' + res.msg); 
-            setToggle(!target, false); 
-            return; 
-        }
+        if (!res.ok) { alert('❌ ' + res.msg); setToggle(!target, false); return; }
         await new Promise(r => setTimeout(r, 2500));
-        await status(); 
-        setToggle(target, false); 
-        
-        if (target === false) {
-            // 1. Limpiar logs
-            ['lMmd','lD2N','lNxdn'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
-            // 2. Limpiar Last Heard inmediatamente
-            $('lhBody').innerHTML = '<tr><td colspan="6" class="lh-empty">Sin actividad reciente</td></tr>';
-            // 3. Limpiar Transmisión Activa
-            $('txCenter').innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad </div>';
-            // 4. Resetear medidores VU a 0
-            updateVU(1, 0);
-            updateVU(2, 0);
-        } else {
-            // Si arrancamos, refrescamos logs normalmente
-            refreshLogs();
-        }
-    } catch (e) { 
-        console.error(e); 
-        setToggle(!target, false); 
-        alert('⚠️ Error: ' + e.message); 
-    }
+        await status();
+        setToggle(target, false);
+        fetchLogs();
+        if (target === false) ['lMmd','lD2N','lNxdn'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
+    } catch (e) { console.error(e); setToggle(!target, false); alert('⚠️ Error: ' + e.message); }
 }
 
 async function openCfg(id) {
@@ -986,7 +984,6 @@ function colorizeLog(text) {
 function startPoll(){ status(); refreshLogs(); fetchTransmission(); S.poll=setInterval(status,5000); S.logT=setInterval(refreshLogs,7000); S.txT=setInterval(fetchTransmission,1000); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('cfgModal').classList.contains('open')) closeCfg(); if(e.key==='Escape' && $('roomModal').classList.contains('open')) closeRoomModal(); });
 
-// ── Funciones Selector de Sala NXDN ──────────────────────────────────────────────────────
 function openRoomModal(){
     $('roomModal').classList.add('open');
     $('roomMsg').style.display='none';
