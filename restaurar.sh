@@ -21,17 +21,18 @@ declare -A DESTMAP=(
   ["MMDVMYSF.ini"]="/home/pi/MMDVMHost/MMDVMYSF.ini"
   ["MMDVMDSTAR.ini"]="/home/pi/MMDVMHost/MMDVMDSTAR.ini"
   ["MMDVMNXDN.ini"]="/home/pi/MMDVMHost/MMDVMNXDN.ini"
-  ["MMDVMDMR2YSF.ini"]="/home/pi/MMDVMHost/MMDVMDMR2YSF.ini"
-  ["DMR2YSF.ini"]="/home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini"
-  ["TG-YSFList.txt"]="/home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt"
-  ["MMDVMYSF2DMR.ini"]="/home/pi/MMDVMHost/MMDVMYSF2DMR.ini"
-  ["YSF2DMR.ini"]="/home/pi/MMDVM_CM/YSF2DMR/YSF2DMR.ini"
   ["DisplayDriver.ini"]="/home/pi/Display-Driver/DisplayDriver.ini"
   ["YSFGateway.ini"]="/home/pi/YSFClients/YSFGateway/YSFGateway.ini"
   ["DMRGateway.ini"]="/home/pi/DMRGateway/DMRGateway.ini"
+  ["MMDVMDMR2YSF.ini"]="/home/pi/MMDVMHost/MMDVMDMR2YSF.ini"
+  ["MMDVMYSF2DMR.ini"]="/home/pi/MMDVMHost/MMDVMYSF2DMR.ini"
+  ["MMDVMNDMR2NXDN.ini"]="/home/pi/MMDVMHost/MMDVMNDMR2NXDN.ini"
+  ["DMR2YSF.ini"]="/home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini"
+  ["YSF2DMR.ini"]="/home/pi/MMDVM_CM/YSF2DMR/YSF2DMR.ini"
+  ["DMR2NXDN.ini"]="/home/pi/MMDVM_CM/DMR2NXDN/DMR2NXDN.ini"
+  ["TG-YSFList.txt"]="/home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt"
   ["DStarGateway.ini"]="/home/pi/DStarGateway/DStarGateway.ini"
   ["NXDNGateway.ini"]="/home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini"
-  ["station.cfg"]="/home/pi/radiosonde_auto_rx/auto_rx/station.cfg"
   ["rbfeeder.ini"]="/etc/rbfeeder.ini"
   ["fr24feed.ini"]="/etc/fr24feed.ini"
   ["sxfeeder.ini"]="/etc/sxfeeder.ini"
@@ -53,7 +54,7 @@ for name in "${!DESTMAP[@]}"; do
   if [ -f "$src" ]; then
     cp "$src" "$dst" 2>/dev/null
     if [ $? -eq 0 ]; then
-      chmod 777 "$dst" 2>/dev/null
+      chmod 664 "$dst" 2>/dev/null
       RESTORED+=("$name")
     else
       ERRORS+=("$name")
@@ -70,7 +71,7 @@ if [ -d "$TMPDIR/logs" ]; then
     destdir=$(dirname "$destfile")
     mkdir -p "$destdir" 2>/dev/null
     cp "$logfile" "$destfile" 2>/dev/null
-    chmod 777 "$destfile" 2>/dev/null
+    chmod 664 "$destfile" 2>/dev/null
   done
 fi
 
