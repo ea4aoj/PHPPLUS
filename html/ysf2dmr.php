@@ -261,17 +261,6 @@ if ($action === 'restart-svc') {
 }
 
 // ── Transmisión y Last Heard ──
-// Lee del LOG de YSF2DMR. Dos sentidos:
-//
-// YSF → DMR (tú pisas el walkie):
-//   M: ... Received YSF Header: Src: EA3EIZ    Dst: *****E55Bo
-//   M: ... DMR ID of EA3EIZ: 2143206, DstID: TG 9
-//   M: ... YSF received end of voice transmission, 1.1 seconds
-//
-// DMR → YSF (alguien del lado DMR habla hacia ti):
-//   M: ... DMR audio received from EA4AOJ to TG 9
-//   M: ... DMR audio late entry received from 4374 to TG 9   ← puede ser ID numérico
-//   M: ... DMR received end of voice transmission, 6.5 seconds
 if ($action === 'transmission') {
     $log = tailLive(LOG_Y2D, 5000);
 
@@ -345,14 +334,12 @@ if ($action === 'transmission') {
     foreach ($lines as $line) {
 
         // ── YSF→DMR PASO 1: cabecera YSF con callsign origen ──
-        // "Received YSF Header: Src: EA3EIZ    Dst: *****E55Bo"
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+Received YSF Header:\s+Src:\s+([A-Z0-9]+)\s/i', $line, $m)) {
             $pendingCallsign = strtoupper(trim($m[2]));
             $pendingTime     = $m[1];
         }
 
         // ── YSF→DMR PASO 2: TG asociado al header anterior ──
-        // "DMR ID of EA3EIZ: 2143206, DstID: TG 9"
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR ID of ([A-Z0-9]+):\s*\d+,\s*DstID:\s*TG\s*(\d+)/i', $line, $m)) {
             $callsign = $pendingCallsign ?? strtoupper(trim($m[2]));
             $tg       = $m[3];
@@ -374,14 +361,11 @@ if ($action === 'transmission') {
         }
 
         // ── YSF→DMR PASO 3: fin de transmisión YSF ──
-        // "YSF received end of voice transmission, 1.1 seconds"
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+YSF received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
             $closeActiveTx($m[2].'s');
         }
 
         // ── DMR→YSF INICIO: audio DMR entrante (callsign o ID numérico) ──
-        // "DMR audio received from EA4AOJ to TG 9"
-        // "DMR audio late entry received from 4374 to TG 9"
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR audio (?:late entry )?received from\s+([A-Z0-9]+)\s+to\s+TG\s*(\d+)/i', $line, $m)) {
             $rawId    = trim($m[2]);
             $callsign = $resolveCallsign($rawId);
@@ -402,7 +386,6 @@ if ($action === 'transmission') {
         }
 
         // ── DMR→YSF FIN: fin de transmisión DMR ──
-        // "DMR received end of voice transmission, 6.5 seconds"
         if (preg_match('/(\d{2}:\d{2}:\d{2})\.\d+\s+DMR received end of voice transmission,\s*([\d.]+)\s*seconds/i', $line, $m)) {
             $closeActiveTx($m[2].'s');
         }
@@ -506,220 +489,317 @@ function _saveLastHeardCache($entries, $cacheFile = '/tmp/ysf2dmr_lastheard.json
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
-:root { 
-    --bg:#0a0e14; --surface:#111720; --border:#1e2d3d; --green:#00ff9f; --red:#ff4560; 
-    --amber:#ffb300; --cyan:#00d4ff; --violet:#b57aff; --text:#a8b9cc; --text-dim:#4a5568; 
-    --font-mono:'Share Tech Mono',monospace; --font-ui:'Rajdhani',sans-serif; 
+:root {
+    --bg:#0a0e14; --surface:#111720; --border:#1e2d3d;
+    --green:#00ff9f; --red:#ff4560; --amber:#ffb300; --cyan:#00d4ff; --violet:#b57aff;
+    --text:#a8b9cc; --text-dim:#4a5568;
+    --font-mono:'Share Tech Mono',monospace; --font-ui:'Rajdhani',sans-serif;
 }
-* { box-sizing:border-box; margin:0; padding:0; }
-body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font-size:1rem; min-height:100vh; line-height:1.5; }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size:.9rem;}
 
-.header { border-bottom:2px solid var(--border); padding:1.2rem 2rem; background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
-.header h1 { font-family:var(--font-ui); font-weight:700; font-size:1.6rem; letter-spacing:.1em; color:#e2eaf5; text-transform:uppercase; margin:0; text-shadow:0 0 20px rgba(0,212,255,0.3); }
-.badge-direct { font-family:var(--font-mono); font-size:.75rem; background:linear-gradient(135deg,rgba(181,122,255,.2),rgba(0,212,255,.2)); color:var(--violet); border:1px solid var(--violet); border-radius:6px; padding:.3rem .7rem; box-shadow:0 0 10px rgba(181,122,255,0.2); }
-.nav-actions { display:flex; gap:.5rem; flex-wrap:wrap; }
-.btn-nav { font-family:var(--font-mono); font-size:.75rem; letter-spacing:.06em; text-transform:uppercase; background:transparent; border-radius:6px; padding:.5rem 1rem; cursor:pointer; transition:all .3s; text-decoration:none; display:inline-flex; align-items:center; gap:.5rem; border:1px solid var(--border); color:var(--text); font-weight:600; }
-.btn-nav:hover { background:rgba(0,212,255,.15); border-color:var(--cyan); color:var(--cyan); transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,212,255,0.2); }
-.btn-nav.primary { background:linear-gradient(135deg,rgba(181,122,255,.15),rgba(0,212,255,.15)); border-color:var(--violet); color:var(--violet); }
-.btn-nav.primary:hover { background:linear-gradient(135deg,rgba(181,122,255,.3),rgba(0,212,255,.3)); box-shadow:0 4px 15px rgba(181,122,255,0.3); }
-
-.container { max-width:1400px; margin:0 auto; padding:2rem; }
-.status-bar { display:flex; gap:2rem; margin-bottom:2rem; flex-wrap:wrap; align-items:center; padding:1rem 1.5rem; background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%); border:1px solid var(--border); border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-.s-item { display:flex; align-items:center; gap:.6rem; font-family:var(--font-mono); font-size:.85rem; }
-.s-dot { width:12px; height:12px; border-radius:50%; background:var(--text-dim); transition:all .3s; box-shadow:0 0 8px rgba(0,0,0,0.5); }
-.s-dot.on { background:var(--green); box-shadow:0 0 12px var(--green),0 0 20px rgba(0,255,159,0.4); animation:pulse-dot 2s infinite; }
-.s-dot.off { background:var(--red); box-shadow:0 0 8px var(--red); }
-@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
-.s-label { color:var(--text-dim); text-transform:uppercase; letter-spacing:.1em; font-size:.75rem; }
-.s-val { font-weight:700; color:var(--cyan); text-shadow:0 0 10px rgba(0,212,255,0.3); }
-.s-val.on { color:var(--green); } .s-val.off { color:var(--red); }
-
-.card { background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%); border:1px solid var(--border); border-radius:12px; padding:1.8rem; margin-bottom:2rem; position:relative; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.3); }
-.card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(--violet),var(--cyan),var(--violet),transparent); box-shadow:0 0 10px rgba(181,122,255,0.5); }
-.c-title { font-family:var(--font-mono); font-size:.9rem; letter-spacing:.15em; text-transform:uppercase; color:var(--violet); margin-bottom:1.5rem; display:flex; align-items:center; gap:.6rem; font-weight:700; }
-.c-title::before { content:'▸'; color:var(--cyan); font-size:1.2rem; }
-
-.toggle-row { display:flex; align-items:center; gap:1.5rem; padding:.8rem 0; margin-bottom:.8rem; }
-.t-label { font-family:var(--font-mono); font-size:.95rem; letter-spacing:.08em; color:var(--text); text-transform:uppercase; flex:1; font-weight:600; }
-.t-status { font-family:var(--font-mono); font-size:.8rem; letter-spacing:.12em; color:var(--text-dim); min-width:4rem; text-align:right; font-weight:700; }
-.t-status.on { color:var(--green); } .t-status.off { color:var(--red); }
-.sw { position:relative; width:70px; height:36px; flex-shrink:0; cursor:pointer; }
-.sw input { opacity:0; width:0; height:0; position:absolute; }
-.sw-track { position:absolute; inset:0; border-radius:8px; background:#1a2535; border:2px solid var(--red); transition:all .3s; box-shadow:inset 0 2px 5px rgba(0,0,0,0.3); }
-.sw-knob { position:absolute; top:4px; left:4px; width:24px; height:24px; background:var(--red); border-radius:5px; transition:all .3s cubic-bezier(.4,0,.2,1); box-shadow:0 3px 8px rgba(0,0,0,0.4); }
-.sw input:checked ~ .sw-track { background:#1a2535; border-color:var(--green); box-shadow:0 0 15px rgba(0,255,159,0.3); }
-.sw input:checked ~ .sw-knob { transform:translateX(34px); background:var(--green); box-shadow:0 0 15px rgba(0,255,159,0.6),0 0 25px rgba(0,255,159,0.3); }
-.sw.busy .sw-knob { animation:pulse-knob 1s infinite alternate; }
-@keyframes pulse-knob { from{box-shadow:0 0 10px rgba(0,255,159,.5)} to{box-shadow:0 0 20px rgba(0,255,159,.9),0 0 30px rgba(181,122,255,.6)} }
-
-.cfg-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.8rem; margin-top:1.2rem; }
-.btn-cfg { font-family:var(--font-mono); font-size:.75rem; text-transform:uppercase; padding:.6rem 1rem; border-radius:8px; border:1px solid var(--border); background:linear-gradient(135deg,rgba(30,45,61,0.5),rgba(17,23,32,0.5)); color:var(--text); cursor:pointer; transition:all .3s; text-align:center; font-weight:600; letter-spacing:.05em; }
-.btn-cfg:hover:not(.muted) { background:linear-gradient(135deg,rgba(255,179,0,.2),rgba(0,212,255,.2)); border-color:var(--amber); color:var(--amber); transform:translateY(-2px); box-shadow:0 5px 15px rgba(255,179,0,0.2); }
-.btn-cfg.muted { color:var(--text-dim); border-color:var(--border); cursor:not-allowed; opacity:0.5; }
-
-.vu-wrapper { display: flex; align-items: center; justify-content: center; gap: 2rem; min-height: 180px; }
-.vu-meter { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-.vu-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
-.vu-track { width: 35px; height: 160px; background: linear-gradient(180deg, #0a0e14, #1a2535); border: 2px solid var(--border); border-radius: 4px; position: relative; overflow: hidden; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
-.vu-track::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(255,255,255,0.1) 2px, rgba(255,255,255,0.1) 3px); z-index: 2; pointer-events: none; }
-.vu-track::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(to bottom, transparent 0px, transparent 14px, rgba(255,255,255,0.3) 14px, rgba(255,255,255,0.3) 16px); z-index: 2; pointer-events: none; }
-.vu-fill { position: absolute; bottom: 0; left: 2px; right: 2px; height: 0%; background: linear-gradient(180deg, var(--green) 0%, var(--green) 60%, var(--amber) 80%, var(--red) 100%); border-radius: 2px; transition: height 0.1s ease-out; box-shadow: 0 0 15px rgba(0,212,255,0.5); z-index: 1; }
-.vu-fill.peak { background: linear-gradient(180deg, var(--amber) 0%, var(--red) 100%); box-shadow: 0 0 20px rgba(255,179,0,0.8), 0 0 30px rgba(255,69,96,0.5); }
-.vu-peak { position: absolute; left: 0; right: 0; height: 2px; background: var(--amber); opacity: 0.9; transition: bottom 0.2s ease-out; box-shadow: 0 0 8px var(--amber); z-index: 3; }
-.vu-value { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--cyan); min-width: 40px; text-align: center; }
-
-.tx-panel { min-height: 200px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, rgba(0,0,0,0.3), rgba(13,30,42,0.3)); border-radius: 10px; padding: 1.5rem; font-family: var(--font-mono); border: 2px solid var(--border); }
-.tx-idle { color: var(--text-dim); font-size: 1rem; letter-spacing: 0.1em; }
-.tx-callsign { font-family: var(--font-ui); font-size: 3.5rem; font-weight: 900; color: var(--green); text-shadow: 0 0 20px rgba(0,255,159,0.6), 0 0 40px rgba(0,255,159,0.3); letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.6rem; animation: tx-glow 2s ease-in-out infinite; }
-@keyframes tx-glow { 0%,100% { text-shadow: 0 0 20px rgba(0,255,159,0.6), 0 0 40px rgba(0,255,159,0.3); } 50% { text-shadow: 0 0 30px rgba(0,255,159,0.9), 0 0 60px rgba(0,255,159,0.5); } }
-.tx-flag { display: inline-flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.5rem; }
-.tx-info { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-.tx-name { font-size: 1.2rem; color: var(--cyan); font-weight: 600; text-shadow: 0 0 10px rgba(0,212,255,0.4); }
-.tx-meta { display: flex; gap: 1.2rem; align-items: center; font-size: 0.85rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
-.tx-src { padding: 0.3rem 0.6rem; border-radius: 6px; font-weight: 700; font-family: var(--font-mono); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.08em; }
-.tx-src.rf { background: rgba(0,255,159,.2); color: var(--green); border: 1px solid rgba(0,255,159,.4); box-shadow: 0 0 10px rgba(0,255,159,0.2); }
-.tx-src.net { background: rgba(0,212,255,.2); color: var(--cyan); border: 1px solid rgba(0,212,255,.4); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
-.tx-dest { color: var(--amber); font-weight: 700; text-shadow: 0 0 10px rgba(255,179,0,0.3); }
-.tx-time { color: var(--text-dim); font-family: var(--font-mono); }
-
-.lh-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.8rem; }
-.lh-table th { text-align: left; padding: 0.8rem 1rem; background: rgba(0,0,0,0.3); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; border-bottom: 2px solid var(--border); font-weight: 700; }
-.lh-table td { padding: 0.6rem 1rem; border-bottom: 1px solid rgba(30,45,61,0.5); color: var(--text); vertical-align: middle; }
-.lh-table tr:hover td { background: rgba(181,122,255,0.08); }
-.tx-row td { background: rgba(0,255,159,0.1); border-left: 3px solid var(--green); }
-.lh-cs { color: var(--violet); font-weight: bold; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.4rem; }
-.lh-flag { font-size: 1.3rem; }
-.lh-empty { text-align: center; color: var(--text-dim); padding: 1.5rem !important; font-style: italic; }
-.tx-flag img, .lh-flag img { width: auto; height: 2rem; vertical-align: middle; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-
-.logs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
-@media (max-width: 1000px) { .logs { grid-template-columns: 1fr; } }
-.l-panel { height: 250px; display: flex; flex-direction: column; border: 2px solid var(--border); border-radius: 10px; overflow: hidden; background: linear-gradient(180deg, var(--surface), #0d1e2a); box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-.l-head { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.2rem; background: rgba(0,0,0,0.3); border-bottom: 2px solid var(--border); }
-.l-title { font-family: var(--font-mono); font-size: 0.85rem; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
-.l-actions { display: flex; gap: 0.5rem; }
-.btn-log { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); background: rgba(30,45,61,0.5); border: 1px solid var(--border); cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 5px; transition: all 0.3s; }
-.btn-log:hover { color: var(--text); background: rgba(0,212,255,0.2); border-color: var(--cyan); transform: translateY(-1px); }
-.l-out { flex: 1; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.6; color: #7a9ab5; padding: 1rem; overflow-y: auto; white-space: pre-wrap; word-break: break-word; background: rgba(0,0,0,0.2); }
-.l-out::-webkit-scrollbar { width: 6px; }
-.l-out::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
-.l-out::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-.l-out::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
-.log-info { color: #7a9ab5; } .log-ok { color: var(--green); } .log-warn { color: var(--amber); } .log-err { color: var(--red); }
-
-.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-.modal.open { display: flex; }
-.m-box { background: linear-gradient(135deg, var(--surface), #0d1e2a); border: 2px solid var(--border); border-radius: 12px; padding: 2rem; width: 900px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; gap: 1.2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-.m-title { font-family: var(--font-mono); font-size: 1rem; color: var(--cyan); letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; }
-.m-path { font-family: var(--font-mono); font-size: 0.8rem; color: var(--amber); letter-spacing: 0.05em; word-break: break-all; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; border: 1px solid var(--border); }
-.m-editor { flex: 1; font-family: var(--font-mono); font-size: 0.85rem; color: #c9d1d9; background: #060c10; border: 2px solid var(--border); border-radius: 8px; padding: 1rem; resize: vertical; outline: none; line-height: 1.6; min-height: 300px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5); }
-.m-editor:focus { border-color: var(--cyan); box-shadow: 0 0 15px rgba(0,212,255,0.3), inset 0 2px 10px rgba(0,0,0,0.5); }
-.m-msg { font-family: var(--font-mono); font-size: 0.8rem; padding: 0.6rem 1rem; border-radius: 6px; display: none; border: 1px solid; font-weight: 600; }
-.m-msg.ok { color: var(--green); border-color: var(--green); background: rgba(0,255,159,0.1); box-shadow: 0 0 10px rgba(0,255,159,0.2); }
-.m-msg.err { color: var(--red); border-color: var(--red); background: rgba(255,69,96,0.1); box-shadow: 0 0 10px rgba(255,69,96,0.2); }
-.m-acts { display: flex; gap: 1rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid var(--border); }
-.btn-act { font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.7rem 1.5rem; border-radius: 8px; border: 2px solid var(--border); cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 700; }
-.btn-act.stop { background: transparent; color: var(--red); border-color: var(--red); }
-.btn-act.stop:hover { background: rgba(255,69,96,.15); color: #fff; border-color: #ff6b81; box-shadow: 0 0 20px rgba(255,69,96,0.4); transform: translateY(-2px); }
-.btn-act.start { background: transparent; color: var(--green); border-color: var(--green); }
-.btn-act.start:hover { background: rgba(0,255,159,.15); color: #fff; border-color: #00ff9f; box-shadow: 0 0 20px rgba(0,255,159,0.4); transform: translateY(-2px); }
-.btn-act:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
-
-.footer { text-align: center; padding: 2rem; color: var(--text-dim); font-family: var(--font-mono); font-size: 0.8rem; border-top: 2px solid var(--border); margin-top: 3rem; background: linear-gradient(180deg, transparent, var(--surface)); }
-.footer a { color: var(--cyan); text-decoration: none; transition: all 0.3s; }
-.footer a:hover { color: var(--violet); text-shadow: 0 0 10px rgba(181,122,255,0.5); }
-
-@media (max-width: 768px) {
-    .header { padding: 1rem; } .header h1 { font-size: 1.2rem; } .container { padding: 1rem; } .card { padding: 1.2rem; }
-    .tx-callsign { font-size: 2rem; } .vu-track { height: 120px; width: 30px; } .logs { grid-template-columns: 1fr; } .l-panel { height: 200px; } .vu-wrapper { gap: 1rem; }
+/* ══ HEADER ══ */
+.header{
+    padding:.7rem .8rem;
+    display:flex;align-items:center;gap:1rem;
+    background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%);
+    border:1px solid var(--border);border-radius:8px;
+    box-shadow:0 4px 20px rgba(0,0,0,.3);
 }
+.header h1{font-family:var(--font-ui);font-weight:700;font-size:1.1rem;letter-spacing:.08em;color:#e2eaf5;text-transform:uppercase;margin:0;white-space:nowrap;}
+.badge-direct{font-family:var(--font-mono);font-size:.65rem;background:linear-gradient(135deg,rgba(181,122,255,.2),rgba(0,212,255,.2));color:var(--violet);border:1px solid var(--violet);border-radius:5px;padding:.15rem .5rem;white-space:nowrap;}
+/* status dots en header */
+.h-status{display:flex;align-items:center;gap:1rem;flex:1;margin-left:.3rem;}
+.s-item{display:flex;align-items:center;gap:.35rem;font-family:var(--font-mono);font-size:.72rem;}
+.s-dot{width:9px;height:9px;border-radius:50%;background:var(--text-dim);transition:all .3s;}
+.s-dot.on{background:var(--green);box-shadow:0 0 7px var(--green);animation:pulse-dot 2s infinite;}
+.s-dot.off{background:var(--red);box-shadow:0 0 5px var(--red);}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.55}}
+.s-label{color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;font-size:.68rem;}
+.s-val{font-weight:700;color:var(--cyan);}
+.s-val.on{color:var(--green);} .s-val.off{color:var(--red);}
+.h-ts{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);white-space:nowrap;}
+.h-ts span{color:var(--amber);font-weight:700;}
+/* toggle en header */
+.h-toggle{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+.h-tlabel{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.sw{position:relative;width:54px;height:26px;flex-shrink:0;cursor:pointer;}
+.sw input{opacity:0;width:0;height:0;position:absolute;}
+.sw-track{position:absolute;inset:0;border-radius:6px;background:#1a2535;border:2px solid var(--red);transition:all .3s;}
+.sw-knob{position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--red);border-radius:4px;transition:all .3s cubic-bezier(.4,0,.2,1);}
+.sw input:checked~.sw-track{border-color:var(--green);box-shadow:0 0 10px rgba(0,255,159,.3);}
+.sw input:checked~.sw-knob{transform:translateX(28px);background:var(--green);box-shadow:0 0 10px rgba(0,255,159,.6);}
+.sw.busy .sw-knob{animation:pulse-knob 1s infinite alternate;}
+@keyframes pulse-knob{from{box-shadow:0 0 8px rgba(0,255,159,.5)}to{box-shadow:0 0 18px rgba(0,255,159,.9)}}
+.t-status{font-family:var(--font-mono);font-size:.75rem;font-weight:700;}
+.t-status.on{color:var(--green);} .t-status.off{color:var(--red);}
+.btn-nav{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;background:transparent;border-radius:5px;padding:.3rem .65rem;cursor:pointer;transition:all .3s;text-decoration:none;display:inline-flex;align-items:center;gap:.35rem;border:1px solid var(--border);color:var(--text);font-weight:600;white-space:nowrap;}
+.btn-nav:hover{background:rgba(0,212,255,.15);border-color:var(--cyan);color:var(--cyan);}
+.btn-nav.primary{background:linear-gradient(135deg,rgba(181,122,255,.15),rgba(0,212,255,.15));border-color:var(--violet);color:var(--violet);}
+
+/* ══ WRAPPER ══ */
+.page-wrap{
+    max-width:1400px;width:100%;
+    margin:0 auto;
+    padding:1.5rem .8rem .5rem;
+    display:flex;flex-direction:column;
+    gap:1rem;
+}
+
+/* ══ CARD CONFIG ══ */
+.card-cfg{
+    background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%);
+    border:1px solid var(--border);border-radius:8px;
+    padding:.4rem .75rem;position:relative;overflow:hidden;flex-shrink:0;
+}
+.card-cfg::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--violet),var(--cyan),var(--violet),transparent);}
+.c-title{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--violet);display:flex;align-items:center;gap:.4rem;font-weight:700;white-space:nowrap;}
+.c-title::before{content:'▸';color:var(--cyan);}
+.arch-info{font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);padding:.25rem .55rem;
+    background:rgba(0,0,0,.2);border-radius:4px;border-left:2px solid var(--violet);}
+.cfg-row{display:flex;gap:.4rem;flex-wrap:wrap;}
+.btn-cfg{font-family:var(--font-mono);font-size:.68rem;text-transform:uppercase;padding:.3rem .65rem;
+    border-radius:6px;border:1px solid var(--border);
+    background:linear-gradient(135deg,rgba(30,45,61,.5),rgba(17,23,32,.5));
+    color:var(--text);cursor:pointer;transition:all .3s;font-weight:600;letter-spacing:.04em;white-space:nowrap;}
+.btn-cfg:hover:not(.muted){background:linear-gradient(135deg,rgba(255,179,0,.2),rgba(0,212,255,.2));border-color:var(--amber);color:var(--amber);}
+.btn-cfg.muted{color:var(--text-dim);border-color:var(--border);cursor:not-allowed;opacity:.5;}
+
+/* ══ ZONA ACTIVA ══ */
+.active-zone{
+    flex-shrink:0;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:.5rem;
+    align-items:stretch;
+}
+
+/* ── Columna TX ── */
+.tx-col{
+    display:flex;flex-direction:column;gap:.4rem;
+    height:433px;
+    background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%);
+    border:1px solid var(--border);border-radius:8px;
+    padding:.5rem .7rem;position:relative;overflow:hidden;
+}
+.tx-col::before,.lh-col::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--violet),var(--cyan),var(--violet),transparent);}
+
+/* Panel TX */
+.tx-display-wrap{
+    flex:1;min-height:0;
+    display:flex;align-items:stretch;
+    border:1px solid var(--border);border-radius:7px;
+    background:rgba(0,0,0,.25);overflow:hidden;
+}
+.vu-side{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:.3rem;padding:.4rem .5rem;
+    background:rgba(0,0,0,.15);
+    border-right:1px solid var(--border);
+    flex-shrink:0;
+}
+.vu-side.right{border-right:none;border-left:1px solid var(--border);}
+.vu-label{font-family:var(--font-mono);font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;}
+.vu-track{width:22px;height:120px;background:linear-gradient(180deg,#0a0e14,#1a2535);border:1px solid var(--border);border-radius:3px;position:relative;overflow:hidden;}
+.vu-track::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(255,255,255,.07) 3px,rgba(255,255,255,.07) 4px);z-index:2;pointer-events:none;}
+.vu-fill{position:absolute;bottom:0;left:1px;right:1px;height:0%;background:linear-gradient(180deg,var(--green) 0%,var(--green) 60%,var(--amber) 80%,var(--red) 100%);border-radius:2px;transition:height .1s ease-out;z-index:1;}
+.vu-fill.peak{background:linear-gradient(180deg,var(--amber) 0%,var(--red) 100%);}
+.vu-peak{position:absolute;left:0;right:0;height:2px;background:var(--amber);opacity:.9;transition:bottom .2s;box-shadow:0 0 4px var(--amber);z-index:3;}
+.vu-value{font-family:var(--font-mono);font-size:.65rem;font-weight:700;color:var(--cyan);}
+
+/* Centro TX */
+.tx-center{
+    flex:1;display:flex;align-items:center;justify-content:center;
+    padding:.6rem;font-family:var(--font-mono);
+}
+.tx-idle{color:var(--text-dim);font-size:1.2rem;letter-spacing:.1em;text-align:center;}
+.tx-callsign{font-family:var(--font-ui);font-size:5.5rem;font-weight:900;color:var(--green);
+    text-shadow:0 0 30px rgba(0,255,159,.6),0 0 60px rgba(0,255,159,.3);
+    letter-spacing:.05em;display:flex;align-items:center;justify-content:center;gap:.5rem;
+    animation:tx-glow 2s ease-in-out infinite;}
+@keyframes tx-glow{0%,100%{text-shadow:0 0 30px rgba(0,255,159,.6),0 0 60px rgba(0,255,159,.3)}50%{text-shadow:0 0 50px rgba(0,255,159,.9),0 0 90px rgba(0,255,159,.4)}}
+.tx-flag{font-size:3.8rem;line-height:1;}
+.tx-info{display:flex;flex-direction:column;align-items:center;gap:.5rem;}
+.tx-name{font-size:1.8rem;color:var(--cyan);font-weight:600;text-shadow:0 0 12px rgba(0,212,255,.4);display:block;text-align:center;margin-top:.3rem;margin-bottom:.6rem;}
+.tx-meta{display:flex;gap:.8rem;align-items:center;font-size:.9rem;flex-wrap:wrap;justify-content:center;margin-top:.4rem;}
+.tx-src{padding:.2rem .6rem;border-radius:6px;font-weight:700;font-family:var(--font-mono);text-transform:uppercase;font-size:.78rem;}
+.tx-src.rf{background:rgba(0,255,159,.2);color:var(--green);border:1px solid rgba(0,255,159,.4);}
+.tx-src.net{background:rgba(0,212,255,.2);color:var(--cyan);border:1px solid rgba(0,212,255,.4);}
+.tx-dest{color:var(--amber);font-weight:700;}
+.tx-time{color:var(--text-dim);font-family:var(--font-mono);font-size:.78rem;}
+.flag-emoji{font-size:1em;line-height:1;vertical-align:middle;}
+.flag-emoji-img{height:1.1em;width:auto;vertical-align:middle;}
+
+/* Last Heard columna derecha */
+.lh-col{
+    display:flex;flex-direction:column;
+    height:433px;
+    background:linear-gradient(135deg,var(--surface) 0%,#0d1e2a 100%);
+    border:1px solid var(--border);border-radius:8px;
+    padding:.5rem .7rem;position:relative;overflow:hidden;
+}
+.lh-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:.88rem;}
+.lh-table th{text-align:left;padding:.4rem .6rem;background:rgba(0,0,0,.3);color:var(--text-dim);
+    text-transform:uppercase;letter-spacing:.07em;font-size:.78rem;border-bottom:1px solid var(--border);}
+.lh-table td{padding:.45rem .6rem;border-bottom:1px solid rgba(30,45,61,.4);color:var(--text);vertical-align:middle;}
+.lh-table tr:hover td{background:rgba(181,122,255,.08);}
+.tx-row td{background:rgba(0,255,159,.08);border-left:2px solid var(--green);}
+.lh-cs{color:var(--violet);font-weight:bold;display:flex;align-items:center;gap:.4rem;font-size:.9rem;}
+.lh-flag{font-size:1.2rem;}
+.lh-empty{text-align:center;color:var(--text-dim);padding:1rem!important;font-style:italic;}
+.lh-scroll{flex:1;overflow-y:auto;}
+.lh-table .tx-src{font-size:.75rem;padding:.15rem .5rem;}
+
+/* ── Logs: 2 paneles en fila horizontal ── */
+.logs-wrap{
+    flex-shrink:0;
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:.5rem;
+    height:220px;
+}
+.l-panel{
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;
+    border:1px solid var(--border);border-radius:7px;overflow:hidden;
+    background:linear-gradient(180deg,var(--surface),#0d1e2a);
+}
+.l-head{display:flex;align-items:center;justify-content:space-between;padding:.3rem .65rem;
+    background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);flex-shrink:0;}
+.l-title{font-family:var(--font-mono);font-size:.7rem;color:var(--violet);text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+.l-actions{display:flex;gap:.3rem;}
+.btn-log{font-family:var(--font-mono);font-size:.65rem;color:var(--text-dim);background:rgba(30,45,61,.5);
+    border:1px solid var(--border);cursor:pointer;padding:.15rem .38rem;border-radius:4px;transition:all .3s;}
+.btn-log:hover{color:var(--text);background:rgba(0,212,255,.2);border-color:var(--cyan);}
+.l-out{flex:1;min-height:0;font-family:var(--font-mono);font-size:.82rem;line-height:1.6;
+    color:#7a9ab5;padding:.4rem .6rem;overflow-y:auto;white-space:pre-wrap;word-break:break-word;background:rgba(0,0,0,.15);}
+.l-out::-webkit-scrollbar{width:4px;} .l-out::-webkit-scrollbar-track{background:rgba(0,0,0,.2);}
+.l-out::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.log-info{color:#7a9ab5;} .log-ok{color:var(--green);} .log-warn{color:var(--amber);} .log-err{color:var(--red);}
+
+/* ══ FOOTER ══ */
+.footer{color:var(--text-dim);font-family:var(--font-mono);font-size:.68rem;}
+.footer-inner{
+    padding:.3rem .8rem;text-align:center;
+    background:var(--surface);
+    border:1px solid var(--border);border-radius:8px;
+}
+.footer a{color:var(--cyan);text-decoration:none;} .footer a:hover{color:var(--violet);}
+
+/* ══ MODALES ══ */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;
+    align-items:center;justify-content:center;backdrop-filter:blur(5px);}
+.modal.open{display:flex;}
+.m-box{background:linear-gradient(135deg,var(--surface),#0d1e2a);border:2px solid var(--border);
+    border-radius:12px;padding:1.5rem;width:900px;max-width:95vw;max-height:90vh;
+    display:flex;flex-direction:column;gap:1rem;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.m-title{font-family:var(--font-mono);font-size:.9rem;color:var(--cyan);letter-spacing:.1em;text-transform:uppercase;font-weight:700;}
+.m-path{font-family:var(--font-mono);font-size:.72rem;color:var(--amber);word-break:break-all;
+    background:rgba(0,0,0,.3);padding:.4rem;border-radius:4px;border:1px solid var(--border);}
+.m-editor{flex:1;font-family:var(--font-mono);font-size:.8rem;color:#c9d1d9;background:#060c10;
+    border:2px solid var(--border);border-radius:7px;padding:.8rem;resize:vertical;outline:none;
+    line-height:1.6;min-height:280px;}
+.m-editor:focus{border-color:var(--cyan);box-shadow:0 0 12px rgba(0,212,255,.3);}
+.m-msg{font-family:var(--font-mono);font-size:.72rem;padding:.4rem .75rem;border-radius:5px;display:none;border:1px solid;}
+.m-msg.ok{color:var(--green);border-color:var(--green);background:rgba(0,255,159,.1);}
+.m-msg.err{color:var(--red);border-color:var(--red);background:rgba(255,69,96,.1);}
+.m-acts{display:flex;gap:.7rem;justify-content:flex-end;padding-top:.7rem;border-top:1px solid var(--border);}
+.btn-act{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;
+    padding:.55rem 1.1rem;border-radius:7px;border:2px solid var(--border);cursor:pointer;
+    transition:all .3s;display:inline-flex;align-items:center;gap:.4rem;font-weight:700;}
+.btn-act.stop{background:transparent;color:var(--red);border-color:var(--red);}
+.btn-act.stop:hover{background:rgba(255,69,96,.15);}
+.btn-act.start{background:transparent;color:var(--green);border-color:var(--green);}
+.btn-act.start:hover{background:rgba(0,255,159,.15);}
+.btn-act:disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
 </style>
 </head>
 <body>
+
+<!-- ══ TODO dentro del mismo container centrado ══ -->
+<div class="page-wrap">
+
+<!-- HEADER -->
 <header class="header">
-    <div style="display:flex;align-items:center;gap:1rem;">
-        <h1>🔗 Puente YSF ⇄ DMR</h1>
+    <div style="display:flex;align-items:center;gap:.55rem;flex-shrink:0;">
+        <h1>🔗 YSF ⇄ DMR</h1>
         <span class="badge-direct">BRIDGE</span>
     </div>
-    <div class="nav-actions">
-        <a href="mmdvm.php" class="btn-nav primary">🏠 Panel PHPPLUS</a>
-    </div>
-</header>
-
-<main class="container">
-    <div class="status-bar">
+    <div class="h-status">
         <div class="s-item"><span class="s-dot" id="dot-mmd"></span><span class="s-label">MMDVMYSF2DMR:</span><span class="s-val" id="val-mmd">—</span></div>
         <div class="s-item"><span class="s-dot" id="dot-y2d"></span><span class="s-label">YSF2DMR:</span><span class="s-val" id="val-y2d">—</span></div>
-        <div style="margin-left:auto;display:flex;align-items:center;gap:.5rem;">
-            <span class="s-label">Actualizado:</span><span class="s-val" id="ts" style="color:var(--amber)">—</span>
-        </div>
+        <div class="h-ts">ACT: <span id="ts">—</span></div>
     </div>
-
-    <div class="card">
-        <div class="c-title">⚙️ Control Principal del Puente</div>
-        <div class="toggle-row">
-            <span class="t-label">Activar / Desactivar sistemas</span>
-            <label class="sw" id="sw"><input type="checkbox" id="chk" onchange="toggle(this)"><span class="sw-track"></span><span class="sw-knob"></span></label>
-            <span class="t-status" id="sts">OFF</span>
-        </div>
-        <div style="font-family:var(--font-mono);font-size:.85rem;color:var(--text-dim);margin:.8rem 0 1.2rem;padding:.8rem;background:rgba(0,0,0,0.2);border-radius:6px;border-left:3px solid var(--violet);">
-            <span style="color:var(--cyan);">ℹ️</span> <strong>Arquitectura:</strong> MMDVMHost ⇄ YSF2DMR
-        </div>
-        <div class="cfg-row">
-            <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMYSF2DMR.ini</button>
-            <button class="btn-cfg" onclick="openCfg('ysf2dmr')">📄 YSF2DMR.ini</button>
-        </div>
+    <div class="h-toggle" style="flex-shrink:0;">
+        <span class="h-tlabel">PUENTE:</span>
+        <label class="sw" id="sw"><input type="checkbox" id="chk" onchange="toggle(this)"><span class="sw-track"></span><span class="sw-knob"></span></label>
+        <span class="t-status" id="sts">OFF</span>
     </div>
+    <a href="mmdvm.php" class="btn-nav primary" style="flex-shrink:0;">🏠 PHPPLUS</a>
+</header>
 
-    <div class="card">
-        <div class="c-title">📡 Transmisión Activa</div>
-        <div id="txDisplay" class="tx-panel">
-            <div class="vu-wrapper">
-                <div class="vu-meter">
-                    <div class="vu-label">Audio</div>
-                    <div class="vu-track">
-                        <div class="vu-fill" id="vu1"></div>
-                        <div class="vu-peak" id="vu1Peak"></div>
-                    </div>
-                    <div class="vu-value" id="vu1Val">0%</div>
-                </div>
-                <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad</div>
-                <div class="vu-meter" style="visibility:hidden;">
-                    <div class="vu-label">Slot 2</div>
-                    <div class="vu-track">
-                        <div class="vu-fill" id="vu2"></div>
-                        <div class="vu-peak" id="vu2Peak"></div>
-                    </div>
-                    <div class="vu-value" id="vu2Val">0%</div>
-                </div>
+<!-- CONTENIDO -->
+
+    <!-- CARD CONFIG -->
+    <div class="card-cfg">
+        <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;">
+            <span class="c-title" style="margin-bottom:0;">⚙️ Control del Puente</span>
+            <div class="arch-info" style="flex:1;min-width:180px;margin-bottom:0;">
+                <span style="color:var(--cyan);">ℹ️</span> <strong>Arquitectura:</strong> MMDVMHost ⇄ YSF2DMR
+            </div>
+            <div class="cfg-row" style="flex-shrink:0;">
+                <button class="btn-cfg" onclick="openCfg('mmdvm')">📄 MMDVMYSF2DMR.ini</button>
+                <button class="btn-cfg" onclick="openCfg('ysf2dmr')">📄 YSF2DMR.ini</button>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="c-title">📋 Ultimas Estaciones Escuchadas</div>
-        <table class="lh-table">
-            <thead>
-                <tr>
-                    <th>Indicativo</th>
-                    <th>Nombre</th>
-                    <th>TG</th>
-                    <th>Hora</th>
-                    <th>Origen</th>
-                </tr>
-            </thead>
-            <tbody id="lhBody">
-                <tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>
-            </tbody>
-        </table>
-    </div>
+    <!-- ZONA ACTIVA: TX izquierda + Last Heard derecha -->
+    <div class="active-zone">
 
-    <div class="logs">
+        <!-- TX -->
+        <div class="tx-col">
+            <div class="c-title" style="margin-bottom:0;flex-shrink:0;">📡 Transmisión Activa</div>
+            <div class="tx-display-wrap">
+                <div class="vu-side">
+                    <div class="vu-label">AUDIO</div>
+                    <div class="vu-track"><div class="vu-fill" id="vu1"></div><div class="vu-peak" id="vu1Peak"></div></div>
+                    <div class="vu-value" id="vu1Val">0%</div>
+                </div>
+                <div class="tx-center">
+                    <div class="tx-idle" id="txCenter">⏸ Pausa > Esperando actividad</div>
+                </div>
+                <div class="vu-side right" style="visibility:hidden;">
+                    <div class="vu-label">SL 2</div>
+                    <div class="vu-track"><div class="vu-fill" id="vu2"></div><div class="vu-peak" id="vu2Peak"></div></div>
+                    <div class="vu-value" id="vu2Val">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Last Heard -->
+        <div class="lh-col">
+            <div class="c-title" style="margin-bottom:.3rem;flex-shrink:0;">📋 Últimas Estaciones Escuchadas</div>
+            <div class="lh-scroll">
+                <table class="lh-table">
+                    <thead><tr><th>Indicativo</th><th>Nombre</th><th>TG</th><th>Hora</th><th>Origen</th></tr></thead>
+                    <tbody id="lhBody"><tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /active-zone -->
+
+    <!-- LOGS: 2 paneles en fila horizontal -->
+    <div class="logs-wrap">
         <div class="l-panel">
             <div class="l-head">
                 <span class="l-title">📋 MMDVMYSF2DMR</span>
                 <div class="l-actions">
-                    <button class="btn-log" onclick="refreshLogs()" title="Actualizar logs">🔄</button>
+                    <button class="btn-log" onclick="refreshLogs()" title="Actualizar">🔄</button>
                     <button class="btn-log" onclick="clearLog('lMmd')" title="Limpiar">🗑</button>
                 </div>
             </div>
@@ -727,18 +807,26 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
         </div>
         <div class="l-panel">
             <div class="l-head">
-                <span class="l-title" style="color:#c9a0ff">📋 YSF2DMR</span>
+                <span class="l-title" style="color:#c9a0ff;">📋 YSF2DMR</span>
                 <div class="l-actions">
-                    <button class="btn-log" onclick="refreshLogs()" title="Actualizar logs">🔄</button>
+                    <button class="btn-log" onclick="refreshLogs()" title="Actualizar">🔄</button>
                     <button class="btn-log" onclick="clearLog('lY2D')" title="Limpiar">🗑</button>
                 </div>
             </div>
             <div class="l-out" id="lY2D">Esperando…</div>
         </div>
-    </div>
-</main>
+    </div><!-- /logs-wrap -->
 
-<!-- Modal genérico de edición -->
+<!-- FOOTER -->
+<footer class="footer">
+    <div class="footer-inner">
+        Panel Bridge YSF⇄DMR | <a href="mmdvm.php">Volver al panel PHPPLUS</a>
+    </div>
+</footer>
+
+</div><!-- /page-wrap -->
+
+<!-- ══ MODAL CFG ══ -->
 <div id="cfgModal" class="modal" onclick="if(event.target===this)closeCfg()">
     <div class="m-box">
         <div class="m-title">✏️ Editor de Configuración</div>
@@ -752,17 +840,13 @@ body { background:var(--bg); color:var(--text); font-family:var(--font-ui); font
     </div>
 </div>
 
-<footer class="footer">
-    Panel Bridge YSF⇄DMR | <a href="mmdvm.php">Volver al panel PHPPLUS</a>
-</footer>
-
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const fmtT = ts => new Date(ts*1000).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 const api = async (a, p={}, m='GET') => {
     const u = new URL(location.href); u.searchParams.set('action',a);
-    const o = { method:m, headers:{'Content-Type':'application/x-www-form-urlencoded'} };
+    const o = {method:m,headers:{'Content-Type':'application/x-www-form-urlencoded'}};
     if(m==='POST' && Object.keys(p).length) o.body = new URLSearchParams(p).toString();
     const r = await fetch(u.toString(),o);
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -772,190 +856,176 @@ const api = async (a, p={}, m='GET') => {
 const _winOS = /Windows/i.test(navigator.userAgent);
 const _TBASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
 const _FLAGS = [
-    {re:/^E[ABCDEFGH][1-9]/, e:'🇪🇸', t:'1f1ea-1f1f8'}, {re:/^C[TUQ]/, e:'🇵🇹', t:'1f1f5-1f1f9'}, {re:/^F[A-Z]/, e:'🇫🇷', t:'1f1eb-1f1f7'},
-    {re:/^I[0-9]|^IK|^IW|^IZ/, e:'🇮🇹', t:'1f1ee-1f1f9'}, {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/, e:'🇬🇧', t:'1f1ec-1f1e7'},
-    {re:/^D[A-R]|^Y[2-9]/, e:'🇩🇪', t:'1f1e9-1f1ea'}, {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/, e:'🇺🇸', t:'1f1fa-1f1f8'},
-    {re:/^VE|^VA|^VO|^VY/, e:'🇨🇦', t:'1f1e8-1f1e6'}, {re:/^PY|^PU|^PV|^PW|^PX/, e:'🇧🇷', t:'1f1e7-1f1f7'},
-    {re:/^LU|^LV|^LW|^LX/, e:'🇦🇷', t:'1f1e6-1f1f7'}, {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/, e:'🇯🇵', t:'1f1ef-1f1f5'},
-    {re:/^VK/, e:'🇦🇺', t:'1f1e6-1f1fa'}, {re:/^ZS|^ZT|^ZU/, e:'🇿🇦', t:'1f1ff-1f1e6'}, {re:/^OH|^OG/, e:'🇫🇮', t:'1f1eb-1f1ee'},
-    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/, e:'🇳🇱', t:'1f1f3-1f1f1'}, {re:/^HB/, e:'🇨🇭', t:'1f1e8-1f1ed'},
-    {re:/^OE/, e:'🇦🇹', t:'1f1e6-1f1f9'}, {re:/^SP|^SQ|^SR|^HF/, e:'🇵🇱', t:'1f1f5-1f1f1'},
-    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/, e:'🇷🇺', t:'1f1f7-1f1fa'}, {re:/^SV|^SW|^SX|^SY|^SZ/, e:'🇬🇷', t:'1f1ec-1f1f7'},
-    {re:/^LY/, e:'🇱🇹', t:'1f1f1-1f1f9'}, {re:/^9A/, e:'🇭🇷', t:'1f1ed-1f1f7'},
+    {re:/^E[ABCDEFGH][1-9]/,e:'🇪🇸',t:'1f1ea-1f1f8'},{re:/^C[TUQ]/,e:'🇵🇹',t:'1f1f5-1f1f9'},
+    {re:/^F[A-Z]/,e:'🇫🇷',t:'1f1eb-1f1f7'},{re:/^I[0-9]|^IK|^IW|^IZ/,e:'🇮🇹',t:'1f1ee-1f1f9'},
+    {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/,e:'🇬🇧',t:'1f1ec-1f1e7'},{re:/^D[A-R]|^Y[2-9]/,e:'🇩🇪',t:'1f1e9-1f1ea'},
+    {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/,e:'🇺🇸',t:'1f1fa-1f1f8'},{re:/^VE|^VA|^VO|^VY/,e:'🇨🇦',t:'1f1e8-1f1e6'},
+    {re:/^PY|^PU|^PV|^PW|^PX/,e:'🇧🇷',t:'1f1e7-1f1f7'},{re:/^LU|^LV|^LW|^LX/,e:'🇦🇷',t:'1f1e6-1f1f7'},
+    {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/,e:'🇯🇵',t:'1f1ef-1f1f5'},{re:/^VK/,e:'🇦🇺',t:'1f1e6-1f1fa'},
+    {re:/^ZS|^ZT|^ZU/,e:'🇿🇦',t:'1f1ff-1f1e6'},{re:/^OH|^OG/,e:'🇫🇮',t:'1f1eb-1f1ee'},
+    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/,e:'🇳🇱',t:'1f1f3-1f1f1'},{re:/^HB/,e:'🇨🇭',t:'1f1e8-1f1ed'},
+    {re:/^OE/,e:'🇦🇹',t:'1f1e6-1f1f9'},{re:/^SP|^SQ|^SR|^HF/,e:'🇵🇱',t:'1f1f5-1f1f1'},
+    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/,e:'🇷🇺',t:'1f1f7-1f1fa'},{re:/^SV|^SW|^SX|^SY|^SZ/,e:'🇬🇷',t:'1f1ec-1f1f7'},
+    {re:/^LY/,e:'🇱🇹',t:'1f1f1-1f1f9'},{re:/^9A/,e:'🇭🇷',t:'1f1ed-1f1f7'}
 ];
 
 function getFlag(callsign){
     if(!callsign) return '';
-    const cs = callsign.toUpperCase().trim();
-    for(const p of _FLAGS){
-        if(p.re.test(cs)){
-            if(_winOS) return '<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
-            return '<span class="flag-emoji">'+p.e+'</span>';
-        }
-    }
+    const cs=callsign.toUpperCase().trim();
+    for(const p of _FLAGS){ if(p.re.test(cs)){
+        if(_winOS) return '<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
+        return '<span class="flag-emoji">'+p.e+'</span>';
+    }}
     return '<span class="flag-emoji">🌐</span>';
 }
 
-let S = { active:false, poll:null, logT:null, txT:null, last:null, busy:false, cfgId:null };
+let S={active:false,poll:null,logT:null,txT:null,last:null,busy:false,cfgId:null};
 
-function setDot(id, v) {
-    const e=$(id), vEl=$(id.replace('dot-','val-'));
+function setDot(id,v){
+    const e=$(id),vEl=$(id.replace('dot-','val-'));
     if(!e||!vEl)return;
     e.className='s-dot '+(v==='active'?'on':'off');
     vEl.textContent=v==='active'?'ON':'OFF';
     vEl.className='s-val '+(v==='active'?'on':'off');
 }
-
-function setToggle(on, busy=false) {
-    const chk=$('chk'), sts=$('sts'), sw=$('sw');
-    if (!busy) { chk.checked = on; sts.textContent = on ? 'ON' : 'OFF'; sts.className = 't-status ' + (on ? 'on' : 'off'); }
-    sw.classList.toggle('busy', busy); S.busy = busy;
+function setToggle(on,busy=false){
+    const chk=$('chk'),sts=$('sts'),sw=$('sw');
+    if(!busy){chk.checked=on;sts.textContent=on?'ON':'OFF';sts.className='t-status '+(on?'on':'off');}
+    sw.classList.toggle('busy',busy);S.busy=busy;
+}
+function updateVU(slot,level){
+    const fill=$('vu'+slot),peak=$('vu'+slot+'Peak'),val=$('vu'+slot+'Val');
+    if(!fill||!peak||!val)return;
+    level=Math.max(0,Math.min(100,level));
+    fill.style.height=level+'%';val.textContent=level+'%';peak.style.bottom=level+'%';
+    fill.classList.toggle('peak',level>=90);
 }
 
-function updateVU(slot, level) {
-    const fill = $('vu'+slot), peak = $('vu'+slot+'Peak'), val = $('vu'+slot+'Val');
-    if(!fill || !peak || !val) return;
-    level = Math.max(0, Math.min(100, level));
-    fill.style.height = level + '%'; val.textContent = level + '%'; peak.style.bottom = level + '%';
-    fill.classList.toggle('peak', level >= 90);
-}
-
-async function status() {
-    try {
-        const d = await api('status');
-        setDot('dot-mmd', d.mmdvm); setDot('dot-y2d', d.ysf2dmr);
+async function status(){
+    try{
+        const d=await api('status');
+        setDot('dot-mmd',d.mmdvm);setDot('dot-y2d',d.ysf2dmr);
         const desiredOn = (d.state_on !== null && d.state_on !== undefined) ? !!d.state_on : !!d.bridge_active;
-        if (!S.busy) setToggle(desiredOn, false);
-        S.active = desiredOn;
-        $('ts').textContent = fmtT(d.ts);
-        document.querySelectorAll('.btn-cfg').forEach(btn => {
-            const id = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-            if (d.perms[id]) btn.classList.toggle('muted', !d.perms[id].writable);
+        if(!S.busy&&desiredOn!==S.active)setToggle(desiredOn,false);
+        S.active=desiredOn;$('ts').textContent=fmtT(d.ts);
+        document.querySelectorAll('.btn-cfg').forEach(btn=>{
+            const m=btn.getAttribute('onclick').match(/'([^']+)'/);
+            if(m&&d.perms[m[1]])btn.classList.toggle('muted',!d.perms[m[1]].writable);
         });
-    } catch(e) { console.warn('status err', e); }
+    }catch(e){console.warn('status err',e);}
 }
 
-async function refreshLogs() {
-    try {
-        const d = await api('logs', {lines:80});
-        const panels = {lMmd: d.mmdvm, lY2D: d.ysf2dmr};
-        for(let [id, txt] of Object.entries(panels)) {
-            const el = $(id);
-            const atBot = el.scrollHeight - el.clientHeight <= el.scrollTop + 20;
-            el.innerHTML = txt ? colorizeLog(txt) : '<span class="log-info">Sin salida en vivo</span>';
-            if(atBot) el.scrollTop = el.scrollHeight;
+async function refreshLogs(){
+    try{
+        const d=await api('logs',{lines:80});
+        const panels={lMmd:d.mmdvm,lY2D:d.ysf2dmr};
+        for(let[id,txt]of Object.entries(panels)){
+            const el=$(id);
+            const atBot=el.scrollHeight-el.clientHeight<=el.scrollTop+20;
+            el.innerHTML=txt?colorizeLog(txt):'<span class="log-info">Sin salida en vivo</span>';
+            if(atBot)el.scrollTop=el.scrollHeight;
         }
-    } catch(e) { console.warn('logs err', e); alert('⚠️ Error al actualizar logs: ' + e.message); }
+    }catch(e){console.warn('logs err',e);}
+}
+async function fetchLogs(){
+    try{
+        const d=await api('logs',{lines:80});
+        const panels={lMmd:d.mmdvm,lY2D:d.ysf2dmr};
+        for(let[id,txt]of Object.entries(panels)){
+            const el=$(id);
+            const atBot=el.scrollHeight-el.clientHeight<=el.scrollTop+20;
+            el.innerHTML=txt?colorizeLog(txt):'<span class="log-info">Sin salida en vivo</span>';
+            if(atBot)el.scrollTop=el.scrollHeight;
+        }
+    }catch(e){console.warn('logs err',e);}
 }
 
-async function fetchLogs() {
-    try {
-        const d = await api('logs',{lines:80});
-        const panels = {lMmd: d.mmdvm, lY2D: d.ysf2dmr};
-        for(let [id, txt] of Object.entries(panels)) {
-            const el = $(id);
-            const atBot = el.scrollHeight - el.clientHeight <= el.scrollTop + 20;
-            el.innerHTML = txt ? colorizeLog(txt) : '<span class="log-info">Sin salida en vivo</span>';
-            if(atBot) el.scrollTop = el.scrollHeight;
+async function fetchTransmission(){
+    try{
+        const r=await api('transmission');
+        const d=r.state||{};
+        const txCenter=$('txCenter');
+        if(d.active&&d.callsign){
+            const flag=getFlag(d.callsign);
+            const nameHtml=d.name?`<span class="tx-name">(${esc(d.name)})</span>`:'';
+            const sourceBadge=`<span class="tx-src ${d.source==='YSF'?'rf':'net'}">${d.source||'YSF'}</span>`;
+            const metaHtml=`<div class="tx-meta">${sourceBadge}<span class="tx-dest">→ TG ${d.tg||'—'}</span>${d.duration?`<span class="tx-time">⏱ ${esc(d.duration)}</span>`:''}</div>`;
+            txCenter.innerHTML=`<div class="tx-info"><div class="tx-callsign"><span class="tx-flag">${flag}</span>${esc(d.callsign)}</div>${nameHtml}${metaHtml}</div>`;
+        }else{
+            txCenter.innerHTML='<div class="tx-idle">⏸ Pausa > Esperando actividad</div>';
         }
-    } catch(e){ console.warn('logs err',e); }
-}
-
-async function fetchTransmission() {
-    try {
-        const r = await api('transmission');
-        const d = r.state || {};
-        const txCenter = $('txCenter');
-        if (d.active && d.callsign) {
-            const flag = getFlag(d.callsign);
-            const nameHtml = d.name ? `<span class="tx-name">(${esc(d.name)})</span>` : '';
-            const sourceBadge = `<span class="tx-src net">${d.source||'YSF'}</span>`;
-            const metaHtml = `<div class="tx-meta">${sourceBadge}<span class="tx-dest">→ TG ${d.tg||'—'}</span>${d.duration ? `<span class="tx-time">⏱ ${esc(d.duration)}</span>` : ''}<span class="tx-time">${esc(d.time||'')}</span></div>`;
-            txCenter.innerHTML = `<div class="tx-info"><div class="tx-callsign"><span class="tx-flag">${flag}</span>${esc(d.callsign)} ${nameHtml}</div>${metaHtml}</div>`;
-        } else {
-            txCenter.innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad</div>';
-        }
-        if (r.vu) { updateVU(1, r.vu.slot1||0); updateVU(2, r.vu.slot2||0); }
-
-        const tbody = $('lhBody');
-        const list = r.lastHeard || [];
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';
-        } else {
-            tbody.innerHTML = list.map(r => {
-                const flag = getFlag(r.callsign);
-                const isTx = d.active && r.callsign === d.callsign && r.tg === d.tg;
-                const durLoss = r.duration ? `<small style="color:var(--text-dim)">(${r.duration})</small>` : '';
+        if(r.vu){updateVU(1,r.vu.slot1||0);}
+        const tbody=$('lhBody');const list=r.lastHeard||[];
+        if(list.length===0){
+            tbody.innerHTML='<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';
+        }else{
+            tbody.innerHTML=list.map(r=>{
+                const flag=getFlag(r.callsign);
+                const isTx=d.active&&r.callsign===d.callsign&&r.tg===d.tg;
+                const durLoss=r.duration?`<small style="color:var(--text-dim)">(${r.duration})</small>`:'';
                 return `<tr class="${isTx?'tx-row':''}">
                     <td><span class="lh-cs"><span class="lh-flag">${flag}</span>${esc(r.callsign)}</span></td>
-                    <td>${esc(r.name||'—')}</td>
-                    <td>TG ${esc(r.tg||'—')}</td>
+                    <td>${esc(r.name||'—')}</td><td>TG ${esc(r.tg||'—')}</td>
                     <td>${esc(r.time||'—')}</td>
-                    <td><span class="tx-src net">${r.source||'YSF'}</span> ${durLoss}</td>
+                    <td><span class="tx-src ${r.source==='YSF'?'rf':'net'}">${r.source||'YSF'}</span> ${durLoss}</td>
                 </tr>`;
             }).join('');
         }
-    } catch(e){ console.warn('tx err',e); }
+    }catch(e){console.warn('tx err',e);}
 }
 
-async function toggle(chk) {
-    const target = chk.checked;
-    setToggle(target, true);
-    try {
-        const res = await api(target ? 'start' : 'stop', {}, 'POST');
-        if (!res.ok) { alert('❌ ' + res.msg); setToggle(!target, false); return; }
-        await new Promise(r => setTimeout(r, 2500));
-        S.busy = false;
-        await status(); fetchLogs();
-        setToggle(target, false);
-        if (target === false) ['lMmd','lY2D'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
-    } catch (e) { console.error(e); setToggle(!target, false); alert('⚠️ Error: ' + e.message); }
+async function toggle(chk){
+    const target=chk.checked;setToggle(target,true);
+    try{
+        const res=await api(target?'start':'stop',{},'POST');
+        if(!res.ok){alert('❌ '+res.msg);setToggle(!target,false);return;}
+        await new Promise(r=>setTimeout(r,2500));
+        S.busy=false;
+        await status();fetchLogs();
+        setToggle(target,false);
+        if(target===false)['lMmd','lY2D'].forEach(id=>$(id).innerHTML='<span class="log-info">Logs limpiados.</span>');
+    }catch(e){console.error(e);setToggle(!target,false);alert('⚠️ Error: '+e.message);}
 }
 
-async function openCfg(id) {
-    S.cfgId=id;
-    const m=$('cfgModal'), a=$('cfgArea'), p=$('cfgPath'), msg=$('cfgMsg');
-    msg.style.display='none'; a.disabled=true; m.classList.add('open');
-    try {
+async function openCfg(id){
+    S.cfgId=id;const m=$('cfgModal'),a=$('cfgArea'),p=$('cfgPath'),msg=$('cfgMsg');
+    msg.style.display='none';a.disabled=true;m.classList.add('open');
+    try{
         const d=await api('cfg-read',{id},'POST');
-        if(d.ok){ p.textContent=d.path; a.value=d.content; a.disabled=false; a.focus(); }
-        else { p.textContent='Error'; msg.className='m-msg err'; msg.textContent='✖ '+d.msg; msg.style.display='block'; }
-    } catch(e){ msg.className='m-msg err'; msg.textContent='✖ '+e.message; msg.style.display='block'; }
+        if(d.ok){p.textContent=d.path;a.value=d.content;a.disabled=false;a.focus();}
+        else{p.textContent='Error';msg.className='m-msg err';msg.textContent='✖ '+d.msg;msg.style.display='block';}
+    }catch(e){msg.className='m-msg err';msg.textContent='✖ '+e.message;msg.style.display='block';}
 }
-
-function closeCfg(){ $('cfgModal').classList.remove('open'); S.cfgId=null; }
-
-async function saveCfg() {
+function closeCfg(){$('cfgModal').classList.remove('open');S.cfgId=null;}
+async function saveCfg(){
     if(!S.cfgId)return;
-    const msg=$('cfgMsg'); msg.style.display='block'; msg.className='m-msg'; msg.textContent='⏳ Guardando…';
-    try {
+    const msg=$('cfgMsg');msg.style.display='block';msg.className='m-msg';msg.textContent='⏳ Guardando…';
+    try{
         const d=await api('cfg-save',{id:S.cfgId,content:$('cfgArea').value},'POST');
-        msg.className='m-msg '+(d.ok?'ok':'err'); msg.textContent=(d.ok?'✅ ':'❌ ')+d.msg;
-        if(d.ok) setTimeout(closeCfg,1500);
-    } catch(e){ msg.className='m-msg err'; msg.textContent='✖ '+e.message; }
+        msg.className='m-msg '+(d.ok?'ok':'err');msg.textContent=(d.ok?'✅ ':'❌ ')+d.msg;
+        if(d.ok)setTimeout(closeCfg,1500);
+    }catch(e){msg.className='m-msg err';msg.textContent='✖ '+e.message;}
 }
-
-const clearLog=id=>{ if(!confirm('¿Limpiar logs?'))return; $(id).innerHTML='<span class="log-info">Limpiado.</span>'; };
-
-function colorizeLog(text) {
-    return text.split('\n').map(l => {
-        const ll = l.toLowerCase();
-        if (/error|fail|abort|exception|denied|segfault/i.test(ll)) return `<span class="log-err">${l}</span>`;
-        if (/warn|warning|timeout/i.test(ll)) return `<span class="log-warn">${l}</span>`;
-        if (/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped|received|header|src/i.test(ll)) return `<span class="log-ok">${l}</span>`;
-        return `<span class="log-info">${l}</span>`;
+const clearLog=id=>{if(!confirm('¿Limpiar logs?'))return;$(id).innerHTML='<span class="log-info">Limpiado.</span>';};
+function colorizeLog(text){
+    return text.split('\n').map(l=>{
+        const ll=l.toLowerCase();
+        if(/error|fail|abort|exception|denied|segfault/i.test(ll))return`<span class="log-err">${esc(l)}</span>`;
+        if(/warn|warning|timeout/i.test(ll))return`<span class="log-warn">${esc(l)}</span>`;
+        if(/connect|start|open|loaded|success|tx|rx|linked|tg|ysf|slot|mode|sigterm|stopped|received|header|src/i.test(ll))return`<span class="log-ok">${esc(l)}</span>`;
+        return`<span class="log-info">${esc(l)}</span>`;
     }).join('\n');
 }
-
 function startPoll(){
-    status(); fetchLogs(); fetchTransmission();
+    status();refreshLogs();fetchTransmission();
     S.poll=setInterval(status,5000);
-    S.logT=setInterval(fetchLogs,7000);
+    S.logT=setInterval(refreshLogs,7000);
     S.txT=setInterval(fetchTransmission,1000);
 }
-function stopPoll(){ clearInterval(S.poll); clearInterval(S.logT); clearInterval(S.txT); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('cfgModal').classList.contains('open')) closeCfg(); });
-window.addEventListener('load', startPoll);
+document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&$('cfgModal').classList.contains('open'))closeCfg();
+});
+window.addEventListener('load',startPoll);
 </script>
 </body>
 </html>
