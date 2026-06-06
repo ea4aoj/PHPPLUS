@@ -128,7 +128,6 @@ function colorizeLog($text) {
 // ============================================================================
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// ── XDN Hosts: listar reflectores disponibles (CORREGIDO: claves sin espacios) ──
 if ($action === 'nxdn-hosts') {
     $list = [];
     if (file_exists(XDN_HOSTS)) {
@@ -136,7 +135,6 @@ if ($action === 'nxdn-hosts') {
         if (isset($json['reflectors']) && is_array($json['reflectors'])) {
             foreach ($json['reflectors'] as $ref) {
                 $id = intval($ref['designator'] ?? 0);
-                // Si 'name' es null, usamos 'sponsor' como nombre de la sala
                 $name = trim($ref['name'] ?? $ref['sponsor'] ?? '');
                 $country = strtoupper(trim($ref['country'] ?? ''));
                 if ($id <= 0) continue;
@@ -154,7 +152,6 @@ if ($action === 'nxdn-hosts') {
     exit;
 }
 
-// ── Establecer sala NXDN ──
 if ($action === 'nxdn-set-room') {
     $roomId = intval($_POST['room_id'] ?? 0);
     if ($roomId > 0) {
@@ -269,7 +266,6 @@ if ($action === 'restart-svc') {
     header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
 
-// ── Transmisión y Last Heard ──
 if ($action === 'transmission') {
     $log = tailLive(LOG_MMDVM, 5000);
     if (empty(trim($log))) {
@@ -918,15 +914,40 @@ async function fetchTransmission() {
     } catch(e){ console.warn('tx err',e); }
 }
 
+// ✅ FUNCIÓN TOGGLE CORREGIDA: Limpieza total e inmediata al detener
 async function toggle(chk) {
-    const target = chk.checked; setToggle(target, true);
+    const target = chk.checked; 
+    setToggle(target, true);
     try {
         const res = await api(target ? 'start' : 'stop', {}, 'POST');
-        if (!res.ok) { alert('❌ ' + res.msg); setToggle(!target, false); return; }
+        if (!res.ok) { 
+            alert('❌ ' + res.msg); 
+            setToggle(!target, false); 
+            return; 
+        }
         await new Promise(r => setTimeout(r, 2500));
-        await status(); setToggle(target, false); refreshLogs();
-        if (target === false) ['lMmd','lD2N','lNxdn'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
-    } catch (e) { console.error(e); setToggle(!target, false); alert('⚠️ Error: ' + e.message); }
+        await status(); 
+        setToggle(target, false); 
+        
+        if (target === false) {
+            // 1. Limpiar logs
+            ['lMmd','lD2N','lNxdn'].forEach(id => $(id).innerHTML = '<span class="log-info">Logs limpiados.</span>');
+            // 2. Limpiar Last Heard inmediatamente
+            $('lhBody').innerHTML = '<tr><td colspan="6" class="lh-empty">Sin actividad reciente</td></tr>';
+            // 3. Limpiar Transmisión Activa
+            $('txCenter').innerHTML = '<div class="tx-idle">⏸ Pausa > Esperando actividad </div>';
+            // 4. Resetear medidores VU a 0
+            updateVU(1, 0);
+            updateVU(2, 0);
+        } else {
+            // Si arrancamos, refrescamos logs normalmente
+            refreshLogs();
+        }
+    } catch (e) { 
+        console.error(e); 
+        setToggle(!target, false); 
+        alert('⚠️ Error: ' + e.message); 
+    }
 }
 
 async function openCfg(id) {
