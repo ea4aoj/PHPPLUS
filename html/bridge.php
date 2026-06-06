@@ -1,26 +1,39 @@
 <?php
-// ═══ VERIFICACIÓN DE ESTADO DE BRIDGES ═══
+// ═══ VERIFICACIÓN DE ESTADO DE BRIDGES (Método robusto por PID) ═══
 if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
     header('Content-Type: application/json');
     
-    function isProcessRunning($processName) {
-        $output = shell_exec("pgrep -f '$processName' 2>/dev/null");
-        return !empty(trim($output));
-    }
-    
-    function isBridgeActive($processes) {
-        foreach ($processes as $process) {
-            if (!isProcessRunning($process)) {
-                return false;
-            }
-        }
-        return true;
+    function isProcessRunningByPid($pidFile, $expectedString) {
+        if (!file_exists($pidFile)) return false;
+        $pid = trim(file_get_contents($pidFile));
+        if (!is_numeric($pid) || $pid <= 0) return false;
+        
+        // Leemos la línea de comandos real del proceso
+        $cmdline = @file_get_contents("/proc/{$pid}/cmdline");
+        if ($cmdline === false) return false;
+        
+        // Los argumentos en cmdline están separados por bytes nulos, los cambiamos a espacios
+        $cmdline = str_replace("\0", " ", $cmdline);
+        
+        // Verificamos si el nombre del ejecutable o su configuración está en la línea de comandos
+        return strpos($cmdline, $expectedString) !== false;
     }
     
     $status = [
-        'dmr2ysf'  => isBridgeActive(['MMDVMDMR2YSF', 'DMR2YSF', 'YSFGateway']),
-        'ysf2dmr'  => isBridgeActive(['MMDVMYSF2DMR', 'YSF2DMR']), // ✅ Corregido: solo 2 procesos
-        'dmr2nxdn' => isBridgeActive(['MMDVMNXDN', 'DMR2NXDN', 'NXDNGateway'])
+        'dmr2ysf' => (
+            isProcessRunningByPid('/tmp/MMDVMDMR2YSF.pid', 'MMDVMDMR2YSF') &&
+            isProcessRunningByPid('/tmp/DMR2YSF.pid', 'DMR2YSF') &&
+            isProcessRunningByPid('/tmp/YSFGateway.pid', 'YSFGateway')
+        ),
+        'ysf2dmr' => (
+            isProcessRunningByPid('/tmp/MMDVMYSF2DMR.pid', 'MMDVMYSF2DMR') &&
+            isProcessRunningByPid('/tmp/YSF2DMR.pid', 'YSF2DMR')
+        ),
+        'dmr2nxdn' => (
+            isProcessRunningByPid('/tmp/MMDVMNXDN.pid', 'MMDVMNXDN') &&
+            isProcessRunningByPid('/tmp/DMR2NXDN.pid', 'DMR2NXDN') &&
+            isProcessRunningByPid('/tmp/NXDNGateway.pid', 'NXDNGateway')
+        )
     ];
     
     echo json_encode($status);
@@ -32,9 +45,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BRIDGES · REM-ESP</title>
+    <title>BRIDGES</title>
 
-    <!-- FAVICON: eslabones plateados -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23C0C0C0' viewBox='0 0 16 16'%3E%3Cpath d='M4.715 6.542 3.343 7.914a3 3 0 1 0 4.243 4.243l1.828-1.829A3 3 0 0 0 8.586 5.5L8 6.086a1 1 0 0 0-.154.199 2 2 0 0 1 .861 3.337L6.88 11.45a2 2 0 1 1-2.83-2.83l.793-.792a4 4 0 0 1-.128-1.287z'/%3E%3Cpath d='M6.586 4.672A3 3 0 0 0 7.414 9.5l.775-.776a2 2 0 0 1-.896-3.346L9.12 3.55a2 2 0 1 1 2.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 1 0-4.243-4.243z'/%3E%3C/svg%3E">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -136,13 +148,16 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
             box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
         }
 
-        .title-wrapper { text-align: center; margin: 3rem 0 3.5rem; position: relative; }
-        .title-antenna { position: relative; display: inline-block; margin-bottom: 1rem; }
-        .title-antenna i {
-            font-size: 3.5rem;
-            color: var(--cyan);
-            filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.6));
-            animation: antennaPulse 2s ease-in-out infinite;
+        .title-wrapper {
+            text-align: center;
+            margin: 4rem 0 3.5rem; /* ⬅️ antes 3rem, ahora 2rem para subir el conjunto */
+            position: relative;
+        }
+
+        .title-antenna {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 2.0rem; /* ️ antes 1rem, ahora casi pegado al título */
         }
 
         @keyframes antennaPulse {
@@ -179,6 +194,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
             background-clip: text;
             text-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
             margin: 0;
+            margin-top: 3rem; /* ️ NUEVO: baja el título para que no lo toquen las ondas */
         }
 
         .title-sub {
@@ -428,7 +444,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
     </div>
 
     <div class="row g-4 justify-content-center">
-        <!-- DMR2YSF -->
         <div class="col-12 col-md-6 col-lg-4">
             <div class="bridge-card dmr2ysf">
                 <span class="status-badge inactive" id="badge-dmr2ysf">INACTIVO</span>
@@ -440,7 +455,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
             </div>
         </div>
 
-        <!-- YSF2DMR -->
         <div class="col-12 col-md-6 col-lg-4">
             <div class="bridge-card ysf2dmr">
                 <span class="status-badge inactive" id="badge-ysf2dmr">INACTIVO</span>
@@ -452,7 +466,6 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
             </div>
         </div>
 
-        <!-- DMR2NXDN -->
         <div class="col-12 col-md-6 col-lg-4">
             <div class="bridge-card dmr2nxdn">
                 <span class="status-badge inactive" id="badge-dmr2nxdn">INACTIVO</span>
@@ -494,9 +507,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'check_status') {
         }
     }
 
-    // Comprobar al cargar y luego cada 5 segundos
+    // Comprobar al cargar y luego cada 3 segundos (3000 ms)
     checkStatus();
-    setInterval(checkStatus, 5000);
+    setInterval(checkStatus, 3000);
 </script>
 </body>
 </html>
