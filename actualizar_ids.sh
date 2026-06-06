@@ -11,7 +11,7 @@
                         cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2NXDN/DMRIds.dat
                         
                         echo "*********************************************"
-                        echo "         IDS actualizadas correctamente"
+                        echo "         IDS actualizadas correctamente      "
                         echo "*********************************************"
                         sleep 3
 
