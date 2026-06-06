@@ -439,9 +439,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 .page-wrap{
     max-width:1400px;width:100%;
     margin:0 auto;
-    padding:.5rem .8rem .5rem;
+    padding:1.0rem .8rem .5rem;
     display:flex;flex-direction:column;
-    gap:.4rem;
+    gap:1.0rem;
 }
 
 /* ══ CARD CONFIG (1 fila compacta) ══ */
