@@ -10,15 +10,17 @@ zip -j "$ZIPPATH" \
   /home/pi/MMDVMHost/MMDVMDSTAR.ini \
   /home/pi/MMDVMHost/MMDVMNXDN.ini \
   /home/pi/MMDVMHost/MMDVMDMR2YSF.ini \
+  /home/pi/MMDVMHost/MMDVMYSF2DMR.ini \
+  /home/pi/MMDVMHost/MMDVMDMR2NXDN.ini \
   /home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini \
   /home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt \
-  /home/pi/MMDVMHost/MMDVMYSF2DMR.ini \
   /home/pi/MMDVM_CM/YSF2DMR/YSF2DMR.ini \
-  /home/pi/Display-Driver/DisplayDriver.ini \
+  /home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt \
   /home/pi/YSFClients/YSFGateway/YSFGateway.ini \
   /home/pi/DMRGateway/DMRGateway.ini \
-  /home/pi/DStarGateway/DStarGateway.ini \
   /home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini \
+  /home/pi/DMRGateway/DMRGateway.ini \
+  /home/pi/DStarGateway/DStarGateway.ini \
   /home/pi/radiosonde_auto_rx/auto_rx/station.cfg \
   /etc/rbfeeder.ini \
   /etc/fr24feed.ini \
@@ -30,6 +32,8 @@ zip -j "$ZIPPATH" \
   /home/pi/AMBE_SERVER/AMBEserver.ini \
   /home/pi/dump1090-fa/dump1090.args \
   /home/pi/.local/bluetooth.sh \
+  /home/pi/Display-Driver/DisplayDriver.ini \
+  
   2>/dev/null
 
 cd /home/pi/radiosonde_auto_rx/auto_rx && zip -r "$ZIPPATH" logs/ 2>/dev/null
