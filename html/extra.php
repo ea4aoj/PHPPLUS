@@ -67,12 +67,48 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             height: 45px;
         }
 
+        /* ═══ TARJETAS CON BORDE SUPERIOR DE COLOR ═══ */
         .card {
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-top: 3px solid var(--card-color, #6c757d);
+            overflow: hidden;
         }
 
         .card:hover {
             transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        /* Colores por tarjeta */
+        .card-dump1090 { --card-color: #00ff15; }
+        .card-ambe { --card-color: #ff4dff; }
+        .card-radarbox { --card-color: #ff6600; }
+        .card-fr24 { --card-color: #ffcc00; }
+        .card-radiosonde { --card-color: #66ffcc; }
+        .card-ais { --card-color: #00d4ff; }
+        .card-svxlink { --card-color: #00d4ff; }
+        .card-bluetooth { --card-color: #00d4ff; }
+        .card-esp32 { --card-color: #00ffff; }
+        .card-fusion { --card-color: #ff3b3b; }
+        .card-openwebrx { --card-color: #00ff99; }
+        .card-limpieza { --card-color: #ff6666; }
+        .card-analisis { --card-color: #00e5ff; }
+        .card-seguridad { --card-color: #ff6600; }
+        .card-fabrica { --card-color: #ffaa00; }
+
+        .card-title i {
+            filter: drop-shadow(0 0 5px var(--card-color, #6c757d));
+        }
+
+        .btn-info {
+            border: 1px solid var(--card-color, #0dcaf0);
+            transition: all 0.3s;
+        }
+
+        .btn-info:hover {
+            background: var(--card-color, #0dcaf0);
+            border-color: var(--card-color, #0dcaf0);
+            box-shadow: 0 0 10px var(--card-color, #0dcaf0);
         }
 
         #fabrica-output {
@@ -120,7 +156,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- DUMP1090 CONTROL -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-dump1090">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Control
@@ -137,7 +173,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- DUMP1090 MONITOR -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-dump1090">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Monitor
@@ -154,7 +190,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- AMBE SERVER -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-ambe">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-cpu-fill me-2" style="color:#ff4dff;"></i>AMBE SERVER
@@ -171,7 +207,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- RADARBOX -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-radarbox">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-airplane-engines-fill me-2" style="color:#ff6600;"></i>RADARBOX
@@ -188,7 +224,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- FLIGHTRADAR24 -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-fr24">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-airplane-engines-fill me-2" style="color:#ffcc00;"></i>FLIGHTRADAR24
@@ -205,7 +241,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- RADIOSONDE (AUTO_RX) -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-radiosonde">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-balloon-fill me-2" style="color:#66ffcc;"></i>RADIOSONDE
@@ -220,31 +256,27 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             </div>
         </div>
 
-<!-- AIS / SHIP EXPLORER -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            
-            <h5 class="card-title">
-                <i class="bi bi-water me-2" style="color:#00d4ff;"></i>
-                AIS / Ship Explorer
-            </h5>
-
-            <p class="card-text text-white-50 small flex-grow-1">
-                Monitorización AIS · Tráfico marítimo en tiempo real · barcos y rutas
-            </p>
-
-            <a href="/sxfeeder.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
-
+        <!-- AIS / SHIP EXPLORER -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-ais">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-water me-2" style="color:#00d4ff;"></i>
+                        AIS / Ship Explorer
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Monitorización AIS · Tráfico marítimo en tiempo real · barcos y rutas
+                    </p>
+                    <a href="/sxfeeder.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <!-- SVXLINK -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-svxlink">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-broadcast me-2" style="color:#00d4ff;"></i>SVXLINK
@@ -261,7 +293,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- BLUETOOTH -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-bluetooth">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-bluetooth me-2" style="color:#00d4ff;"></i>Bluetooth
@@ -278,7 +310,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- PROGRAMADOR ESP32 -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100">
+            <div class="card bg-secondary border-0 h-100 card-esp32">
                 <div class="card-body d-flex flex-column">
                     <h5 class="card-title">
                         <i class="bi bi-cpu me-2" style="color:#00ffff;"></i>Programador ESP32
@@ -293,137 +325,110 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             </div>
         </div>
 
-<!-- FUSION 2X -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
-            </h5>
-            <p class="card-text text-white-50 small flex-grow-1">
-                Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
-            </p>
-            <a href="/fusion2x.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
+        <!-- FUSION 2X -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-fusion">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
+                    </p>
+                    <a href="/fusion2x.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- OPENWEBRX -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-
-            <h5 class="card-title">
-                <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
-            </h5>
-
-            <p class="card-text text-white-50 small flex-grow-1">
-                Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
-            </p>
-
-            <a href="/openwebrx_control.php"
-               class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
-
+        <!-- OPENWEBRX -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-openwebrx">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
+                    </p>
+                    <a href="/openwebrx_control.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-        
- 
-<!-- MIS ENLACES PREFERIDOS
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-bookmarks-fill me-2" style="color:#00e5ff;"></i>Mis Enlaces Preferidos
-            </h5>
-            <p class="card-text text-white-50 small flex-grow-1">
-                Panel de acceso rápido a enlaces de radioafición y servicios web.
-            </p>
-            <a href="/mis_enlaces.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
+
+        <!-- LIMPIEZA DEL SISTEMA -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-limpieza">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
+                        Limpieza del sistema
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
+                    </p>
+                    <a href="/limpieza.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>-->
 
-<!-- LIMPIEZA DEL SISTEMA -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
-                Limpieza del sistema
-            </h5>
-
-            <p class="card-text text-white-50 small flex-grow-1">
-                Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
-            </p>
-
-            <a href="/limpieza.php"
-               class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
+        <!-- ANALISIS.PHP -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-analisis">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Análisis Servicios
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
+                    </p>
+                    <a href="/analisis.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- ANALISIS.PHP -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Análisis Servicios
-            </h5>
-            <p class="card-text text-white-50 small flex-grow-1">
-                Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
-            </p>
-            <a href="/analisis.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
+        <!-- SEGURIDAD / CAMBIO DE CONTRASEÑAS -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-seguridad">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-shield-lock-fill me-2" style="color:#ff6600;"></i>Seguridad
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Cambio de contraseñas · Gestión segura de usuarios pi y root
+                    </p>
+                    <a href="/changepassword.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- SEGURIDAD / CAMBIO DE CONTRASEÑAS -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-shield-lock-fill me-2" style="color:#ff6600;"></i>Seguridad
-            </h5>
-            <p class="card-text text-white-50 small flex-grow-1">
-                Cambio de contraseñas · Gestión segura de usuarios pi y root
-            </p>
-            <a href="/changepassword.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-            </a>
+        <!-- RESTAURAR IMAGEN DE FÁBRICA -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card bg-secondary border-0 h-100 card-fabrica">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
+                        Restaurar de fábrica
+                    </h5>
+                    <p class="card-text text-white-50 small flex-grow-1">
+                        Restaura la imagen y borra todos los parámetros de usuario dejándola como cuando la descargas.
+                    </p>
+                    <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark" onclick="confirmarFabrica()">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
+                    </button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
-<!-- RESTAURAR IMAGEN DE FÁBRICA -->
-<div class="col-12 col-sm-6 col-lg-3">
-    <div class="card bg-secondary border-0 h-100">
-        <div class="card-body d-flex flex-column">
-            <h5 class="card-title">
-                <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
-                Restaurar de fábrica
-            </h5>
-            <p class="card-text text-white-50 small flex-grow-1">
-                Restaura la imagen y borra todos los parámetros de usuario dejándola como cuando la descargas.
-            </p>
-            <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark"
-                    onclick="confirmarFabrica()">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
-            </button>
-        </div>
-    </div>
-</div>
-        
     </div>
 </div>
 
