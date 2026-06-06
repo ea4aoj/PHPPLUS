@@ -123,9 +123,9 @@
                     <p class="card-text text-white-50 small flex-grow-1">
                         Bridge DMR ↔ NXDN · Puente entre redes DMR y NXDN
                     </p>
-                    <button type="button" class="btn btn-warning btn-sm mt-2 text-dark fw-bold" data-bs-toggle="modal" data-bs-target="#proximamenteModal">
-                        <i class="bi bi-hourglass-split me-1"></i>Próximamente
-                    </button>
+                    <a href="/dmr2nxdn.php"  class="btn btn-info btn-sm mt-2 text-dark fw-bold">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
+                    </a>
                 </div>
             </div>
         </div>
