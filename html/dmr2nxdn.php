@@ -644,7 +644,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 <header class="header">
     <div style="display:flex;align-items:center;gap:.55rem;flex-shrink:0;">
         <h1>🔗 DMR ⇄ NXDN</h1>
-        <span class="badge-direct">CONVERSOR DIRECTO</span>
+        <span class="badge-direct">BRIDGE</span>
     </div>
     <div class="h-status">
         <div class="s-item"><span class="s-dot" id="dot-mmd"></span><span class="s-label">MMDVMDMR2NXDN:</span><span class="s-val" id="val-mmd">—</span></div>
