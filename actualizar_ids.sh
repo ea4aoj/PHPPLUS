@@ -1,18 +1,41 @@
 #!/bin/bash
-                      
-                        # Cambio realizado el 31-05-2026 para actualizar los IDS en MMDVMHost 
-                        
-                        sudo chmod 777 -R /home/pi/MMDVMHost
-                        sudo chmod 777 -R /home/pi/MMDVM_CM
-                        cd /home/pi/MMDVMHost
-                        curl --fail -o DMRIds.dat -s http://www.pistar.uk/downloads/DMRIds.dat
-                        cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2YSF/DMRIds.dat
-                        cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/YSF2DMR/DMRIds.dat
-                        cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2NXDN/DMRIds.dat
-                        
-                        echo "*********************************************"
-                        echo "         IDS actualizadas correctamente      "
-                        echo "*********************************************"
-                        sleep 3
 
-                        
+# ==========================================================
+# Actualización de DMR IDs para MMDVM
+# ==========================================================
+
+printf "🔄 Iniciando actualización de DMR IDs...\n"
+
+# Ajuste de permisos
+printf "🔧 Ajustando permisos en directorios MMDVM...\n"
+sudo chmod 777 -R /home/pi/MMDVMHost > /dev/null 2>&1
+sudo chmod 777 -R /home/pi/MMDVM_CM > /dev/null 2>&1
+printf "✅ Permisos configurados correctamente.\n"
+
+# Descarga del archivo
+cd /home/pi/MMDVMHost || { printf "❌ Error: No se puede acceder a MMDVMHost\n"; exit 1; }
+
+printf "📥 Descargando DMRIds.dat desde pi-star.uk...\n"
+if curl --fail -o DMRIds.dat -s http://www.pistar.uk/downloads/DMRIds.dat; then
+    printf "✅ Descarga completada con éxito.\n"
+else
+    printf "❌ Error al descargar el archivo.\n"
+    exit 1
+fi
+
+# Distribución a los puentes
+printf "📤 Distribuyendo DMRIds.dat a MMDVMHost y puentes...\n"
+cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2YSF/DMRIds.dat && \
+cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/YSF2DMR/DMRIds.dat && \
+cp /home/pi/MMDVMHost/DMRIds.dat /home/pi/MMDVM_CM/DMR2NXDN/DMRIds.dat
+
+if [ $? -eq 0 ]; then
+    printf "✅ Archivo copiado en MMDVMHost, DMR2YSF, YSF2DMR y DMR2NXDN.\n"
+else
+    printf "❌ Error al copiar los archivos.\n"
+    exit 1
+fi
+
+# Finalización
+printf "🎉 DMR IDs actualizadas correctamente.\n"
+sleep 3
