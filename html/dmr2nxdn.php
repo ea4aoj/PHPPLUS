@@ -185,6 +185,7 @@ if ($action === 'stop') {
     $out = shell_exec('sudo '.STOP_SCRIPT.' 2>&1'); sleep(2);
     shell_exec('sudo pkill -9 -f DMR2NXDN 2>/dev/null');
     shell_exec('sudo rm -f /tmp/DMR2NXDN.pid'); sleep(1);
+    @unlink('/tmp/dmr2nxdn_lastheard.json');
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true,'msg'=>'Puente detenido','log'=>trim($out)?:'Sin salida']);
     exit;
@@ -954,7 +955,12 @@ async function toggle(chk){
         if(!res.ok){alert('❌ '+res.msg);setToggle(!target,false);return;}
         await new Promise(r=>setTimeout(r,2500));
         await status();setToggle(target,false);fetchLogs();
-        if(target===false)['lMmd','lD2N','lNxdn'].forEach(id=>$(id).innerHTML='<span class="log-info">Logs limpiados.</span>');
+        if(target===false){
+        ['lMmd','lD2N','lNxdn'].forEach(id=>$(id).innerHTML='<span class="log-info">Logs limpiados.</span>');
+         $('lhBody').innerHTML='<tr><td colspan="6" class="lh-empty">Sin actividad reciente</td></tr>';
+          $('txCenter').innerHTML='<div class="tx-idle">⏸ Pausa > Esperando actividad</div>';
+        updateVU(1,0);updateVU(2,0);
+}
     }catch(e){console.error(e);setToggle(!target,false);alert('⚠️ Error: '+e.message);}
 }
 
