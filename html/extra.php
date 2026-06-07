@@ -67,16 +67,95 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             height: 45px;
         }
 
-        /* ═══ TARJETAS CON BORDE SUPERIOR DE COLOR ═══ */
+        /* ═══ TARJETAS CON ALTURA FIJA 180px ═══ */
+        .card-link {
+            text-decoration: none;
+            display: block;
+            height: 100%;
+        }
+
         .card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        box-shadow 0.4s ease,
+                        border-color 0.4s ease;
             border-top: 3px solid var(--card-color, #6c757d);
             overflow: hidden;
+            position: relative;
+            height: 165px;
+            cursor: pointer;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.05),
+                transparent
+            );
+            transition: left 0.6s ease;
+        }
+
+        .card:hover::before {
+            left: 100%;
         }
 
         .card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4), 
+                        0 0 20px var(--card-color, transparent);
+            border-top-color: var(--card-color, #6c757d);
+        }
+
+        .card-body {
+            padding: 1.25rem 1.25rem 1rem 1.25rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0;
+            flex-shrink: 0;
+            letter-spacing: 0.01em;
+        }
+
+        .card-title i {
+            font-size: 1.4rem;
+            filter: drop-shadow(0 0 6px var(--card-color, #6c757d));
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card:hover .card-title i {
+            transform: scale(1.25) rotate(5deg);
+        }
+
+        .card-divider {
+            height: 1px;
+            background: linear-gradient(90deg, var(--card-color, #6c757d), transparent);
+            opacity: 0.4;
+            margin: 0.6rem 0;
+            flex-shrink: 0;
+        }
+
+        .card-text {
+            font-size: 0.9rem;
+            line-height: 1.45;
+            margin-bottom: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            flex-grow: 1;
         }
 
         /* Colores por tarjeta */
@@ -96,20 +175,39 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         .card-seguridad { --card-color: #ff6600; }
         .card-fabrica { --card-color: #ffaa00; }
 
-        .card-title i {
-            filter: drop-shadow(0 0 5px var(--card-color, #6c757d));
+        /* Animación de entrada */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        .btn-info {
-            border: 1px solid var(--card-color, #0dcaf0);
-            transition: all 0.3s;
+        .col-12 {
+            animation: fadeInUp 0.6s ease-out backwards;
         }
 
-        .btn-info:hover {
-            background: var(--card-color, #0dcaf0);
-            border-color: var(--card-color, #0dcaf0);
-            box-shadow: 0 0 10px var(--card-color, #0dcaf0);
-        }
+        .col-12:nth-child(1) { animation-delay: 0.05s; }
+        .col-12:nth-child(2) { animation-delay: 0.1s; }
+        .col-12:nth-child(3) { animation-delay: 0.15s; }
+        .col-12:nth-child(4) { animation-delay: 0.2s; }
+        .col-12:nth-child(5) { animation-delay: 0.25s; }
+        .col-12:nth-child(6) { animation-delay: 0.3s; }
+        .col-12:nth-child(7) { animation-delay: 0.35s; }
+        .col-12:nth-child(8) { animation-delay: 0.4s; }
+        .col-12:nth-child(9) { animation-delay: 0.45s; }
+        .col-12:nth-child(10) { animation-delay: 0.5s; }
+        .col-12:nth-child(11) { animation-delay: 0.55s; }
+        .col-12:nth-child(12) { animation-delay: 0.6s; }
+        .col-12:nth-child(13) { animation-delay: 0.65s; }
+        .col-12:nth-child(14) { animation-delay: 0.7s; }
+        .col-12:nth-child(15) { animation-delay: 0.75s; }
+        .col-12:nth-child(16) { animation-delay: 0.8s; }
+        .col-12:nth-child(17) { animation-delay: 0.85s; }
 
         #fabrica-output {
             background: #111;
@@ -156,275 +254,273 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- DUMP1090 CONTROL -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-dump1090">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Control
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Lanzador configurador Dump1090
-                    </p>
-                    <a href="/dump1090.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/dump1090.php" class="card-link">
+                <div class="card bg-secondary border-0 card-dump1090">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Control
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Lanzador configurador Dump1090
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- DUMP1090 MONITOR -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-dump1090">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Monitor
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Seguimiento de aeronaves en tiempo real
-                    </p>
-                    <a href="/dump1090monitor.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/dump1090monitor.php" class="card-link">
+                <div class="card bg-secondary border-0 card-dump1090">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Monitor
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Seguimiento de aeronaves en tiempo real
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- AMBE SERVER -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-ambe">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-cpu-fill me-2" style="color:#ff4dff;"></i>AMBE SERVER
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Servidor AMBE · Control de voz digital DMR
-                    </p>
-                    <a href="/ambeserver.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/ambeserver.php" class="card-link">
+                <div class="card bg-secondary border-0 card-ambe">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-cpu-fill me-2" style="color:#ff4dff;"></i>AMBE SERVER
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Servidor AMBE · Control de voz digital DMR
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- RADARBOX -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-radarbox">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-airplane-engines-fill me-2" style="color:#ff6600;"></i>RADARBOX
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Feeder Radarbox · Tracking ADS-B global.
-                    </p>
-                    <a href="/radarbox.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/radarbox.php" class="card-link">
+                <div class="card bg-secondary border-0 card-radarbox">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-airplane-engines-fill me-2" style="color:#ff6600;"></i>RADARBOX
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Feeder Radarbox · Tracking ADS-B global.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- FLIGHTRADAR24 -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-fr24">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-airplane-engines-fill me-2" style="color:#ffcc00;"></i>FLIGHTRADAR24
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Feeder FR24 · Seguimiento de vuelos en tiempo real.
-                    </p>
-                    <a href="/flightradar.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/flightradar.php" class="card-link">
+                <div class="card bg-secondary border-0 card-fr24">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-airplane-engines-fill me-2" style="color:#ffcc00;"></i>FLIGHTRADAR24
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Feeder FR24 · Seguimiento de vuelos en tiempo real.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- RADIOSONDE (AUTO_RX) -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-radiosonde">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-balloon-fill me-2" style="color:#66ffcc;"></i>RADIOSONDE
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Seguimiento de sondas meteorológicas en tiempo real.
-                    </p>
-                    <a href="/auto_rx.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/auto_rx.php" class="card-link">
+                <div class="card bg-secondary border-0 card-radiosonde">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-balloon-fill me-2" style="color:#66ffcc;"></i>RADIOSONDE
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Seguimiento de sondas meteorológicas en tiempo real.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- AIS / SHIP EXPLORER -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-ais">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-water me-2" style="color:#00d4ff;"></i>
-                        AIS / Ship Explorer
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Monitorización AIS · Tráfico marítimo en tiempo real · barcos y rutas
-                    </p>
-                    <a href="/sxfeeder.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/sxfeeder.php" class="card-link">
+                <div class="card bg-secondary border-0 card-ais">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-water me-2" style="color:#00d4ff;"></i>
+                            AIS / Ship Explorer
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Monitorización AIS · Tráfico marítimo en tiempo real · barcos y rutas
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- SVXLINK -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-svxlink">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-broadcast me-2" style="color:#00d4ff;"></i>SVXLINK
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Control de repetidor · EchoLink · Configuración y logs
-                    </p>
-                    <a href="/svxlink.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/svxlink.php" class="card-link">
+                <div class="card bg-secondary border-0 card-svxlink">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-broadcast me-2" style="color:#00d4ff;"></i>SVXLINK
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Control de repetidor · EchoLink · Configuración y logs
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- BLUETOOTH -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-bluetooth">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-bluetooth me-2" style="color:#00d4ff;"></i>Bluetooth
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Gestión de dispositivos Bluetooth
-                    </p>
-                    <a href="/bluetooth.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/bluetooth.php" class="card-link">
+                <div class="card bg-secondary border-0 card-bluetooth">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-bluetooth me-2" style="color:#00d4ff;"></i>Bluetooth
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Gestión de dispositivos Bluetooth
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- PROGRAMADOR ESP32 -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-esp32">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-cpu me-2" style="color:#00ffff;"></i>Programador ESP32
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Grabador de Firmware para módulos ESP32 vía WebSerial
-                    </p>
-                    <a href="/esp32.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/esp32.php" class="card-link">
+                <div class="card bg-secondary border-0 card-esp32">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-cpu me-2" style="color:#00ffff;"></i>Programador ESP32
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Grabador de Firmware para módulos ESP32 vía WebSerial
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- FUSION 2X -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-fusion">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
-                    </p>
-                    <a href="/fusion2x.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/fusion2x.php" class="card-link">
+                <div class="card bg-secondary border-0 card-fusion">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- OPENWEBRX -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-openwebrx">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
-                    </p>
-                    <a href="/openwebrx_control.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/openwebrx_control.php" class="card-link">
+                <div class="card bg-secondary border-0 card-openwebrx">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- LIMPIEZA DEL SISTEMA -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-limpieza">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
-                        Limpieza del sistema
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
-                    </p>
-                    <a href="/limpieza.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/limpieza.php" class="card-link">
+                <div class="card bg-secondary border-0 card-limpieza">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
+                            Limpieza del sistema
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- ANALISIS.PHP -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-analisis">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Análisis Servicios
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
-                    </p>
-                    <a href="/analisis.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/analisis.php" class="card-link">
+                <div class="card bg-secondary border-0 card-analisis">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Análisis Servicios
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- SEGURIDAD / CAMBIO DE CONTRASEÑAS -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-seguridad">
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">
-                        <i class="bi bi-shield-lock-fill me-2" style="color:#ff6600;"></i>Seguridad
-                    </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
-                        Cambio de contraseñas · Gestión segura de usuarios pi y root
-                    </p>
-                    <a href="/changepassword.php" class="btn btn-info btn-sm mt-2 text-dark fw-bold">
-                        <i class="bi bi-box-arrow-up-right me-1"></i>Abrir
-                    </a>
+            <a href="/changepassword.php" class="card-link">
+                <div class="card bg-secondary border-0 card-seguridad">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-shield-lock-fill me-2" style="color:#ff6600;"></i>Seguridad
+                        </h5>
+                        <div class="card-divider"></div>
+                        <p class="card-text text-white-50 small">
+                            Cambio de contraseñas · Gestión segura de usuarios pi y root
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- RESTAURAR IMAGEN DE FÁBRICA -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 h-100 card-fabrica">
-                <div class="card-body d-flex flex-column">
+            <div class="card bg-secondary border-0 card-fabrica" onclick="confirmarFabrica()">
+                <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
                         Restaurar de fábrica
                     </h5>
-                    <p class="card-text text-white-50 small flex-grow-1">
+                    <div class="card-divider"></div>
+                    <p class="card-text text-white-50 small">
                         Restaura la imagen y borra todos los parámetros de usuario dejándola como cuando la descargas.
                     </p>
-                    <button class="btn btn-warning btn-sm mt-2 fw-bold text-dark" onclick="confirmarFabrica()">
-                        <i class="bi bi-arrow-counterclockwise me-1"></i>Restaurar
-                    </button>
                 </div>
             </div>
         </div>
@@ -432,7 +528,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
     </div>
 </div>
 
-<!-- ── MODAL CONFIRMACIÓN ─────────────────────────────────────────────────── -->
+<!-- ─ MODAL CONFIRMACIÓN ─────────────────────────────────────────────────── -->
 <div class="modal fade" id="modalConfirm" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content bg-dark border border-warning">
