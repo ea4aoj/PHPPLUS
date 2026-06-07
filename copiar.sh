@@ -13,8 +13,8 @@ zip -j "$ZIPPATH" \
   /home/pi/MMDVMHost/MMDVMYSF2DMR.ini \
   /home/pi/MMDVMHost/MMDVMDMR2NXDN.ini \
   /home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini \
-  /home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt \
   /home/pi/MMDVM_CM/YSF2DMR/YSF2DMR.ini \
+  /home/pi/MMDVM_CM/DMR2NXDN/DMR2NXDN.ini \
   /home/pi/MMDVM_CM/DMR2YSF/TG-YSFList.txt \
   /home/pi/YSFClients/YSFGateway/YSFGateway.ini \
   /home/pi/DMRGateway/DMRGateway.ini \
