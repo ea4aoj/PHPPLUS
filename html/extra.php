@@ -40,6 +40,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
+        body {
+            background: #1a1a1f;
+            background-image: 
+                radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.03) 1px, transparent 0);
+            background-size: 40px 40px;
+        }
+
         .navbar-granate {
             background-color: #6b0f1a;
             min-height: 60px;
@@ -67,7 +74,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             height: 45px;
         }
 
-        /* ═══ TARJETAS CON ALTURA FIJA 180px ═══ */
+        /* ═══ TARJETAS ELEGANTES ═══ */
         .card-link {
             text-decoration: none;
             display: block;
@@ -75,45 +82,57 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         }
 
         .card {
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
-                        box-shadow 0.4s ease,
-                        border-color 0.4s ease;
-            border-top: 3px solid var(--card-color, #6c757d);
+            background: rgba(45, 45, 55, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-left: 4px solid var(--card-color, #6c757d);
+            border-radius: 12px;
             overflow: hidden;
             position: relative;
             height: 165px;
             cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
+        /* Efecto de brillo en el borde */
         .card::before {
             content: '';
             position: absolute;
             top: 0;
-            left: -100%;
-            width: 100%;
+            left: 0;
+            width: 4px;
             height: 100%;
             background: linear-gradient(
-                90deg,
+                180deg,
                 transparent,
-                rgba(255, 255, 255, 0.05),
+                var(--card-color, #6c757d),
                 transparent
             );
-            transition: left 0.6s ease;
+            opacity: 0;
+            transition: opacity 0.4s ease;
         }
 
         .card:hover::before {
-            left: 100%;
+            opacity: 1;
+            animation: borderGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         .card:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 12px 32px rgba(0,0,0,0.4), 
-                        0 0 20px var(--card-color, transparent);
-            border-top-color: var(--card-color, #6c757d);
+            transform: translateY(-6px);
+            background: rgba(55, 55, 65, 0.7);
+            border-left-color: var(--card-color, #6c757d);
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.5),
+                0 0 30px var(--card-color, transparent);
         }
 
         .card-body {
-            padding: 1.25rem 1.25rem 1rem 1.25rem;
+            padding: 1.25rem 1.25rem 1rem 1.5rem;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -125,25 +144,49 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             font-weight: 700;
             margin-bottom: 0;
             flex-shrink: 0;
-            letter-spacing: 0.01em;
+            letter-spacing: 0.02em;
+            color: #fff;
         }
 
         .card-title i {
             font-size: 1.4rem;
-            filter: drop-shadow(0 0 6px var(--card-color, #6c757d));
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 0 8px var(--card-color, #6c757d));
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0%, 100% { 
+                filter: drop-shadow(0 0 8px var(--card-color, #6c757d));
+                transform: scale(1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px var(--card-color, #6c757d));
+                transform: scale(1.05);
+            }
         }
 
         .card:hover .card-title i {
-            transform: scale(1.25) rotate(5deg);
+            animation: iconHover 0.6s ease-in-out;
+        }
+
+        @keyframes iconHover {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.3) rotate(10deg); }
+            100% { transform: scale(1.25) rotate(5deg); }
         }
 
         .card-divider {
             height: 1px;
             background: linear-gradient(90deg, var(--card-color, #6c757d), transparent);
-            opacity: 0.4;
+            opacity: 0.3;
             margin: 0.6rem 0;
             flex-shrink: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card:hover .card-divider {
+            opacity: 0.6;
         }
 
         .card-text {
@@ -156,6 +199,12 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             flex-grow: 1;
+            color: rgba(255, 255, 255, 0.6);
+            transition: color 0.4s ease;
+        }
+
+        .card:hover .card-text {
+            color: rgba(255, 255, 255, 0.8);
         }
 
         /* Colores por tarjeta */
@@ -175,20 +224,20 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         .card-seguridad { --card-color: #ff6600; }
         .card-fabrica { --card-color: #ffaa00; }
 
-        /* Animación de entrada */
-        @keyframes fadeInUp {
+        /* Animación de entrada escalonada */
+        @keyframes fadeInScale {
             from {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(30px) scale(0.95);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
 
         .col-12 {
-            animation: fadeInUp 0.6s ease-out backwards;
+            animation: fadeInScale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
         }
 
         .col-12:nth-child(1) { animation-delay: 0.05s; }
@@ -255,13 +304,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- DUMP1090 CONTROL -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/dump1090.php" class="card-link">
-                <div class="card bg-secondary border-0 card-dump1090">
+                <div class="card card-dump1090">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Control
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Lanzador configurador Dump1090
                         </p>
                     </div>
@@ -272,13 +321,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- DUMP1090 MONITOR -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/dump1090monitor.php" class="card-link">
-                <div class="card bg-secondary border-0 card-dump1090">
+                <div class="card card-dump1090">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-airplane-fill me-2" style="color: #00ff15;"></i>Dump1090 Monitor
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Seguimiento de aeronaves en tiempo real
                         </p>
                     </div>
@@ -289,13 +338,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- AMBE SERVER -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/ambeserver.php" class="card-link">
-                <div class="card bg-secondary border-0 card-ambe">
+                <div class="card card-ambe">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-cpu-fill me-2" style="color:#ff4dff;"></i>AMBE SERVER
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Servidor AMBE · Control de voz digital DMR
                         </p>
                     </div>
@@ -306,13 +355,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- RADARBOX -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/radarbox.php" class="card-link">
-                <div class="card bg-secondary border-0 card-radarbox">
+                <div class="card card-radarbox">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-airplane-engines-fill me-2" style="color:#ff6600;"></i>RADARBOX
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Feeder Radarbox · Tracking ADS-B global.
                         </p>
                     </div>
@@ -323,13 +372,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- FLIGHTRADAR24 -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/flightradar.php" class="card-link">
-                <div class="card bg-secondary border-0 card-fr24">
+                <div class="card card-fr24">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-airplane-engines-fill me-2" style="color:#ffcc00;"></i>FLIGHTRADAR24
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Feeder FR24 · Seguimiento de vuelos en tiempo real.
                         </p>
                     </div>
@@ -340,13 +389,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- RADIOSONDE (AUTO_RX) -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/auto_rx.php" class="card-link">
-                <div class="card bg-secondary border-0 card-radiosonde">
+                <div class="card card-radiosonde">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-balloon-fill me-2" style="color:#66ffcc;"></i>RADIOSONDE
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Seguimiento de sondas meteorológicas en tiempo real.
                         </p>
                     </div>
@@ -357,14 +406,14 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- AIS / SHIP EXPLORER -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/sxfeeder.php" class="card-link">
-                <div class="card bg-secondary border-0 card-ais">
+                <div class="card card-ais">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-water me-2" style="color:#00d4ff;"></i>
                             AIS / Ship Explorer
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Monitorización AIS · Tráfico marítimo en tiempo real · barcos y rutas
                         </p>
                     </div>
@@ -375,13 +424,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- SVXLINK -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/svxlink.php" class="card-link">
-                <div class="card bg-secondary border-0 card-svxlink">
+                <div class="card card-svxlink">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-broadcast me-2" style="color:#00d4ff;"></i>SVXLINK
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Control de repetidor · EchoLink · Configuración y logs
                         </p>
                     </div>
@@ -392,13 +441,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- BLUETOOTH -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/bluetooth.php" class="card-link">
-                <div class="card bg-secondary border-0 card-bluetooth">
+                <div class="card card-bluetooth">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-bluetooth me-2" style="color:#00d4ff;"></i>Bluetooth
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Gestión de dispositivos Bluetooth
                         </p>
                     </div>
@@ -409,13 +458,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- PROGRAMADOR ESP32 -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/esp32.php" class="card-link">
-                <div class="card bg-secondary border-0 card-esp32">
+                <div class="card card-esp32">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-cpu me-2" style="color:#00ffff;"></i>Programador ESP32
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Grabador de Firmware para módulos ESP32 vía WebSerial
                         </p>
                     </div>
@@ -426,13 +475,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- FUSION 2X -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/fusion2x.php" class="card-link">
-                <div class="card bg-secondary border-0 card-fusion">
+                <div class="card card-fusion">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-broadcast-pin me-2" style="color:#ff3b3b;"></i>Fusion 2X
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Servidor Fusion 2X · Interfaz web en tiempo real para equipos Yaesu
                         </p>
                     </div>
@@ -443,13 +492,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- OPENWEBRX -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/openwebrx_control.php" class="card-link">
-                <div class="card bg-secondary border-0 card-openwebrx">
+                <div class="card card-openwebrx">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-broadcast me-2" style="color:#00ff99;"></i>OpenWebRX
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Receptor SDR en tiempo real · Web interface para RTL-SDR y decodificación digital.
                         </p>
                     </div>
@@ -460,14 +509,14 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- LIMPIEZA DEL SISTEMA -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/limpieza.php" class="card-link">
-                <div class="card bg-secondary border-0 card-limpieza">
+                <div class="card card-limpieza">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-trash3-fill me-2" style="color:#ff6666;"></i>
                             Limpieza del sistema
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Limpieza de logs, temporales y mantenimiento básico del sistema para liberar espacio.
                         </p>
                     </div>
@@ -478,13 +527,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- ANALISIS.PHP -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/analisis.php" class="card-link">
-                <div class="card bg-secondary border-0 card-analisis">
+                <div class="card card-analisis">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-speedometer2 me-2" style="color:#00e5ff;"></i>Análisis Servicios
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Panel de monitoreo · CPU/RAM/Disco · Control de servicios con interruptores
                         </p>
                     </div>
@@ -495,13 +544,13 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
         <!-- SEGURIDAD / CAMBIO DE CONTRASEÑAS -->
         <div class="col-12 col-sm-6 col-lg-3">
             <a href="/changepassword.php" class="card-link">
-                <div class="card bg-secondary border-0 card-seguridad">
+                <div class="card card-seguridad">
                     <div class="card-body">
                         <h5 class="card-title">
                             <i class="bi bi-shield-lock-fill me-2" style="color:#ff6600;"></i>Seguridad
                         </h5>
                         <div class="card-divider"></div>
-                        <p class="card-text text-white-50 small">
+                        <p class="card-text">
                             Cambio de contraseñas · Gestión segura de usuarios pi y root
                         </p>
                     </div>
@@ -511,14 +560,14 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
 
         <!-- RESTAURAR IMAGEN DE FÁBRICA -->
         <div class="col-12 col-sm-6 col-lg-3">
-            <div class="card bg-secondary border-0 card-fabrica" onclick="confirmarFabrica()">
+            <div class="card card-fabrica" onclick="confirmarFabrica()">
                 <div class="card-body">
                     <h5 class="card-title">
                         <i class="bi bi-arrow-counterclockwise me-2" style="color:#ffaa00;"></i>
                         Restaurar de fábrica
                     </h5>
                     <div class="card-divider"></div>
-                    <p class="card-text text-white-50 small">
+                    <p class="card-text">
                         Restaura la imagen y borra todos los parámetros de usuario dejándola como cuando la descargas.
                     </p>
                 </div>
