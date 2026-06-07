@@ -89,7 +89,7 @@ if (isset($_POST['accion']) && $_POST['accion'] === 'restaurar_fabrica') {
             border-radius: 12px;
             overflow: hidden;
             position: relative;
-            height: 164px;
+            height: 162px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
