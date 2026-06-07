@@ -1,7 +1,6 @@
 <?php
 // =============================================================
 // dmr2nxdn.php - Control de puente DMR ⇄ NXDN by EA4AOJ
-// Layout compacto single-page, lógica de transmisión original
 // =============================================================
 
 if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1') {
@@ -439,7 +438,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);font-size
 .page-wrap{
     max-width:1400px;width:100%;
     margin:0 auto;
-    padding:1.0rem .8rem .5rem;
+    padding:1.5rem .8rem .5rem;
     display:flex;flex-direction:column;
     gap:1.0rem;
 }
