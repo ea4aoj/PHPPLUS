@@ -18,6 +18,10 @@ $INI_FILES = [
     'DMRGateway' => '/home/pi/DMRGateway/DMRGateway.ini',
     'YSFGateway' => '/home/pi/YSFClients/YSFGateway/YSFGateway.ini',
     'NXDNGateway' => '/home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini',
+
+
+
+    
 ];
 
 // ── Mapa: campo => [ [file_key, section, ini_key], ... ]
@@ -32,48 +36,102 @@ $WRITE_MAP = [
         ['MMDVMYSF',   'General', 'Callsign'],
         ['MMDVMDSTAR', 'General', 'Callsign'],
         ['MMDVMNXDN',  'General', 'Callsign'],
+        ['MMDVMDMR2YSF', 'General', 'Callsign'],
+        ['MMDVMYSF2DMR', 'General', 'Callsign'],
+        ['MMDVMDMR2NXDN', 'General', 'Callsign'],
+        ['DMR2YSF', 'General', 'Callsign'],
+        ['YSF2DMR', 'General', 'Callsign'],
+        ['DMR2NXDN', 'General', 'Callsign'],
+        ['DMRGateway', 'General', 'Callsign'],
+        ['YSFGateway', 'General', 'Callsign'],
+        ['NXDNGateway', 'General', 'Callsign'],
     ],
     'Id'          => [
         ['MMDVMHost',  'General', 'Id'],
         ['MMDVMYSF',   'General', 'Id'],
         ['MMDVMDSTAR', 'General', 'Id'],
         ['MMDVMNXDN',  'General', 'Id'],
+        ['MMDVMDMR2YSF', 'General', 'Id'],
+        ['MMDVMYSF2DMR', 'General', 'Id'],
+        ['MMDVMDMR2NXDN', 'General', 'Id'],
+        ['DMR2YSF', 'General', 'Id'],
+        ['YSF2DMR', 'General', 'Id'],
+        ['DMR2NXDN', 'General', 'Id'],
+        ['DMRGateway', 'General', 'Id'],
+        ['YSFGateway', 'General', 'Id'],
+        ['NXDNGateway', 'General', 'Id'],
     ],
     'RXFrequency' => [
         ['MMDVMHost',  'Info', 'RXFrequency'],
         ['MMDVMYSF',   'Info', 'RXFrequency'],
         ['MMDVMDSTAR', 'Info', 'RXFrequency'],
         ['MMDVMNXDN',  'Info', 'RXFrequency'],
+        ['MMDVMDMR2YSF', 'Info', 'RXFrequency'],
+        ['MMDVMYSF2DMR', 'Info', 'RXFrequency'],
+        ['MMDVMDMR2NXDN', 'Info', 'RXFrequency'],
+        ['DMR2YSF', 'Info', 'RXFrequency'],
+        ['YSF2DMR', 'Info', 'RXFrequency'],
+        ['DMR2NXDN', 'Info', 'RXFrequency'],
     ],
     'TXFrequency' => [
         ['MMDVMHost',  'Info', 'TXFrequency'],
         ['MMDVMYSF',   'Info', 'TXFrequency'],
         ['MMDVMDSTAR', 'Info', 'TXFrequency'],
         ['MMDVMNXDN',  'Info', 'TXFrequency'],
+        ['MMDVMDMR2YSF', 'Info', 'TXFrequency'],
+        ['MMDVMYSF2DMR', 'Info', 'TXFrequency'],
+        ['MMDVMDMR2NXDN', 'Info', 'TXFrequency'],
+        ['DMR2YSF', 'Info', 'TXFrequency'],
+        ['YSF2DMR', 'Info', 'TXFrequency'],
+        ['DMR2NXDN', 'Info', 'TXFrequency'],
     ],
     'Latitude'    => [
         ['MMDVMHost',  'Info', 'Latitude'],
         ['MMDVMYSF',   'Info', 'Latitude'],
         ['MMDVMDSTAR', 'Info', 'Latitude'],
         ['MMDVMNXDN',  'Info', 'Latitude'],
+        ['MMDVMDMR2YSF', 'Info', 'Latitude'],
+        ['MMDVMYSF2DMR', 'Info', 'Latitude'],
+        ['MMDVMDMR2NXDN', 'Info', 'Latitude'],
+        ['DMR2YSF', 'Info', 'Latitude'],
+        ['YSF2DMR', 'Info', 'Latitude'],
+        ['DMR2NXDN', 'Info', 'Latitude'],
     ],
     'Longitude'   => [
         ['MMDVMHost',  'Info', 'Longitude'],
         ['MMDVMYSF',   'Info', 'Longitude'],
         ['MMDVMDSTAR', 'Info', 'Longitude'],
         ['MMDVMNXDN',  'Info', 'Longitude'],
+        ['MMDVMDMR2YSF', 'Info', 'Longitude'],
+        ['MMDVMYSF2DMR', 'Info', 'Longitude'],
+        ['MMDVMDMR2NXDN', 'Info', 'Longitude'],
+        ['DMR2YSF', 'Info', 'Longitude'],
+        ['YSF2DMR', 'Info', 'Longitude'],
+        ['DMR2NXDN', 'Info', 'Longitude'],
     ],
     'Location'    => [
         ['MMDVMHost',  'Info', 'Location'],
         ['MMDVMYSF',   'Info', 'Location'],
         ['MMDVMDSTAR', 'Info', 'Location'],
         ['MMDVMNXDN',  'Info', 'Location'],
+        ['MMDVMDMR2YSF', 'Info', 'Location'],
+        ['MMDVMYSF2DMR', 'Info', 'Location'],
+        ['MMDVMDMR2NXDN', 'Info', 'Location'],
+        ['DMR2YSF', 'Info', 'Location'],
+        ['YSF2DMR', 'Info', 'Location'],
+        ['DMR2NXDN', 'Info', 'Location'],
     ],
-    'URL'         => [
+        'URL'         => [
         ['MMDVMHost',  'Info', 'URL'],
         ['MMDVMYSF',   'Info', 'URL'],
         ['MMDVMDSTAR', 'Info', 'URL'],
         ['MMDVMNXDN',  'Info', 'URL'],
+        ['MMDVMDMR2YSF', 'Info', 'URL'],
+        ['MMDVMYSF2DMR', 'Info', 'URL'],
+        ['MMDVMDMR2NXDN', 'Info', 'URL'],
+        ['DMR2YSF', 'Info', 'URL'],
+        ['YSF2DMR', 'Info', 'URL'],
+        ['DMR2NXDN', 'Info', 'URL'],
     ],
 ];
 
@@ -356,15 +414,11 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
 </head>
 <body>
 
-
-
-
-
 <div class="page-header">
     <div class="page-header-inner" style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;">
         
     <div style="display:flex; align-items:center; gap:16px;">
-            <h1><i class="bi bi-sliders"></i> 🍊&nbsp;EDITOR GENERAL</h1>
+            <h1><i class="bi bi-sliders"></i> 🍓&nbsp;EDITOR GENERAL</h1>
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
             </a>
