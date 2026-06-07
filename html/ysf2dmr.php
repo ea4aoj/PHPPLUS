@@ -1,6 +1,6 @@
 <?php
 // =============================================================
-// ysf2dmr.php - Control de puente YSF ⇄ DMR
+// ysf2dmr.php - Control del puente YSF ⇄ DMR
 // =============================================================
 
 // 🔧 Permitir acceso sin sesión SOLO desde localhost (systemd/terminal)
