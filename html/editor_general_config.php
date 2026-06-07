@@ -9,6 +9,15 @@ $INI_FILES = [
     'MMDVMYSF'     => '/home/pi/MMDVMHost/MMDVMYSF.ini',
     'MMDVMDSTAR'   => '/home/pi/MMDVMHost/MMDVMDSTAR.ini',
     'MMDVMNXDN'    => '/home/pi/MMDVMHost/MMDVMNXDN.ini',
+    'MMDVMDMR2YSF' => '/home/pi/MMDVMHost/MMDVMDMR2YSF.ini',
+    'MMDVMYSF2DMR' => '/home/pi/MMDVMHost/MMDVMYSF2DMR.ini',
+    'MMDVMDMR2NXDN' => '/home/pi/MMDVMHost/MMDVMDMR2NXDN.ini',
+    'DMR2YSF' => '/home/pi/MMDVM_CM/DMR2YSF/DMR2YSF.ini',
+    'YSF2DMR' => '/home/pi/MMDVM_CM/YSF2DMR/YSF2DMR.ini',
+    'DMR2NXDN' => '/home/pi/MMDVM_CM/DMR2NXDN/DMR2NXDN.ini',
+    'DMRGateway' => '/home/pi/DMRGateway/DMRGateway.ini',
+    'YSFGateway' => '/home/pi/YSFClients/YSFGateway/YSFGateway.ini',
+    'NXDNGateway' => '/home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini',
 ];
 
 // ── Mapa: campo => [ [file_key, section, ini_key], ... ]
