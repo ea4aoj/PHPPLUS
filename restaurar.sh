@@ -55,7 +55,7 @@ for name in "${!DESTMAP[@]}"; do
   if [ -f "$src" ]; then
     cp "$src" "$dst" 2>/dev/null
     if [ $? -eq 0 ]; then
-      chmod 664 "$dst" 2>/dev/null
+      chmod 777 "$dst" 2>/dev/null
       RESTORED+=("$name")
     else
       ERRORS+=("$name")
@@ -72,7 +72,7 @@ if [ -d "$TMPDIR/logs" ]; then
     destdir=$(dirname "$destfile")
     mkdir -p "$destdir" 2>/dev/null
     cp "$logfile" "$destfile" 2>/dev/null
-    chmod 664 "$destfile" 2>/dev/null
+    chmod 777 "$destfile" 2>/dev/null
   done
 fi
 
