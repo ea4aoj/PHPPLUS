@@ -210,6 +210,7 @@ if ($action === 'stop') {
     shell_exec('sudo pkill -9 -f YSF2DMR 2>/dev/null');
     shell_exec('sudo rm -f /tmp/YSF2DMR.pid');
     sleep(1);
+    @unlink('/tmp/ysf2dmr_lastheard.json');
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true, 'msg'=>'Puente detenido', 'log'=>trim($out)?:'Sin salida']);
     exit;
@@ -983,7 +984,7 @@ async function toggle(chk){
         S.busy=false;
         await status();fetchLogs();
         setToggle(target,false);
-        if(target===false)['lMmd','lY2D'].forEach(id=>$(id).innerHTML='<span class="log-info">Logs limpiados.</span>');
+        if(target===false){['lMmd','lY2D'].forEach(id=>$(id).innerHTML='<span class="log-info">Logs limpiados.</span>');$('lhBody').innerHTML='<tr><td colspan="5" class="lh-empty">Sin actividad reciente</td></tr>';$('txCenter').innerHTML='<div class="tx-idle">⏸ Pausa > Esperando actividad</div>';updateVU(1,0);}
     }catch(e){console.error(e);setToggle(!target,false);alert('⚠️ Error: '+e.message);}
 }
 
