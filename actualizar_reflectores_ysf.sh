@@ -10,16 +10,12 @@ printf "✅ Permisos configurados correctamente.\n"
 # Descarga del archivo
 cd /home/pi || { printf "❌ Error: No se puede acceder a /home/pi\n"; exit 1; }
 
-printf "📥 Descargando YSFHosts.txt desde hostfiles.refcheck.radio...\n"
-
-# Intentamos con wget (ignorando certificados SSL caducados y forzando el nombre del archivo)
-if wget --user-agent="EA4RCR" --no-check-certificate -O YSFHosts.txt -q https://hostfiles.refcheck.radio/YSFHosts.txt; then
+printf "📥 Descargando YSFHosts.txt desde mirror oficial...\n"
+# Usamos -O para forzar el nombre del archivo y -q para que sea silencioso
+if wget -O YSFHosts.txt -q https://www.pistar.uk/downloads/YSF_Hosts.txt; then
     printf "✅ Descarga completada con éxito.\n"
-# Plan B: Si wget falla (por ejemplo, error 403 del servidor), intentamos con curl
-elif curl --fail -L -A "EA4RCR" -o YSFHosts.txt -s --insecure https://hostfiles.refcheck.radio/YSFHosts.txt; then
-    printf "✅ Descarga completada con éxito (vía curl).\n"
 else
-    printf "❌ Error al descargar el archivo (el servidor podría estar caído).\n"
+    printf "❌ Error al descargar el archivo.\n"
     exit 1
 fi
 
