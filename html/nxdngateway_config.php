@@ -304,7 +304,7 @@ function postKey($sec, $key) { return str_replace(' ', '_', $sec) . '_' . $key; 
 <body>
 
 <header class="ctrl-header">
-  <img src="Logo_ea3eiz.png" alt="EA3EIZ">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR">
   <h1><span>NXDN</span>Gateway Config Editor</h1>
   <a href="mmdvm.php" class="btn-back">← Volver a MMDVM Control</a>
 </header>
