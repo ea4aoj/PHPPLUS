@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/auth.php';
 
-
 $files = [
     'mmdvm'        => '/home/pi/MMDVMHost/MMDVMHost.ini',
     'dmrgateway'   => '/home/pi/DMRGateway/DMRGateway.ini',
