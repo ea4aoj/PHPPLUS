@@ -422,7 +422,7 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
     <div class="page-header-inner" style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;">
         
     <div style="display:flex; align-items:center; gap:16px;">
-            <h1><i class="bi bi-sliders"></i> 🍓&nbsp;EDITOR GENERAL</h1>
+            <h1><i class="bi bi-sliders"></i> &nbsp;EDITOR GENERAL</h1>
             <a href="mmdvm.php" class="btn btn-outline-light btn-sm">
                 <i class="bi bi-house-fill me-1"></i> Panel PHPPLUS
             </a>
