@@ -987,7 +987,14 @@ button.btn-header { font-family: var(--font-mono); }
             if ($model === '') $model = trim(shell_exec('uname -m 2>/dev/null') ?? '');
             $ml = strtolower($model);
             $icon = str_contains($ml, 'raspberry') ? '🍓' : (str_contains($ml, 'orange') ? '🍊' : '🖥️');
-            $modelShort = str_contains($ml, 'raspberry') ? substr($model, 0, 14) : $model;
+            
+            // --- TRIMMING PARA ORANGE PI ---
+            if (str_contains($ml, 'orange')) {
+                $pos = stripos($model, 'orange'); // Busca "orange" sin importar mayúsculas
+                $modelShort = ($pos !== false) ? substr($model, $pos) : $model;
+            } else {
+                $modelShort = str_contains($ml, 'raspberry') ? substr($model, 0, 14) : $model;
+            }
         ?>
         <span id="siModelLabel" style="font-size:1.4rem;line-height:1;"><?php echo $icon; ?></span>
         <span class="station-meta-value" id="siModel" style="color:var(--violet);font-size:.7rem;white-space:nowrap;"><?php echo htmlspecialchars($modelShort); ?></span>
