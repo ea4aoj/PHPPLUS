@@ -137,7 +137,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-ui);min-heigh
 </head>
 <body>
 <header class="ctrl-header">
-  <img src="Logo_ea3eiz.png" alt="EA3EIZ">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR">
   <div>
     <h1>⚙ MMDVMHost Config</h1>
     <div class="path"><?= htmlspecialchars($iniPath) ?></div>
