@@ -65,7 +65,7 @@ $title   = basename($path);
 </head>
 <body>
 <header class="ctrl-header">
-  <img src="Logo_ea3eiz.png" alt="EA3EIZ">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR">
   <h1>Editor · <?= htmlspecialchars($title) ?></h1>
   <span class="filepath"><?= htmlspecialchars($path) ?></span>
   <a href="mmdvm.php" class="btn-back">← Volver</a>
