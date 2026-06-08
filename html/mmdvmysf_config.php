@@ -284,7 +284,7 @@ select.field-select option { background: var(--surface); }
 <body>
 
 <header class="ctrl-header">
-    <img src="Logo_ea3eiz.png" alt="EA3EIZ">
+    <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR">
     <h1>MMDVMYSF Config Editor</h1>
     <a href="mmdvm.php" class="btn-back">← Volver</a>
 </header>
