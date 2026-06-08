@@ -137,7 +137,7 @@ $values = readIniValues($INI_PATH, $SECTIONS);
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>YSFGateway Config · EA3EIZ</title>
+<title>YSFGateway Config</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -185,7 +185,7 @@ $values = readIniValues($INI_PATH, $SECTIONS);
 </head>
 <body>
 <header class="ctrl-header">
-  <img src="Logo_ea3eiz.png" alt="EA3EIZ">
+  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR">
   <h1>YSFGateway Config Editor</h1>
   <a href="mmdvm.php" class="btn-back">← Volver</a>
 </header>
