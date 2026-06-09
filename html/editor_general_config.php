@@ -1,7 +1,7 @@
 <?php
-// ============================================================
-//  EDITOR GENERAL CONFIG – Panel ADER
-// ============================================================
+// ==========================
+//  EDITOR GENERAL CONFIG
+// ==========================
 session_start();
 
 $INI_FILES = [
@@ -451,14 +451,14 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
                         <label class="form-label">Callsign <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="Callsign" class="form-control"
                                value="<?= htmlspecialchars($form_values['Callsign']) ?>"
-                               placeholder="Ej: EA3EIZ" maxlength="20">
+                               placeholder="Ej: EA4RCR" maxlength="20">
                         <div class="form-hint">[General] Callsign= en los 4 ficheros</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">DMR Id <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="Id" class="form-control"
                                value="<?= htmlspecialchars($form_values['Id']) ?>"
-                               placeholder="Ej: 214317526" pattern="[0-9]*">
+                               placeholder="Ej: 2140000" pattern="[0-9]*">
                         <div class="form-hint">[General] Id= en los 4 ficheros (si existe)</div>
                     </div>
                 </div>
@@ -470,14 +470,14 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
                         <label class="form-label">RX Frecuencia (Hz) <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="RXFrequency" class="form-control"
                                value="<?= htmlspecialchars($form_values['RXFrequency']) ?>"
-                               placeholder="Ej: 430500000" pattern="[0-9]*">
+                               placeholder="Ej: 435125000" pattern="[0-9]*">
                         <div class="form-hint">[Info] RXFrequency= en los 4 ficheros (si existe)</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">TX Frecuencia (Hz) <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="TXFrequency" class="form-control"
                                value="<?= htmlspecialchars($form_values['TXFrequency']) ?>"
-                               placeholder="Ej: 430500000" pattern="[0-9]*">
+                               placeholder="Ej: 435125000" pattern="[0-9]*">
                         <div class="form-hint">[Info] TXFrequency= en los 4 ficheros (si existe)</div>
                     </div>
                 </div>
@@ -506,14 +506,14 @@ body { background: var(--bg-base); color: var(--text-main); font-family: var(--f
                         <label class="form-label">Location <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="Location" class="form-control"
                                value="<?= htmlspecialchars($form_values['Location']) ?>"
-                               placeholder="Ej: Barcelona, Spain">
+                               placeholder="Ej: Madrid, Spain">
                         <div class="form-hint">[Info] Location= en los 4 ficheros (si existe)</div>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">URL <span class="badge-ini">Los 4 ficheros</span></label>
                         <input type="text" name="URL" class="form-control"
                                value="<?= htmlspecialchars($form_values['URL']) ?>"
-                               placeholder="Ej: www.associacioader.com">
+                               placeholder="Ej: www.rem-esp.es">
                         <div class="form-hint">[Info] URL= en los 4 ficheros (si existe)</div>
                     </div>
                 </div>
