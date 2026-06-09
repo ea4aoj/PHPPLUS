@@ -707,7 +707,7 @@ button.btn-header { font-family: var(--font-mono); }
 .service-card-label.ysf { color: var(--violet); }
 .toggle-row { display: flex; align-items: center; gap: 1rem; padding: .5rem 0; }
 .toggle-label { font-family: var(--font-mono); font-size: .85rem; letter-spacing: .06em; color: var(--text-dim); text-transform: uppercase; flex: 1; transition: color .3s; }
-.toggle-label.on-dmr { color: var(--amber); }
+.toggle-label.on-dmr { color: var(--white); }
 .toggle-label.on-ysf { color: var(--violet); }
 .toggle-status { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; color: var(--text-dim); min-width: 3rem; text-align: right; transition: color .3s; }
 .toggle-status.on { color: var(--green); }
@@ -1020,7 +1020,7 @@ button.btn-header { font-family: var(--font-mono); }
   <div class="service-card">
     <div class="service-card-label dmr" style="color:#fff;">▸ DMR · MMDVMHost + DMRGateway</div>
     <div class="toggle-row">
-      <span class="toggle-label" id="dmrToggleLabel"style="color:#fff;">DMR</span>
+      <span class="toggle-label" id="dmrToggleLabel">DMR</span>
       <label class="sw dmr" id="swDMR"><input type="checkbox" id="chkDMR" onchange="toggleServices(this)"><span class="sw-track"></span><span class="sw-knob"></span><span class="sw-busy-dot"></span></label>
       <span class="toggle-status" id="dmrToggleStatus">OFF</span>
     </div>
