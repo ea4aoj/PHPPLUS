@@ -42,6 +42,27 @@ function getLogs($service) {
     return shell_exec("sudo journalctl -u " . escapeshellarg($service) . " -n 5 --no-pager 2>&1");
 }
 
+function cpuUsage() {
+    $stat1 = file_get_contents('/proc/stat');
+    $cpu1 = explode(' ', preg_replace('/^cpu\s+/', '', trim(strtok($stat1, "\n"))));
+    $idle1 = $cpu1[3];
+    $total1 = array_sum($cpu1);
+    
+    usleep(500000);
+    
+    $stat2 = file_get_contents('/proc/stat');
+    $cpu2 = explode(' ', preg_replace('/^cpu\s+/', '', trim(strtok($stat2, "\n"))));
+    $idle2 = $cpu2[3];
+    $total2 = array_sum($cpu2);
+    
+    $diffIdle = $idle2 - $idle1;
+    $diffTotal = $total2 - $total1;
+    
+    $cpuPercent = (1 - ($diffIdle / $diffTotal)) * 100;
+    
+    return round($cpuPercent, 2);
+}
+
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'status') {
     header('Content-Type: application/json');
     $service = $_GET['service'] ?? '';
@@ -68,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$cpu = round(sys_getloadavg()[0], 2);
+$cpu = cpuUsage();
 $data = file_get_contents('/proc/meminfo');
 preg_match('/MemTotal:\s+(\d+)/', $data, $total);
 preg_match('/MemAvailable:\s+(\d+)/', $data, $available);
@@ -153,7 +174,6 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
             box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
         }
 
-        /* Stats en una sola fila */
         .stats-bar {
             display: flex;
             justify-content: space-between;
