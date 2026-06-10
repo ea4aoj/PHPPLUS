@@ -63,32 +63,90 @@ function cpuUsage() {
     return round($cpuPercent, 2);
 }
 
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'status') {
+// AJAX: Estadísticas del sistema
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'stats') {
+    header('Content-Type: application/json');
+    
+    $cpu = cpuUsage();
+    
+    $data = file_get_contents('/proc/meminfo');
+    preg_match('/MemTotal:\s+(\d+)/', $data, $total);
+    preg_match('/MemAvailable:\s+(\d+)/', $data, $available);
+    $ram = round((($total[1] - $available[1]) / $total[1]) * 100, 1);
+    
+    $tempFile = '/sys/class/thermal/thermal_zone0/temp';
+    $temp = file_exists($tempFile) ? round(file_get_contents($tempFile) / 1000, 1) : 'N/A';
+    
+    $rx = $tx = 0;
+    foreach (file('/proc/net/dev') as $line) {
+        if (strpos($line, 'lo:') === false && strpos($line, ':') !== false) {
+            $d = preg_split('/\s+/', trim($line));
+            $rx += $d[1]; $tx += $d[9];
+        }
+    }
+    
+    echo json_encode([
+        'cpu' => $cpu,
+        'ram' => $ram,
+        'temp' => $temp,
+        'rx' => round($rx / 1024 / 1024, 2),
+        'tx' => round($tx / 1024 / 1024, 2)
+    ]);
+    exit;
+}
+
+// AJAX: Acción sobre un servicio individual
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'action') {
+    header('Content-Type: application/json');
+    $service = $_GET['service'] ?? '';
+    $action = $_GET['action'] ?? '';
+    
+    if (in_array($service, $services)) {
+        serviceAction($service, $action);
+        
+        echo json_encode([
+            'success' => true,
+            'service' => $service,
+            'running' => serviceStatus($service),
+            'enabled' => serviceEnabled($service)
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Servicio no encontrado']);
+    }
+    exit;
+}
+
+// AJAX: Estado de TODOS los servicios en una sola petición
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'services') {
+    header('Content-Type: application/json');
+    
+    $result = [];
+    foreach ($services as $idx => $service) {
+        $result[] = [
+            'idx' => $idx,
+            'name' => $service,
+            'running' => serviceStatus($service),
+            'enabled' => serviceEnabled($service)
+        ];
+    }
+    
+    echo json_encode($result);
+    exit;
+}
+
+// AJAX: Logs de un servicio
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'logs') {
     header('Content-Type: application/json');
     $service = $_GET['service'] ?? '';
     if (in_array($service, $services)) {
-        echo json_encode([
-            'service' => $service,
-            'running' => serviceStatus($service),
-            'enabled' => serviceEnabled($service),
-            'logs' => getLogs($service)
-        ]);
+        echo json_encode(['logs' => getLogs($service)]);
     } else {
         echo json_encode(['error' => 'Servicio no encontrado']);
     }
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $service = $_POST['service'] ?? '';
-    $action = $_POST['action'] ?? '';
-    if (in_array($service, $services)) {
-        serviceAction($service, $action);
-    }
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
-}
-
+// Datos iniciales
 $cpu = cpuUsage();
 $data = file_get_contents('/proc/meminfo');
 preg_match('/MemTotal:\s+(\d+)/', $data, $total);
@@ -388,18 +446,18 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
             border-color: rgba(139, 92, 246, 0.2);
         }
 
-        .toggle-mini .toggle-slider::before {
-            width: 16px;
-            height: 16px;
-            background: linear-gradient(145deg, #8b5cf6, #7c3aed);
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-        }
+		.toggle-mini .toggle-slider::before {
+			width: 16px;
+			height: 16px;
+			background: linear-gradient(145deg, #60a5fa, #3b82f6);
+			box-shadow: 0 2px 6px rgba(96, 165, 250, 0.4);
+		}
 
-        .toggle-mini input:checked + .toggle-slider {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            border-color: rgba(139, 92, 246, 0.4);
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-        }
+		.toggle-mini input:checked + .toggle-slider {
+			background: linear-gradient(135deg, #60a5fa, #3b82f6);
+			border-color: rgba(96, 165, 250, 0.4);
+			box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+		}   
 
         .toggle-mini input:checked + .toggle-slider::before {
             transform: translateX(20px);
@@ -442,6 +500,11 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .logs-panel {
@@ -501,11 +564,11 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
     <div class="stats-bar">
         <div class="stat-item">
             <div class="stat-label">CPU</div>
-            <div class="stat-value"><?php echo $cpu; ?>%</div>
+            <div class="stat-value" id="stat-cpu"><?php echo $cpu; ?>%</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">RAM</div>
-            <div class="stat-value"><?php echo $ram; ?>%</div>
+            <div class="stat-value" id="stat-ram"><?php echo $ram; ?>%</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">Disco</div>
@@ -513,15 +576,15 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
         </div>
         <div class="stat-item">
             <div class="stat-label">Temp</div>
-            <div class="stat-value"><?php echo $temp; ?>°C</div>
+            <div class="stat-value" id="stat-temp"><?php echo $temp; ?>°C</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">RX</div>
-            <div class="stat-value"><?php echo $network['rx']; ?> MB</div>
+            <div class="stat-value" id="stat-rx"><?php echo $network['rx']; ?> MB</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">TX</div>
-            <div class="stat-value"><?php echo $network['tx']; ?> MB</div>
+            <div class="stat-value" id="stat-tx"><?php echo $network['tx']; ?> MB</div>
         </div>
         <div class="stat-item">
             <div class="stat-label">Host</div>
@@ -563,14 +626,8 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
             </div>
 
             <div class="button-group">
-                <form method="POST" style="flex: 1;">
-                    <input type="hidden" name="service" value="<?php echo htmlspecialchars($service, ENT_QUOTES); ?>">
-                    <input type="hidden" name="action" value="restart">
-                    <button type="submit" class="btn btn-restart">↻ Reiniciar</button>
-                </form>
-                <button class="btn btn-logs" onclick="toggleLogs('<?php echo htmlspecialchars($service, ENT_QUOTES); ?>')">
-                    📋 Logs
-                </button>
+                <button class="btn btn-restart" onclick="restartService(<?php echo $idx; ?>)">↻ Reiniciar</button>
+                <button class="btn btn-logs" onclick="toggleLogs('<?php echo htmlspecialchars($service, ENT_QUOTES); ?>')">📋 Logs</button>
             </div>
 
             <div class="logs-panel" id="logs-<?php echo htmlspecialchars($service, ENT_QUOTES); ?>">
@@ -587,63 +644,154 @@ $network = ['rx' => round($rx / 1024 / 1024, 2), 'tx' => round($tx / 1024 / 1024
 
 <script>
 const services = <?php echo json_encode($services); ?>;
+let previousState = {}; // Guarda el estado anterior de cada servicio
 
-async function loadServices() {
-    await Promise.all(services.map((svc, idx) => loadService(svc, idx)));
-}
-
-async function loadService(service, idx) {
+// Actualizar estadísticas del sistema cada 2 segundos
+async function updateStats() {
     try {
-        const res = await fetch(`?ajax=status&service=${encodeURIComponent(service)}`);
+        const res = await fetch('?ajax=stats');
         const data = await res.json();
         
-        const badge = document.getElementById(`status-${idx}`);
-        const text = document.getElementById(`status-text-${idx}`);
-        const toggle = document.getElementById(`toggle-${idx}`);
-        const enable = document.getElementById(`enable-${idx}`);
-        const logs = document.getElementById(`logs-${service}`);
+        document.getElementById('stat-cpu').textContent = data.cpu + '%';
+        document.getElementById('stat-ram').textContent = data.ram + '%';
+        document.getElementById('stat-temp').textContent = data.temp + '°C';
+        document.getElementById('stat-rx').textContent = data.rx + ' MB';
+        document.getElementById('stat-tx').textContent = data.tx + ' MB';
+    } catch (e) {
+        console.error('Error actualizando stats:', e);
+    }
+}
+
+// Actualizar UN servicio específico (cuando hay cambio)
+function applyServiceUpdate(svc) {
+    const idx = svc.idx;
+    const badge = document.getElementById(`status-${idx}`);
+    const text = document.getElementById(`status-text-${idx}`);
+    const toggle = document.getElementById(`toggle-${idx}`);
+    const enable = document.getElementById(`enable-${idx}`);
+    
+    if (svc.running) {
+        badge.className = 'status-badge active';
+        text.textContent = 'Activo';
+    } else {
+        badge.className = 'status-badge inactive';
+        text.textContent = 'Detenido';
+    }
+    
+    toggle.checked = svc.running;
+    enable.checked = svc.enabled;
+    
+    document.getElementById(`card-${idx}`).classList.add('loaded');
+    
+    // Guardar estado actual
+    previousState[idx] = `${svc.running}-${svc.enabled}`;
+}
+
+// Cargar todos los servicios al inicio
+async function loadAllServices() {
+    try {
+        const res = await fetch('?ajax=services');
+        const servicesData = await res.json();
         
-        if (data.running) {
-            badge.className = 'status-badge active';
-            text.textContent = 'Activo';
-        } else {
-            badge.className = 'status-badge inactive';
-            text.textContent = 'Detenido';
+        servicesData.forEach(svc => applyServiceUpdate(svc));
+    } catch (e) {
+        console.error('Error cargando servicios:', e);
+    }
+}
+
+// Verificar cambios (solo actualiza los que cambiaron)
+async function checkForChanges() {
+    try {
+        const res = await fetch('?ajax=services');
+        const servicesData = await res.json();
+        
+        servicesData.forEach(svc => {
+            const idx = svc.idx;
+            const currentState = `${svc.running}-${svc.enabled}`;
+            
+            // Solo actualizar si el estado cambió respecto al anterior
+            if (previousState[idx] !== currentState) {
+                applyServiceUpdate(svc);
+            }
+        });
+    } catch (e) {
+        console.error('Error verificando cambios:', e);
+    }
+}
+
+// Ejecutar acción sobre un servicio
+async function executeServiceAction(idx, action) {
+    try {
+        const res = await fetch(`?ajax=action&service=${encodeURIComponent(services[idx])}&action=${action}`);
+        const data = await res.json();
+        
+        if (data.success) {
+            applyServiceUpdate({
+                idx: idx,
+                running: data.running,
+                enabled: data.enabled
+            });
         }
-        
-        toggle.checked = data.running;
-        enable.checked = data.enabled;
-        if (logs) logs.textContent = data.logs || 'Sin logs disponibles';
-        
-        document.getElementById(`card-${idx}`).classList.add('loaded');
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error('Error ejecutando acción:', e);
+    }
 }
 
-function toggleService(idx, enabled) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.innerHTML = `<input type="hidden" name="service" value="${services[idx]}">
-                      <input type="hidden" name="action" value="${enabled ? 'start' : 'stop'}">`;
-    document.body.appendChild(form);
-    form.submit();
+async function toggleService(idx, enabled) {
+    await executeServiceAction(idx, enabled ? 'start' : 'stop');
 }
 
-function toggleEnable(idx, enabled) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.innerHTML = `<input type="hidden" name="service" value="${services[idx]}">
-                      <input type="hidden" name="action" value="${enabled ? 'enable' : 'disable'}">`;
-    document.body.appendChild(form);
-    form.submit();
+async function toggleEnable(idx, enabled) {
+    await executeServiceAction(idx, enabled ? 'enable' : 'disable');
+}
+
+async function restartService(idx) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '⏳ Reiniciando...';
+    
+    await executeServiceAction(idx, 'restart');
+    
+    setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = '↻ Reiniciar';
+    }, 2000);
+}
+
+async function loadLogs(service) {
+    try {
+        const res = await fetch(`?ajax=logs&service=${encodeURIComponent(service)}`);
+        const data = await res.json();
+        const logsEl = document.getElementById(`logs-${service}`);
+        if (logsEl) {
+            logsEl.textContent = data.logs || 'Sin logs disponibles';
+        }
+    } catch (e) {
+        console.error('Error cargando logs:', e);
+    }
 }
 
 function toggleLogs(service) {
     const el = document.getElementById(`logs-${service}`);
-    el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    if (el.style.display === 'block') {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+        loadLogs(service);
+    }
 }
 
-document.addEventListener('DOMContentLoaded', loadServices);
-setTimeout(() => location.reload(), 30000);
+// Inicializar
+document.addEventListener('DOMContentLoaded', () => {
+    // Carga inicial
+    loadAllServices();
+    
+    // Stats cada 2 segundos
+    setInterval(updateStats, 2000);
+    
+    // Verificar cambios cada 8 segundos (una sola petición para todos)
+    setInterval(checkForChanges, 8000);
+});
 </script>
 </body>
 </html>
