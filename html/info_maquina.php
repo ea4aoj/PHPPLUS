@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = file_put_contents($file_path, json_encode($new_data, JSON_PRETTY_PRINT));
 
     if ($result !== false) {
-        $message = '¡Información guardada correctamente en /var/www/html/maquina.json!';
+        $message = '¡Información guardada correctamente en /var/www/html/maquina.json! Redirigiendo...';
         $message_type = 'success';
         $data = $new_data; // Actualizar la vista con los datos guardados
     } else {
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             --success-text: #34d399;
             --error-bg: rgba(239, 68, 68, 0.15);
             --error-text: #f87171;
-            --panel-cyan: #00d4ff; /* Color cian a juego con tu MMDVM */
+            --panel-cyan: #00d4ff; 
         }
 
         * {
@@ -105,37 +105,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             position: relative;
         }
 
-        /* Botón de regresar mejorado en contraste y alineación */
-        .btn-home {
-            position: absolute;
-            top: 1.2rem;
-            right: 1.2rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #171725;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 0.45rem 0.85rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-
-        .btn-home:hover {
-            border-color: var(--panel-cyan);
-            color: var(--panel-cyan);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        /* --- AQUÍ SE DA EL ESPACIO EXTRA PARA COMPENSAR EL BOTÓN --- */
         h2 {
             text-align: center;
             color: var(--text-primary);
-            margin-top: 3.5rem; /* Empuja el título y el formulario hacia abajo */
+            margin-top: 0.5rem; /* Ajustado al quitar el botón superior */
             margin-bottom: 2rem;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -226,9 +199,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 <div class="container">
-    <a href="mmdvm.php" class="btn-home" title="Volver al panel principal">
-        <span>🏠</span> Panel PHPPLUS
-    </a>
 
     <h2>Configuración del Equipo</h2>
 
@@ -253,6 +223,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Guardar Configuración</button>
     </form>
 </div>
+
+<?php if ($message_type === 'success'): ?>
+<script>
+    setTimeout(function() {
+        window.location.href = 'mmdvm.php';
+    }, 3000); // 3000 milisegundos = 3 segundos
+</script>
+<?php endif; ?>
 
 </body>
 </html>
