@@ -685,11 +685,11 @@ body {
     border-bottom: 1px solid var(--border); 
     padding: 1rem 2rem; 
     display: flex; 
-    flex-direction: column; /* Volvemos al diseño original en columna */
+    flex-direction: column;
     align-items: center; 
     gap: .6rem; 
     background: var(--surface); 
-    position: relative; /* ¡CRÍTICO! Esto permite que la máquina se alinee respecto al header */
+    position: relative;
 }
 
 .maquina-info-box {
@@ -700,12 +700,10 @@ body {
     border-radius: 8px;
     padding: 0.5rem 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    
-    /* ─── ESTO HACE LA MAGIA ─── */
+    transition: all 0.3s ease;   
     position: relative;
-    margin: 0;          /* Quitamos márgenes raros */
-    order: 2;           /* Le dice al navegador que este elemento va SEGUNDO */
+    margin: 0;
+    order: 2;
 }
 .maquina-info-box:hover {
     border-color: var(--cyan);
@@ -745,10 +743,10 @@ body {
 .ctrl-header-top { 
     display: flex; 
     align-items: center; 
-    justify-content: center; /* Centra todo el bloque en pantallas grandes */
-    gap: 1.5rem;             /* Separación uniforme entre la máquina, el logo y el texto */
+    justify-content: center;
+    gap: 1.5rem;
     width: 100%;        
-    flex-wrap: wrap;         /* Si minimizas, se adapta sin romperse */
+    flex-wrap: wrap;
 }
 
 .ctrl-header-top h1 { font-family: var(--font-ui); font-weight: 700; font-size: 1.5rem; letter-spacing: .08em; color: #e2eaf5; margin: 0; text-transform: uppercase; }
