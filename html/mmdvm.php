@@ -1,12 +1,14 @@
 <?php
 require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
 $action = $_GET['action'] ?? '';
 
 // ─────────────────────────────────────────────────────
 $maquina_json_path = '/var/www/html/maquina.json';
-$maquina_nombre = 'Orangepi Salón'; 
-$maquina_ip = '—';                 
+$maquina_nombre = 'Orangepi Salón';
+$maquina_ip = '—';
 
 if (file_exists($maquina_json_path)) {
     $maquina_conte = file_get_contents($maquina_json_path);
@@ -16,7 +18,6 @@ if (file_exists($maquina_json_path)) {
         $maquina_ip = $maquina_data['ip'] ?? $maquina_ip;
     }
 }
-// ────────────────────────────────────────────────────────
 
 function saveState($key, $value) {
     $file = '/var/lib/mmdvm-state';
@@ -58,7 +59,6 @@ function formatFreq($hz) {
 // ══════════════════════════════════════════════════════════
 //  FUNCIONES DE LIMPIEZA Y CONTROL DE TIEMPO
 // ══════════════════════════════════════════════════════════
-
 function clearTransmissionState($mode) {
     $files = [];
     switch ($mode) {
@@ -76,8 +76,11 @@ function clearTransmissionState($mode) {
             break;
     }
     foreach ($files as $f) {
-        if (file_exists($f)) @unlink($f);
+        if (file_exists($f)) {
+            shell_exec('sudo rm -f ' . escapeshellarg($f));
+        }
     }
+    clearstatcache();
 }
 
 function saveServiceStartTime($mode) {
@@ -93,15 +96,9 @@ function getServiceStartTime($mode) {
     return 0;
 }
 
+// CAMBIO CLAVE: Siempre limitar a 5 minutos para no arrastrar logs antiguos
 function getFilteredLog($unit, $mode, $maxLines = 500) {
-    $startTime = getServiceStartTime($mode);
-    if ($startTime > 0) {
-        $sinceDate = date('Y-m-d H:i:s', $startTime);
-        $log = shell_exec("sudo journalctl -u {$unit} --since '{$sinceDate}' -n {$maxLines} --no-pager --output=short 2>/dev/null");
-    } else {
-        // Si no hay timestamp, solo últimos 5 minutos para evitar logs antiguos
-        $log = shell_exec("sudo journalctl -u {$unit} --since '5 minutes ago' -n {$maxLines} --no-pager --output=short 2>/dev/null");
-    }
+    $log = shell_exec("sudo journalctl -u {$unit} --since '5 minutes ago' -n {$maxLines} --no-pager --output=short 2>/dev/null");
     return $log ?? '';
 }
 
@@ -219,7 +216,6 @@ if ($action === 'sysinfo') {
         if ($cpu > 100) $cpu = 100;
         return round($cpu, 1);
     }
-
     $cpuOverall = getCpuUsagePercent();
     $cpuCores = [];
     $cores = (int) trim(shell_exec("nproc"));
@@ -230,7 +226,6 @@ if ($action === 'sysinfo') {
         if ($value > 100) $value = 100;
         $cpuCores[] = round($value, 1);
     }
-
     $mem = [];
     foreach (file('/proc/meminfo') as $line) {
         if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) {
@@ -240,11 +235,9 @@ if ($action === 'sysinfo') {
     $ramTotal = round($mem['MemTotal'] / 1048576, 2);
     $ramFree  = round(($mem['MemAvailable'] ?? $mem['MemFree']) / 1048576, 2);
     $ramUsed  = round($ramTotal - $ramFree, 2);
-
     $diskTotal = round(disk_total_space('/') / 1073741824, 1);
     $diskFree  = round(disk_free_space('/') / 1073741824, 1);
     $diskUsed  = round($diskTotal - $diskFree, 1);
-
     $temp = '';
     $tempPaths = [
         '/sys/class/thermal/thermal_zone0/temp',
@@ -258,7 +251,6 @@ if ($action === 'sysinfo') {
             break;
         }
     }
-
     header('Content-Type: application/json');
     echo json_encode([
         'cpu'        => $cpuOverall,
@@ -351,7 +343,6 @@ if ($action === 'reboot')          { shell_exec('sudo /usr/bin/systemctl reboot 
 if ($action === 'display-restart') { shell_exec('sudo systemctl daemon-reload 2>/dev/null'); shell_exec('sudo systemctl enable displaydriver 2>/dev/null'); shell_exec('sudo systemctl restart displaydriver 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
 if ($action === 'install-display') { $output = shell_exec('sudo /home/pi/A108/instalar_displaydriver.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'')]); exit; }
 
-// ── BACKUP ────────────────────────────────────────────────────────────────────
 if ($action === 'backup-configs') {
     $zipPath = '/tmp/Copia_PHPPLUS.zip';
     $zipName = 'Copia_PHPPLUS.zip';
@@ -371,7 +362,6 @@ if ($action === 'backup-configs') {
     exit;
 }
 
-// ── RESTORE ───────────────────────────────────────────────────────────────────
 if ($action === 'restore-configs') {
     ob_start(); error_reporting(0);
     $uploadOk = isset($_FILES['zipfile']) && $_FILES['zipfile']['error'] === UPLOAD_ERR_OK;
@@ -439,28 +429,24 @@ function lookupCall($callsign) {
 if ($action === 'transmission') {
     $stateFile = '/tmp/mmdvm_tx_state.json';
     $lhFile    = '/tmp/mmdvm_lastheard.json';
-
-    // Verificar si el servicio está activo
+    clearstatcache();
+    
     $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmhost 2>/dev/null'));
     $dmrGwActive = trim(shell_exec('systemctl is-active dmrgateway 2>/dev/null'));
     $serviceRunning = ($mmdvmActive === 'active' || $dmrGwActive === 'active');
-
     $emptyState = ['active'=>false,'callsign'=>'','name'=>'','dmrid'=>'','tg'=>'','slot'=>'','source'=>'','lastHeard'=>[]];
 
-    // Si el servicio NO está corriendo, limpiar todo y devolver vacío
+    // Si el servicio NO está corriendo, devolver vacío SIN borrar archivos
     if (!$serviceRunning) {
-        if (file_exists($stateFile)) @unlink($stateFile);
-        if (file_exists($lhFile)) @unlink($lhFile);
         header('Content-Type: application/json');
         echo json_encode($emptyState);
         exit;
     }
 
-    // Obtener logs filtrados por tiempo de arranque
     $log = getFilteredLog('mmdvmhost', 'dmr', 500);
     $lines = array_reverse(explode("\n", $log));
-
     $state = ['active'=>false,'callsign'=>'','name'=>'','dmrid'=>'','tg'=>'','slot'=>'','source'=>''];
+    
     if (file_exists($stateFile)) {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
@@ -493,11 +479,9 @@ if ($action === 'transmission') {
             }
         }
     }
-
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
     }
-
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json');
     echo json_encode($state);
@@ -510,24 +494,19 @@ if ($action === 'transmission') {
 if ($action === 'dstar-transmission') {
     $stateFile = '/tmp/dstar_tx_state.json';
     $lhFile    = '/tmp/dstar_lastheard.json';
-
+    clearstatcache();
+    
     $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmdstar 2>/dev/null'));
     $dstarGwActive = trim(shell_exec('systemctl is-active dstargateway 2>/dev/null'));
     $serviceRunning = ($mmdvmActive === 'active' || $dstarGwActive === 'active');
-
     $emptyState = ['active'=>false,'callsign'=>'','name'=>'','source'=>'','lastHeard'=>[]];
 
     if (!$serviceRunning) {
-        if (file_exists($stateFile)) @unlink($stateFile);
-        if (file_exists($lhFile)) @unlink($lhFile);
-        header('Content-Type: application/json');
-        echo json_encode($emptyState);
-        exit;
+        header('Content-Type: application/json'); echo json_encode($emptyState); exit;
     }
 
     $log = getFilteredLog('mmdvmdstar', 'dstar', 500);
     $lines = array_reverse(explode("\n", $log ?? ''));
-
     $state = ['active'=>false,'callsign'=>'','name'=>'','source'=>''];
     if (file_exists($stateFile)) {
         $saved = json_decode(file_get_contents($stateFile), true);
@@ -563,11 +542,9 @@ if ($action === 'dstar-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
-
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
     }
-
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
@@ -605,25 +582,20 @@ if ($action === 'dstar-logs')  {
 if ($action === 'ysf-transmission') {
     $stateFile = '/tmp/ysf_tx_state.json';
     $lhFile    = '/tmp/ysf_lastheard.json';
-
+    clearstatcache();
+    
     $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmysf 2>/dev/null'));
     $ysfGwActive = trim(shell_exec('systemctl is-active ysfgateway 2>/dev/null'));
     $serviceRunning = ($mmdvmActive === 'active' || $ysfGwActive === 'active');
-
     $emptyState = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>'','lastHeard'=>[]];
 
     if (!$serviceRunning) {
-        if (file_exists($stateFile)) @unlink($stateFile);
-        if (file_exists($lhFile)) @unlink($lhFile);
-        header('Content-Type: application/json');
-        echo json_encode($emptyState);
-        exit;
+        header('Content-Type: application/json'); echo json_encode($emptyState); exit;
     }
 
     $log = getFilteredLog('mmdvmysf', 'ysf', 500);
     if (empty(trim($log))) $log = getFilteredLog('ysfgateway', 'ysf', 500);
     $lines = array_reverse(explode("\n", $log));
-
     $state = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>''];
     if (file_exists($stateFile)) {
         $saved = json_decode(file_get_contents($stateFile), true);
@@ -662,11 +634,9 @@ if ($action === 'ysf-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
-
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
     }
-
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
@@ -717,24 +687,19 @@ if ($action === 'nxdn-logs') {
 if ($action === 'nxdn-transmission') {
     $stateFile = '/tmp/nxdn_tx_state.json';
     $lhFile    = '/tmp/nxdn_lastheard.json';
-
+    clearstatcache();
+    
     $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmnxdn 2>/dev/null'));
     $nxdnGwActive = trim(shell_exec('systemctl is-active nxdngateway 2>/dev/null'));
     $serviceRunning = ($mmdvmActive === 'active' || $nxdnGwActive === 'active');
-
     $emptyState = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>'','lastHeard'=>[]];
 
     if (!$serviceRunning) {
-        if (file_exists($stateFile)) @unlink($stateFile);
-        if (file_exists($lhFile)) @unlink($lhFile);
-        header('Content-Type: application/json');
-        echo json_encode($emptyState);
-        exit;
+        header('Content-Type: application/json'); echo json_encode($emptyState); exit;
     }
 
     $log = getFilteredLog('mmdvmnxdn', 'nxdn', 500);
     $lines = array_reverse(explode("\n", $log ?? ''));
-
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>''];
     if (file_exists($stateFile)) {
         $saved = json_decode(file_get_contents($stateFile), true);
@@ -770,11 +735,9 @@ if ($action === 'nxdn-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
-
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
     }
-
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
@@ -1054,7 +1017,6 @@ button.btn-header { font-family: var(--font-mono); }
 </style>
 </head>
 <body>
-
 <div class="ctrl-header">
     <div class="ctrl-header-top">
         <a href="http://rem-esp.es" target="_blank" style="order: 1;">
@@ -1411,28 +1373,13 @@ async function fetchStationInfo(){try{const r=await fetch('?action=station-info'
 const _winOS = /Windows/i.test(navigator.userAgent);
 const _TBASE = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/';
 const _FLAGS = [
-    {re:/^E[ABCDEFGH][1-9]/,  e:'🇪🇸', t:'1f1ea-1f1f8'},
-    {re:/^C[TUQ]/,            e:'🇵🇹', t:'1f1f5-1f1f9'},
-    {re:/^F[A-Z]/,            e:'🇫🇷', t:'1f1eb-1f1f7'},
-    {re:/^I[0-9]|^IK|^IW|^IZ/,e:'🇮🇹',t:'1f1ee-1f1f9'},
-    {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/,e:'🇬🇧',t:'1f1ec-1f1e7'},
-    {re:/^D[A-R]|^Y[2-9]/,   e:'🇩🇪', t:'1f1e9-1f1ea'},
-    {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/,e:'🇺🇸',t:'1f1fa-1f1f8'},
-    {re:/^VE|^VA|^VO|^VY/,   e:'🇨🇦', t:'1f1e8-1f1e6'},
-    {re:/^PY|^PU|^PV|^PW|^PX/,e:'🇧🇷',t:'1f1e7-1f1f7'},
-    {re:/^LU|^LV|^LW|^LX/,   e:'🇦🇷', t:'1f1e6-1f1f7'},
-    {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/,e:'🇯🇵',t:'1f1ef-1f1f5'},
-    {re:/^VK/,                e:'🇦🇺', t:'1f1e6-1f1fa'},
-    {re:/^ZS|^ZT|^ZU/,       e:'🇿🇦', t:'1f1ff-1f1e6'},
-    {re:/^OH|^OG/,            e:'🇫🇮', t:'1f1eb-1f1ee'},
-    {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/,e:'🇳🇱',t:'1f1f3-1f1f1'},
-    {re:/^HB/,                e:'🇨🇭', t:'1f1e8-1f1ed'},
-    {re:/^OE/,                e:'🇦🇹', t:'1f1e6-1f1f9'},
-    {re:/^SP|^SQ|^SR|^HF/,   e:'🇵🇱', t:'1f1f5-1f1f1'},
-    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/,e:'🇷🇺',t:'1f1f7-1f1fa'},
-    {re:/^SV|^SW|^SX|^SY|^SZ/,e:'🇬🇷',t:'1f1ec-1f1f7'},
-    {re:/^LY/,                e:'🇱🇹', t:'1f1f1-1f1f9'},
-    {re:/^9A/,                e:'🇭🇷', t:'1f1ed-1f1f7'},
+    {re:/^E[ABCDEFGH][1-9]/,  e:'🇪🇸', t:'1f1ea-1f1f8'}, {re:/^C[TUQ]/, e:'🇵🇹', t:'1f1f5-1f1f9'}, {re:/^F[A-Z]/, e:'🇫🇷', t:'1f1eb-1f1f7'},
+    {re:/^I[0-9]|^IK|^IW|^IZ/,e:'🇮🇹',t:'1f1ee-1f1f9'}, {re:/^G[0-9]|^M[0-9]|^2E|^GB|^MJ|^MU/,e:'🇬🇧',t:'1f1ec-1f1e7'}, {re:/^D[A-R]|^Y[2-9]/, e:'🇩🇪', t:'1f1e9-1f1ea'},
+    {re:/^[KWN][0-9]|^AA|^AB|^AC|^AD|^AE|^AF/,e:'🇺🇸',t:'1f1fa-1f1f8'}, {re:/^VE|^VA|^VO|^VY/, e:'🇨🇦', t:'1f1e8-1f1e6'}, {re:/^PY|^PU|^PV|^PW|^PX/,e:'🇧🇷',t:'1f1e7-1f1f7'},
+    {re:/^LU|^LV|^LW|^LX/, e:'🇦🇷', t:'1f1e6-1f1f7'}, {re:/^JA|^JE|^JF|^JG|^JH|^JI|^JJ|^JK|^JL|^JR/,e:'🇯🇵',t:'1f1ef-1f1f5'}, {re:/^VK/, e:'🇦🇺', t:'1f1e6-1f1fa'},
+    {re:/^ZS|^ZT|^ZU/, e:'🇿🇦', t:'1f1ff-1f1e6'}, {re:/^OH|^OG/, e:'🇫🇮', t:'1f1eb-1f1ee'}, {re:/^PA|^PB|^PC|^PD|^PE|^PF|^PG|^PH/,e:'🇳🇱',t:'1f1f3-1f1f1'},
+    {re:/^HB/, e:'🇨🇭', t:'1f1e8-1f1ed'}, {re:/^OE/, e:'🇦🇹', t:'1f1e6-1f1f9'}, {re:/^SP|^SQ|^SR|^HF/, e:'🇵🇱', t:'1f1f5-1f1f1'},
+    {re:/^UA|^UB|^UC|^UD|^UE|^UF|^RA|^RB|^RC/,e:'🇷🇺',t:'1f1f7-1f1fa'}, {re:/^SV|^SW|^SX|^SY|^SZ/,e:'🇬🇷',t:'1f1ec-1f1f7'}, {re:/^LY/, e:'🇱🇹', t:'1f1f1-1f1f9'}, {re:/^9A/, e:'🇭🇷', t:'1f1ed-1f1f7'}
 ];
 function getFlagByCall(callsign){
     if(!callsign)return'';
@@ -1468,14 +1415,11 @@ function showYSFIdle(){ysfCurrentlyActive=false;animateVU(false,'ysf');document.
 function showYSFActive(d){ysfCurrentlyActive=true;animateVU(true,'ysf');document.getElementById('ysfTxBar').className='nx-txbar active-ysf';document.getElementById('ysfDest').textContent=d.dest?d.dest:'ALL';const src=document.getElementById('ysfSource');if(d.source==='RF'){src.textContent='RF';src.className='nx-source rf';}else if(d.source==='NETWORK'){src.textContent='NET';src.className='nx-source net';}else{src.textContent='';src.className='nx-source';}const flag=getFlagByCall(d.callsign);document.getElementById('ysfNxCenter').innerHTML=`<div class="nx-callsign ysf">${flag} ${esc(d.callsign)}</div>`+(d.name?`<div class="nx-name ysf">${esc(d.name)}</div>`:'');}
 
 function renderLastHeard(list,activeCall){const body=document.getElementById('lhBody');if(!list||list.length===0){body.innerHTML='<div class="lh-empty">Sin actividad reciente</div>';return;}body.innerHTML=list.map(r=>{const isActive=activeCall&&r.callsign===activeCall;const srcCls=r.source==='RF'?'rf':'net',srcLbl=r.source==='RF'?'RF':'NET';const dot=isActive?'<span class="lh-tx-dot"></span>':'';const flag=getFlagByCall(r.callsign);return`<div class="lh-row${isActive?' lh-active':''}"><div class="lh-call-wrap">${dot}<span class="lh-call">${flag} ${esc(r.callsign)}</span></div><span class="lh-name">${esc(r.name||'—')}</span><span class="lh-tg">${esc(r.tg||'—')}</span><span class="lh-time">${esc(r.time||'—')}</span><span class="lh-src ${srcCls}">${srcLbl}</span></div>`;}).join('');}
-
 function renderYSFLastHeard(list,activeCall){const body=document.getElementById('ysfLhBody');if(!list||list.length===0){body.innerHTML='<div class="lh-empty">Sin actividad C4FM</div>';return;}body.innerHTML=list.map(r=>{const isActive=activeCall&&r.callsign===activeCall;const srcCls=r.source==='RF'?'rf':'net',srcLbl=r.source==='RF'?'RF':'NET';const dot=isActive?'<span class="lh-tx-dot-ysf"></span>':'';const flag=getFlagByCall(r.callsign);return`<div class="lh-row-ysf${isActive?' lh-active':''}"><div class="lh-call-wrap">${dot}<span class="lh-call-ysf">${flag} ${esc(r.callsign)}</span></div><span class="lh-name">${esc(r.name||'—')}</span><span class="lh-time">${esc(r.time||'—')}</span><span class="lh-src ${srcCls}">${srcLbl}</span></div>`;}).join('');}
 
 async function fetchTransmission(){try{const r=await fetch('?action=transmission');const d=await r.json();if(d.active){showActive(d);}else{showIdle();}renderLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){}}
-
 async function fetchYSFTransmission(){try{const r=await fetch('?action=ysf-transmission');const d=await r.json();if(d.active){ysfLastActiveTs=Date.now();showYSFActive(d);}else{if(ysfCurrentlyActive)showYSFIdle();}renderYSFLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){if(ysfCurrentlyActive&&(Date.now()-ysfLastActiveTs)>YSF_IDLE_TIMEOUT)showYSFIdle();}}
 
-// ═══ FUNCIÓN AUXILIAR: Limpiar lastheard de un modo ═══
 function clearLastHeardUI(mode) {
     const map = {
         'dmr':   { body: 'lhBody',      empty: 'Sin actividad reciente' },
@@ -1495,20 +1439,12 @@ async function checkStatus(){
         const r=await fetch('?action=status');
         const d=await r.json();
         const gw=d.gateway==='active',mmd=d.mmdvm==='active';
-        setDot('dot-gateway',gw?'active':'off');
-        setDot('dot-mmdvm',mmd?'active':'off');
-        setDot('dot-mosquitto',gw?'active':'off');
+        setDot('dot-gateway',gw?'active':'off'); setDot('dot-mmdvm',mmd?'active':'off'); setDot('dot-mosquitto',gw?'active':'off');
         const wasRunning = running;
         running=gw||mmd;
         setDMRToggle(running);
-        if(running){
-            startRefresh();
-        } else if(wasRunning){
-            // Se acaba de detener
-            stopRefresh();
-            showIdle();
-            clearLastHeardUI('dmr');
-        }
+        if(running){ startRefresh(); } 
+        else if(wasRunning){ stopRefresh(); showIdle(); clearLastHeardUI('dmr'); }
     }catch(e){}
 }
 
@@ -1520,10 +1456,7 @@ async function checkYSFStatus(){
         ysfRunning=d.ysf==='active';
         setDot('dot-ysf',ysfRunning?'active':'off');
         setYSFToggle(ysfRunning||mmdvmYsfRunning);
-        if(!ysfRunning && !mmdvmYsfRunning && wasRunning){
-            showYSFIdle();
-            clearLastHeardUI('ysf');
-        }
+        if(!ysfRunning && !mmdvmYsfRunning && wasRunning){ showYSFIdle(); clearLastHeardUI('ysf'); }
     }catch(e){}
 }
 
@@ -1559,24 +1492,51 @@ async function checkDStarStatus(){
         const r=await fetch('?action=dstar-status');
         const d=await r.json();
         const gw=d.gateway==='active',mmd=d.mmdvm==='active';
-        setDot('dot-dstargw',gw?'active':'off');
-        setDot('dot-dstarmmd',mmd?'active':'off');
+        setDot('dot-dstargw',gw?'active':'off'); setDot('dot-dstarmmd',mmd?'active':'off');
         const wasRunning = dstarRunning;
         dstarRunning=(gw||mmd)&&!d.stopped;
         setDSTARToggle(dstarRunning);
-        if(dstarRunning){
-            startDStarLogs();
-            startDStarTransmissionPoll();
-        } else if(wasRunning){
-            stopDStarLogs();
-            stopDStarTransmissionPoll();
-            showDStarIdle();
-            clearLastHeardUI('dstar');
-        }
+        if(dstarRunning){ startDStarLogs(); startDStarTransmissionPoll(); } 
+        else if(wasRunning){ stopDStarLogs(); stopDStarTransmissionPoll(); showDStarIdle(); clearLastHeardUI('dstar'); }
     }catch(e){}
 }
 
-async function toggleDStar(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDSTAR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=dstar-stop':'?action=dstar-start');let ok=false;for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,1000));const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';const isOn=(gw||mmd)&&!d.stopped;if(wasOn&&!isOn){ok=true;setDot('dot-dstargw','off');setDot('dot-dstarmmd','off');dstarRunning=false;setDSTARToggle(false);stopDStarLogs();stopDStarTransmissionPoll();showDStarIdle();clearLog('logDstarGw');clearLog('logDstarMmd');clearLastHeardUI('dstar');break;}if(!wasOn&&isOn){ok=true;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');dstarRunning=true;setDSTARToggle(true);startDStarLogs();startDStarTransmissionPoll();break;}}if(!ok){const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';dstarRunning=(gw||mmd)&&!d.stopped;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');setDSTARToggle(dstarRunning);}}catch(e){console.warn('toggleDStar error:',e);}finally{sw.classList.remove('busy');}}
+async function toggleDStar(chk){
+    const wasOn=!chk.checked;
+    const sw=document.getElementById('swDSTAR');
+    chk.checked=wasOn;
+    sw.classList.add('busy');
+
+    if (wasOn) {
+        stopDStarLogs();
+        stopDStarTransmissionPoll();
+        showDStarIdle();
+        clearLastHeardUI('dstar');
+        clearLog('logDstarGw');
+        clearLog('logDstarMmd');
+    }
+
+    try{
+        await fetch(wasOn?'?action=dstar-stop':'?action=dstar-start');
+        let ok=false;
+        for(let i=0;i<15;i++){
+            await new Promise(r=>setTimeout(r,1000));
+            const r=await fetch('?action=dstar-status');
+            const d=await r.json();
+            const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+            const isOn=(gw||mmd)&&!d.stopped;
+            if(wasOn&&!isOn){
+                ok=true; setDot('dot-dstargw','off'); setDot('dot-dstarmmd','off'); dstarRunning=false; setDSTARToggle(false); break;
+            }
+            if(!wasOn&&isOn){
+                ok=true; setDot('dot-dstargw',gw?'active':'off'); setDot('dot-dstarmmd',mmd?'active':'off'); dstarRunning=true; setDSTARToggle(true); startDStarLogs(); startDStarTransmissionPoll(); break;
+            }
+        }
+        if(!ok) await checkDStarStatus();
+    }catch(e){console.warn('toggleDStar error:',e);}
+    finally{sw.classList.remove('busy');}
+}
+
 async function fetchDStarLogs(){try{const r=await fetch('?action=dstar-logs&lines=15');const d=await r.json();['logDstarGw:gateway','logDstarMmd:mmdvm'].forEach(pair=>{const[id,key]=pair.split(':');const el=document.getElementById(id);const atBot=el.scrollHeight-el.clientHeight<=el.scrollTop+10;el.innerHTML=colorize(d[key]);if(atBot)el.scrollTop=el.scrollHeight;});}catch(e){}}
 function startDStarLogs(){fetchDStarLogs();dstarTimer=setInterval(fetchDStarLogs,5000);}
 function stopDStarLogs(){clearInterval(dstarTimer);dstarTimer=null;}
@@ -1610,39 +1570,50 @@ async function checkNXDNStatus(){
         const r=await fetch('?action=nxdn-status');
         const d=await r.json();
         const gw=d.gateway==='active',mmd=d.mmdvm==='active';
-        setDot('dot-nxdngw',gw?'active':'off');
-        setDot('dot-nxdnmmd',mmd?'active':'off');
+        setDot('dot-nxdngw',gw?'active':'off'); setDot('dot-nxdnmmd',mmd?'active':'off');
         const wasRunning = nxdnRunning;
         nxdnRunning=gw||mmd;
         setNXDNToggle(nxdnRunning);
-        if(nxdnRunning){
-            startNXDNLogs();
-            startNXDNTxPoll();
-        } else if(wasRunning){
-            stopNXDNLogs();
-            stopNXDNTxPoll();
-            showNXDNIdle();
-            clearLastHeardUI('nxdn');
-        }
+        if(nxdnRunning){ startNXDNLogs(); startNXDNTxPoll(); } 
+        else if(wasRunning){ stopNXDNLogs(); stopNXDNTxPoll(); showNXDNIdle(); clearLastHeardUI('nxdn'); }
     }catch(e){}
 }
 
-async function toggleNXDN(chk){const wasOn=!chk.checked;const sw=document.getElementById('swNXDN');chk.checked=wasOn;sw.classList.add('busy');
-try{
-    await fetch(wasOn?'?action=nxdn-stop':'?action=nxdn-start');
-    let ok=false;
-    for(let i=0;i<15;i++){
-        await new Promise(r=>setTimeout(r,1000));
-        const r=await fetch('?action=nxdn-status');
-        const d=await r.json();
-        const gw=d.gateway==='active',mmd=d.mmdvm==='active';
-        const isOn=gw||mmd;
-        if(wasOn&&!isOn){ok=true;setDot('dot-nxdngw','off');setDot('dot-nxdnmmd','off');nxdnRunning=false;setNXDNToggle(false);stopNXDNLogs();stopNXDNTxPoll();showNXDNIdle();clearLog('logNxdnGw');clearLog('logNxdnMmd');clearLastHeardUI('nxdn');break;}
-        if(!wasOn&&isOn){ok=true;setDot('dot-nxdngw',gw?'active':'off');setDot('dot-nxdnmmd',mmd?'active':'off');nxdnRunning=true;setNXDNToggle(true);startNXDNLogs();startNXDNTxPoll();break;}
+async function toggleNXDN(chk){
+    const wasOn=!chk.checked;
+    const sw=document.getElementById('swNXDN');
+    chk.checked=wasOn;
+    sw.classList.add('busy');
+
+    if (wasOn) {
+        stopNXDNLogs();
+        stopNXDNTxPoll();
+        showNXDNIdle();
+        clearLastHeardUI('nxdn');
+        clearLog('logNxdnGw');
+        clearLog('logNxdnMmd');
     }
-    if(!ok)await checkNXDNStatus();
-}catch(e){console.warn('toggleNXDN error:',e);}
-finally{sw.classList.remove('busy');}}
+
+    try{
+        await fetch(wasOn?'?action=nxdn-stop':'?action=nxdn-start');
+        let ok=false;
+        for(let i=0;i<15;i++){
+            await new Promise(r=>setTimeout(r,1000));
+            const r=await fetch('?action=nxdn-status');
+            const d=await r.json();
+            const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+            const isOn=gw||mmd;
+            if(wasOn&&!isOn){
+                ok=true; setDot('dot-nxdngw','off'); setDot('dot-nxdnmmd','off'); nxdnRunning=false; setNXDNToggle(false); break;
+            }
+            if(!wasOn&&isOn){
+                ok=true; setDot('dot-nxdngw',gw?'active':'off'); setDot('dot-nxdnmmd',mmd?'active':'off'); nxdnRunning=true; setNXDNToggle(true); startNXDNLogs(); startNXDNTxPoll(); break;
+            }
+        }
+        if(!ok)await checkNXDNStatus();
+    }catch(e){console.warn('toggleNXDN error:',e);}
+    finally{sw.classList.remove('busy');}
+}
 
 async function fetchNXDNLogs(){try{const r=await fetch('?action=nxdn-logs&lines=15');const d=await r.json();[['logNxdnGw','gateway'],['logNxdnMmd','mmdvm']].forEach(([id,key])=>{const el=document.getElementById(id);const atBot=el.scrollHeight-el.clientHeight<=el.scrollTop+10;el.innerHTML=colorize(d[key]);if(atBot)el.scrollTop=el.scrollHeight;});}catch(e){}}
 function startNXDNLogs(){fetchNXDNLogs();nxdnTimer=setInterval(fetchNXDNLogs,5000);}
@@ -1650,9 +1621,69 @@ function stopNXDNLogs(){clearInterval(nxdnTimer);nxdnTimer=null;}
 function startNXDNTxPoll(){fetchNXDNTransmission();nxdnTxTimer=setInterval(fetchNXDNTransmission,4000);}
 function stopNXDNTxPoll(){clearInterval(nxdnTxTimer);nxdnTxTimer=null;}
 
-async function toggleServices(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDMR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=stop':'?action=start');await new Promise(r=>setTimeout(r,2200));const r=await fetch('?action=status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';running=gw||mmd;setDot('dot-gateway',gw?'active':'off');setDot('dot-mmdvm',mmd?'active':'off');setDot('dot-mosquitto',gw?'active':'off');setDMRToggle(running);if(wasOn){stopRefresh();clearLog('logGw');clearLog('logMmd');showIdle();clearLastHeardUI('dmr');}else startRefresh();}finally{sw.classList.remove('busy');}}
+async function toggleServices(chk){
+    const wasOn=!chk.checked;
+    const sw=document.getElementById('swDMR');
+    chk.checked=wasOn;
+    sw.classList.add('busy');
 
-async function toggleYSF(chk){const wasOn=!chk.checked;const sw=document.getElementById('swYSF');chk.checked=wasOn;sw.classList.add('busy');try{if(wasOn){await fetch('?action=ysf-stop');await new Promise(r=>setTimeout(r,1000));await fetch('?action=mmdvmysf-stop');await new Promise(r=>setTimeout(r,2000));clearLog('logYsf');clearLog('logMmdvmYsf');stopYSFLogs();stopMMDVMYSFLogs();showYSFIdle();clearLastHeardUI('ysf');}else{await fetch('?action=mmdvmysf-start');await new Promise(r=>setTimeout(r,2000));await fetch('?action=ysf-start');await new Promise(r=>setTimeout(r,1500));startYSFLogs();startMMDVMYSFLogs();}await checkYSFStatus();await checkMMDVMYSFStatus();}finally{sw.classList.remove('busy');}}
+    if (wasOn) {
+        stopRefresh();
+        showIdle();
+        clearLastHeardUI('dmr');
+        clearLog('logGw');
+        clearLog('logMmd');
+    }
+
+    try{
+        await fetch(wasOn?'?action=stop':'?action=start');
+        await new Promise(r=>setTimeout(r,2200));
+        const r=await fetch('?action=status');
+        const d=await r.json();
+        const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+        running=gw||mmd;
+        setDot('dot-gateway',gw?'active':'off');
+        setDot('dot-mmdvm',mmd?'active':'off');
+        setDot('dot-mosquitto',gw?'active':'off');
+        setDMRToggle(running);
+        if(!wasOn && running) startRefresh();
+    }finally{sw.classList.remove('busy');}
+}
+
+async function toggleYSF(chk){
+    const wasOn=!chk.checked;
+    const sw=document.getElementById('swYSF');
+    chk.checked=wasOn;
+    sw.classList.add('busy');
+
+    if (wasOn) {
+        stopYSFLogs();
+        stopMMDVMYSFLogs();
+        if(ysfTxTimer) { clearInterval(ysfTxTimer); ysfTxTimer=null; }
+        showYSFIdle();
+        clearLastHeardUI('ysf');
+        clearLog('logYsf');
+        clearLog('logMmdvmYsf');
+    }
+
+    try{
+        if(wasOn){
+            await fetch('?action=ysf-stop');
+            await new Promise(r=>setTimeout(r,1000));
+            await fetch('?action=mmdvmysf-stop');
+        }else{
+            await fetch('?action=mmdvmysf-start');
+            await new Promise(r=>setTimeout(r,2000));
+            await fetch('?action=ysf-start');
+        }
+        await checkYSFStatus();
+        await checkMMDVMYSFStatus();
+        if(!wasOn) {
+            startYSFLogs();
+            startMMDVMYSFLogs();
+        }
+    }finally{sw.classList.remove('busy');}
+}
 
 function toggleDropdown(e){e.stopPropagation();document.getElementById('dropActualizaciones').classList.toggle('open');}
 document.addEventListener('click',()=>document.getElementById('dropActualizaciones').classList.remove('open'));
