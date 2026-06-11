@@ -4,7 +4,7 @@ header('X-Content-Type-Options: nosniff');
 $action = $_GET['action'] ?? '';
 
 $maquina_json_path = '/var/www/html/maquina.json';
-$maquina_nombre = 'Orangepi Salón'; 
+$maquina_nombre = 'Orangepi Casa'; 
 $maquina_ip = '—';                 
 
 if (file_exists($maquina_json_path)) {
