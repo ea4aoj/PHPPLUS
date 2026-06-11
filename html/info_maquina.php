@@ -11,9 +11,9 @@ if (empty($auto_ip)) {
     $auto_ip = $_SERVER['SERVER_ADDR'] ?? '127.0.0.1';
 }
 
-// 2. Inicializar datos por defecto con el nombre solicitado
+// 2. Inicializar datos por defecto con el nombre solicitado: Orangepi Casa
 $data = [
-    'nombre' => 'Orangepi Salón',
+    'nombre' => 'Orangepi Casa',
     'ip' => $auto_ip
 ];
 
@@ -36,6 +36,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nombre_input = htmlspecialchars(trim($_POST['nombre'] ?? ''), ENT_QUOTES, 'UTF-8');
     $ip_input = htmlspecialchars(trim($_POST['ip'] ?? ''), ENT_QUOTES, 'UTF-8');
 
+    // Si la IP está vacía (porque se ha borrado), volvemos a asignar la auto-detectada
+    $ip_recuperada = false;
+    if (empty($ip_input)) {
+        $ip_input = $auto_ip;
+        $ip_recuperada = true;
+    }
+
     $new_data = [
         'nombre' => $nombre_input,
         'ip' => $ip_input
@@ -45,7 +52,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = file_put_contents($file_path, json_encode($new_data, JSON_PRETTY_PRINT));
 
     if ($result !== false) {
-        $message = '¡Información guardada correctamente en /var/www/html/maquina.json! Redirigiendo...';
+        if ($ip_recuperada) {
+            $message = '¡Detectada IP! Se ha restaurado automáticamente a: ' . $ip_input . ' y se ha guardado con éxito. Redirigiendo...';
+        } else {
+            $message = '¡Información guardada correctamente en /var/www/html/maquina.json! Redirigiendo...';
+        }
         $message_type = 'success';
         $data = $new_data; // Actualizar la vista con los datos guardados
     } else {
@@ -108,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         h2 {
             text-align: center;
             color: var(--text-primary);
-            margin-top: 0.5rem; /* Ajustado al quitar el botón superior */
+            margin-top: 0.5rem;
             margin-bottom: 2rem;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -211,13 +222,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST" action="">
         <div class="form-group">
             <label for="nombre">Nombre de la máquina</label>
-            <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($data['nombre']); ?>" required placeholder="Ej: Orangepi casa">
+            <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($data['nombre']); ?>" required placeholder="Ej: Orangepi Casa">
         </div>
 
         <div class="form-group">
             <label for="ip">Dirección IP</label>
-            <input type="text" id="ip" name="ip" value="<?php echo htmlspecialchars($data['ip']); ?>" required placeholder="Ej: 192.168.1.50">
-            <div class="info">Detectada automáticamente. Puedes modificarla si es necesario.</div>
+            <input type="text" id="ip" name="ip" value="<?php echo htmlspecialchars($data['ip']); ?>" placeholder="Ej: 192.168.1.50">
+            <div class="info">Si la borras, se restaurará la IP del sistema automáticamente al guardar.</div>
         </div>
 
         <button type="submit">Guardar Configuración</button>
@@ -228,7 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script>
     setTimeout(function() {
         window.location.href = 'mmdvm.php';
-    }, 3000); // 3000 milisegundos = 3 segundos
+    }, 3000); // 3 segundos
 </script>
 <?php endif; ?>
 
