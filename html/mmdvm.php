@@ -3,7 +3,7 @@ require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
 $action = $_GET['action'] ?? '';
 
-// ─── AQUÍ LO PEGAS ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────
 $maquina_json_path = '/var/www/html/maquina.json';
 $maquina_nombre = 'Orangepi Salón'; 
 $maquina_ip = '—';                 
@@ -16,7 +16,7 @@ if (file_exists($maquina_json_path)) {
         $maquina_ip = $maquina_data['ip'] ?? $maquina_ip;
     }
 }
-// ────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────
 
 function saveState($key, $value) {
     $file = '/var/lib/mmdvm-state';
