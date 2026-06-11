@@ -3,8 +3,9 @@ require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
 $action = $_GET['action'] ?? '';
 
+
 $maquina_json_path = '/var/www/html/maquina.json';
-$maquina_nombre = 'Orangepi Casa'; 
+$maquina_nombre = 'Orangepi Salón'; 
 $maquina_ip = '—';                 
 
 if (file_exists($maquina_json_path)) {
@@ -15,6 +16,7 @@ if (file_exists($maquina_json_path)) {
         $maquina_ip = $maquina_data['ip'] ?? $maquina_ip;
     }
 }
+
 
 function saveState($key, $value) {
     $file = '/var/lib/mmdvm-state';
@@ -1631,24 +1633,29 @@ document.getElementById('xtInp').addEventListener('keydown',async function(e){
 })();
 
 (async()=>{
-    await fetchStationInfo();
-    setInterval(fetchStationInfo,60000);
-    await checkStatus();
-    await checkYSFStatus();
-    await checkMMDVMYSFStatus();
-    await checkDStarStatus();
-    await checkNXDNStatus();
-    setInterval(checkStatus,10000);
-    setInterval(checkYSFStatus,8000);
-    setInterval(checkMMDVMYSFStatus,8000);
-    setInterval(checkDStarStatus,10000);
-    setInterval(checkNXDNStatus,10000);
-    if(!running){showIdle();fetchTransmission();}
-    showYSFIdle();
-    showNXDNIdle();
-    startYSFLogs();
-    startMMDVMYSFLogs();
-    startYSFTransmissionPoll();
+await fetchStationInfo();
+setInterval(fetchStationInfo,60000);
+await checkStatus();
+await checkYSFStatus();
+await checkMMDVMYSFStatus();
+await checkDStarStatus();
+await checkNXDNStatus();
+setInterval(checkStatus,10000);
+setInterval(checkYSFStatus,8000);
+setInterval(checkMMDVMYSFStatus,8000);
+setInterval(checkDStarStatus,10000);
+setInterval(checkNXDNStatus,10000);
+
+showIdle();
+showYSFIdle();
+showDStarIdle();
+showNXDNIdle();
+fetchTransmission();
+fetchDStarTransmission();
+
+startYSFLogs();
+startMMDVMYSFLogs();
+startYSFTransmissionPoll();
 })();
 </script>
 </body>
