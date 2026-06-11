@@ -1015,14 +1015,18 @@ button.btn-header { font-family: var(--font-mono); }
         </a>
 
         <a href="info_maquina.php" style="text-decoration: none; color: inherit; order: 2;" title="Configurar equipo">
-            <div class="maquina-info-box">
-                <span class="maquina-badge">ONLINE</span>
-                <div class="maquina-detalles">
-                    <div class="maquina-nom"><?php echo htmlspecialchars($maquina_nombre); ?></div>
-                    <div class="maquina-dir-ip"><?php echo htmlspecialchars($maquina_ip); ?></div>
-                </div>
-            </div>
-        </a>
+    <div class="maquina-info-box">
+        <span class="maquina-badge">ONLINE</span>
+        
+        <div class="maquina-detalles" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+            
+            <div class="maquina-nom"><?php echo htmlspecialchars($maquina_nombre); ?></div>
+            
+            <div class="maquina-dir-ip"><?php echo htmlspecialchars($maquina_ip); ?></div>
+        </div>
+        
+    </div>
+</a>
 
         <h1 style="
             font-family: 'Bebas Neue', sans-serif;
