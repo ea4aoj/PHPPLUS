@@ -55,6 +55,58 @@ function formatFreq($hz) {
     return number_format($mhz, 3, '.', '') . ' MHz';
 }
 
+// ══════════════════════════════════════════════════════════
+//  FUNCIONES DE LIMPIEZA Y CONTROL DE TIEMPO
+// ══════════════════════════════════════════════════════════
+
+function clearTransmissionState($mode) {
+    $files = [];
+    switch ($mode) {
+        case 'dmr':
+            $files = ['/tmp/mmdvm_tx_state.json', '/tmp/mmdvm_lastheard.json', '/tmp/mmdvm_start_time'];
+            break;
+        case 'dstar':
+            $files = ['/tmp/dstar_tx_state.json', '/tmp/dstar_lastheard.json', '/tmp/dstar_start_time'];
+            break;
+        case 'ysf':
+            $files = ['/tmp/ysf_tx_state.json', '/tmp/ysf_lastheard.json', '/tmp/ysf_start_time'];
+            break;
+        case 'nxdn':
+            $files = ['/tmp/nxdn_tx_state.json', '/tmp/nxdn_lastheard.json', '/tmp/nxdn_start_time'];
+            break;
+    }
+    foreach ($files as $f) {
+        if (file_exists($f)) @unlink($f);
+    }
+}
+
+function saveServiceStartTime($mode) {
+    $file = '/tmp/' . $mode . '_start_time';
+    file_put_contents($file, strval(time()));
+}
+
+function getServiceStartTime($mode) {
+    $file = '/tmp/' . $mode . '_start_time';
+    if (file_exists($file)) {
+        return intval(file_get_contents($file));
+    }
+    return 0;
+}
+
+function getFilteredLog($unit, $mode, $maxLines = 500) {
+    $startTime = getServiceStartTime($mode);
+    if ($startTime > 0) {
+        $sinceDate = date('Y-m-d H:i:s', $startTime);
+        $log = shell_exec("sudo journalctl -u {$unit} --since '{$sinceDate}' -n {$maxLines} --no-pager --output=short 2>/dev/null");
+    } else {
+        // Si no hay timestamp, solo últimos 5 minutos para evitar logs antiguos
+        $log = shell_exec("sudo journalctl -u {$unit} --since '5 minutes ago' -n {$maxLines} --no-pager --output=short 2>/dev/null");
+    }
+    return $log ?? '';
+}
+
+// ══════════════════════════════════════════════════════════
+
 if ($action === 'read-file') {
     $path = trim($_POST['path'] ?? '');
     if ($path === '' || !file_exists($path)) {
@@ -83,34 +135,22 @@ if ($action === 'save-file') {
 }
 
 if ($action === 'terminal') {
-
     $cmd = trim($_POST['cmd'] ?? '');
-
     if (preg_match('/^\s*(vim|vi|less|more|top|htop|su)\s*/i', $cmd)) {
         header('Content-Type: application/json');
-        echo json_encode([
-            'output' => 'Comando interactivo no soportado. Usa: nano /ruta/fichero'
-        ]);
+        echo json_encode(['output' => 'Comando interactivo no soportado. Usa: nano /ruta/fichero']);
         exit;
     }
-
     if (preg_match('/(rm\s+-rf|shutdown|reboot|mkfs|dd\s+if=)/i', $cmd)) {
         header('Content-Type: application/json');
-        echo json_encode([
-            'output' => '❌ Comando bloqueado por seguridad'
-        ]);
+        echo json_encode(['output' => '❌ Comando bloqueado por seguridad']);
         exit;
     }
-
     $out = $cmd !== ''
         ? (shell_exec('/usr/bin/sudo -n -u pi -H bash -c ' . escapeshellarg($cmd) . ' 2>&1') ?? '')
         : '';
-
     header('Content-Type: application/json');
-    echo json_encode([
-        'output' => htmlspecialchars($out)
-    ]);
-
+    echo json_encode(['output' => htmlspecialchars($out)]);
     exit;
 }
 
@@ -171,69 +211,26 @@ if ($action === 'station-info') {
 }
 
 if ($action === 'sysinfo') {
-
-    /*
-    ==========================================================
-    CPU LOAD REAL ESTABLE
-    ==========================================================
-    */
-
     function getCpuUsagePercent() {
-
-        // Load average de 1 minuto
         $load = sys_getloadavg();
-
-        // Número de cores CPU
         $cores = (int) trim(shell_exec("nproc"));
-
-        if ($cores <= 0) {
-            $cores = 1;
-        }
-
-        // Convertir load average a %
+        if ($cores <= 0) $cores = 1;
         $cpu = ($load[0] / $cores) * 100;
-
-        // Limitar a 100%
-        if ($cpu > 100) {
-            $cpu = 100;
-        }
-
+        if ($cpu > 100) $cpu = 100;
         return round($cpu, 1);
     }
 
-    /*
-    ==========================================================
-    CPU GLOBAL
-    ==========================================================
-    */
-
     $cpuOverall = getCpuUsagePercent();
-
-    /*
-    ==========================================================
-    CPU CORES (SIMULADOS ESTABLES)
-    ==========================================================
-    */
-
     $cpuCores = [];
-
     $cores = (int) trim(shell_exec("nproc"));
-
     for ($i = 0; $i < $cores; $i++) {
-
-        // ligera variación visual por core
         $variation = rand(-4, 4);
-
         $value = $cpuOverall + $variation;
-
         if ($value < 0) $value = 0;
         if ($value > 100) $value = 100;
-
         $cpuCores[] = round($value, 1);
     }
 
-
-    // RAM (optimizado)
     $mem = [];
     foreach (file('/proc/meminfo') as $line) {
         if (preg_match('/^(\w+):\s+(\d+)/', $line, $m)) {
@@ -244,12 +241,10 @@ if ($action === 'sysinfo') {
     $ramFree  = round(($mem['MemAvailable'] ?? $mem['MemFree']) / 1048576, 2);
     $ramUsed  = round($ramTotal - $ramFree, 2);
 
-    // DISK
     $diskTotal = round(disk_total_space('/') / 1073741824, 1);
     $diskFree  = round(disk_free_space('/') / 1073741824, 1);
     $diskUsed  = round($diskTotal - $diskFree, 1);
 
-    // TEMP (con fallback para Allwinner H6)
     $temp = '';
     $tempPaths = [
         '/sys/class/thermal/thermal_zone0/temp',
@@ -266,8 +261,8 @@ if ($action === 'sysinfo') {
 
     header('Content-Type: application/json');
     echo json_encode([
-        'cpu'        => $cpuOverall,      // Uso general (todos los núcleos)
-        'cpuCores'   => $cpuCores,        // Array [cpu0%, cpu1%, cpu2%, cpu3%]
+        'cpu'        => $cpuOverall,
+        'cpuCores'   => $cpuCores,
         'ramTotal'   => $ramTotal,
         'ramUsed'    => $ramUsed,
         'ramFree'    => $ramFree,
@@ -276,7 +271,6 @@ if ($action === 'sysinfo') {
         'diskFree'   => $diskFree,
         'temp'       => $temp
     ]);
-
     exit;
 }
 
@@ -285,16 +279,26 @@ if ($action === 'status') {
     $mmd = trim(shell_exec('systemctl is-active mmdvmhost 2>/dev/null'));
     header('Content-Type: application/json'); echo json_encode(['gateway'=>$gw,'mmdvm'=>$mmd]); exit;
 }
+
 if ($action === 'start') {
-    saveState('dmr','on'); shell_exec('sudo systemctl start dmrgateway 2>/dev/null'); sleep(2);
+    clearTransmissionState('dmr');
+    saveServiceStartTime('dmr');
+    saveState('dmr','on');
+    shell_exec('sudo systemctl start dmrgateway 2>/dev/null');
+    sleep(2);
     shell_exec('sudo systemctl start mmdvmhost 2>/dev/null');
     header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
+
 if ($action === 'stop') {
-    saveState('dmr','off'); shell_exec('sudo systemctl stop mmdvmhost 2>/dev/null'); sleep(1);
+    saveState('dmr','off');
+    shell_exec('sudo systemctl stop mmdvmhost 2>/dev/null');
+    sleep(1);
     shell_exec('sudo systemctl stop dmrgateway 2>/dev/null');
+    clearTransmissionState('dmr');
     header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
 }
+
 if ($action === 'update-imagen') { $output = shell_exec('sudo sh /home/pi/A108/actualiza_imagen.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
 if ($action === 'update-ids')    { $output = shell_exec('sudo sh /home/pi/A108/actualizar_ids.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
 if ($action === 'update-ysf')    { $output = shell_exec('sudo sh /home/pi/A108/actualizar_reflectores_ysf.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
@@ -306,17 +310,48 @@ if ($action === 'ysf-status') {
     $active = ($pid && is_numeric($pid) && file_exists('/proc/'.$pid)) ? 'active' : 'inactive';
     header('Content-Type: application/json'); echo json_encode(['ysf'=>$active]); exit;
 }
-if ($action === 'ysf-start')  { saveState('ysf','on'); shell_exec('sudo systemctl start ysfgateway 2>/dev/null'); sleep(1); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
-if ($action === 'ysf-stop')   { saveState('ysf','off'); shell_exec('sudo systemctl stop ysfgateway 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
+
+if ($action === 'ysf-start')  {
+    clearTransmissionState('ysf');
+    saveServiceStartTime('ysf');
+    saveState('ysf','on');
+    shell_exec('sudo systemctl start ysfgateway 2>/dev/null');
+    sleep(1);
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
+if ($action === 'ysf-stop')   {
+    saveState('ysf','off');
+    shell_exec('sudo systemctl stop ysfgateway 2>/dev/null');
+    clearTransmissionState('ysf');
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
 if ($action === 'mmdvmysf-status') { $st = trim(shell_exec('systemctl is-active mmdvmysf 2>/dev/null')); header('Content-Type: application/json'); echo json_encode(['mmdvmysf'=>$st]); exit; }
-if ($action === 'mmdvmysf-start')  { saveState('ysf','on'); shell_exec('sudo systemctl start mmdvmysf 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
-if ($action === 'mmdvmysf-stop')   { saveState('ysf','off'); shell_exec('sudo systemctl stop ysfgateway 2>/dev/null'); sleep(1); shell_exec('sudo systemctl stop mmdvmysf 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
+
+if ($action === 'mmdvmysf-start')  {
+    clearTransmissionState('ysf');
+    saveServiceStartTime('ysf');
+    saveState('ysf','on');
+    shell_exec('sudo systemctl start mmdvmysf 2>/dev/null');
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
+if ($action === 'mmdvmysf-stop')   {
+    saveState('ysf','off');
+    shell_exec('sudo systemctl stop ysfgateway 2>/dev/null');
+    sleep(1);
+    shell_exec('sudo systemctl stop mmdvmysf 2>/dev/null');
+    clearTransmissionState('ysf');
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
 if ($action === 'mmdvmysf-logs')   { $lines = intval($_GET['lines']??15); $log = shell_exec("sudo journalctl -u mmdvmysf -n {$lines} --no-pager --output=short 2>/dev/null"); header('Content-Type: application/json'); echo json_encode(['mmdvmysf'=>htmlspecialchars($log??'')]); exit; }
 if ($action === 'reboot')          { shell_exec('sudo /usr/bin/systemctl reboot 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
 if ($action === 'display-restart') { shell_exec('sudo systemctl daemon-reload 2>/dev/null'); shell_exec('sudo systemctl enable displaydriver 2>/dev/null'); shell_exec('sudo systemctl restart displaydriver 2>/dev/null'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
 if ($action === 'install-display') { $output = shell_exec('sudo /home/pi/A108/instalar_displaydriver.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'')]); exit; }
 
-// ── BACKUP: llama a copiar.sh y sirve el ZIP resultante ──────────────────────
+// ── BACKUP ────────────────────────────────────────────────────────────────────
 if ($action === 'backup-configs') {
     $zipPath = '/tmp/Copia_PHPPLUS.zip';
     $zipName = 'Copia_PHPPLUS.zip';
@@ -336,7 +371,7 @@ if ($action === 'backup-configs') {
     exit;
 }
 
-// ── RESTORE: recibe el ZIP, lo pasa a restaurar.sh y devuelve JSON ───────────
+// ── RESTORE ───────────────────────────────────────────────────────────────────
 if ($action === 'restore-configs') {
     ob_start(); error_reporting(0);
     $uploadOk = isset($_FILES['zipfile']) && $_FILES['zipfile']['error'] === UPLOAD_ERR_OK;
@@ -398,11 +433,31 @@ function lookupCall($callsign) {
     return ['dmrid'=>'','name'=>''];
 }
 
-// ── DMR ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  DMR TRANSMISSION
+// ══════════════════════════════════════════════════════════
 if ($action === 'transmission') {
     $stateFile = '/tmp/mmdvm_tx_state.json';
     $lhFile    = '/tmp/mmdvm_lastheard.json';
-    $log   = shell_exec("sudo journalctl -u mmdvmhost -n 500 --no-pager --output=short 2>/dev/null");
+
+    // Verificar si el servicio está activo
+    $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmhost 2>/dev/null'));
+    $dmrGwActive = trim(shell_exec('systemctl is-active dmrgateway 2>/dev/null'));
+    $serviceRunning = ($mmdvmActive === 'active' || $dmrGwActive === 'active');
+
+    $emptyState = ['active'=>false,'callsign'=>'','name'=>'','dmrid'=>'','tg'=>'','slot'=>'','source'=>'','lastHeard'=>[]];
+
+    // Si el servicio NO está corriendo, limpiar todo y devolver vacío
+    if (!$serviceRunning) {
+        if (file_exists($stateFile)) @unlink($stateFile);
+        if (file_exists($lhFile)) @unlink($lhFile);
+        header('Content-Type: application/json');
+        echo json_encode($emptyState);
+        exit;
+    }
+
+    // Obtener logs filtrados por tiempo de arranque
+    $log = getFilteredLog('mmdvmhost', 'dmr', 500);
     $lines = array_reverse(explode("\n", $log));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','dmrid'=>'','tg'=>'','slot'=>'','source'=>''];
@@ -410,16 +465,17 @@ if ($action === 'transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
+
     foreach ($lines as $line) {
+        if (preg_match('/DMR Slot \d.*end of voice/i', $line)) {
+            $state['active'] = false;
+            file_put_contents($stateFile, json_encode($state));
+            break;
+        }
         if (preg_match('/DMR Slot (\d), received (RF|network) voice header from (\S+) to TG (\d+)/i', $line, $m)) {
             $callsign = strtoupper(rtrim($m[3], ','));
             $info = lookupCall($callsign);
             $state = ['active'=>true,'callsign'=>$callsign,'name'=>$info['name'],'dmrid'=>$info['dmrid'],'tg'=>$m[4],'slot'=>$m[1],'source'=>strtoupper($m[2])];
-            file_put_contents($stateFile, json_encode($state));
-            break;
-        }
-        if (preg_match('/DMR Slot \d.*end of voice/i', $line)) {
-            $state['active'] = false;
             file_put_contents($stateFile, json_encode($state));
             break;
         }
@@ -437,10 +493,9 @@ if ($action === 'transmission') {
             }
         }
     }
+
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
-    } elseif (file_exists($lhFile)) {
-        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
     }
 
     $state['lastHeard'] = $lastHeard;
@@ -449,11 +504,28 @@ if ($action === 'transmission') {
     exit;
 }
 
-// ── DSTAR ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  DSTAR TRANSMISSION
+// ══════════════════════════════════════════════════════════
 if ($action === 'dstar-transmission') {
     $stateFile = '/tmp/dstar_tx_state.json';
     $lhFile    = '/tmp/dstar_lastheard.json';
-    $log   = shell_exec("sudo journalctl -u mmdvmdstar -n 500 --no-pager --output=short 2>/dev/null");
+
+    $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmdstar 2>/dev/null'));
+    $dstarGwActive = trim(shell_exec('systemctl is-active dstargateway 2>/dev/null'));
+    $serviceRunning = ($mmdvmActive === 'active' || $dstarGwActive === 'active');
+
+    $emptyState = ['active'=>false,'callsign'=>'','name'=>'','source'=>'','lastHeard'=>[]];
+
+    if (!$serviceRunning) {
+        if (file_exists($stateFile)) @unlink($stateFile);
+        if (file_exists($lhFile)) @unlink($lhFile);
+        header('Content-Type: application/json');
+        echo json_encode($emptyState);
+        exit;
+    }
+
+    $log = getFilteredLog('mmdvmdstar', 'dstar', 500);
     $lines = array_reverse(explode("\n", $log ?? ''));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','source'=>''];
@@ -461,6 +533,7 @@ if ($action === 'dstar-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
+
     foreach ($lines as $line) {
         if (preg_match('/D-Star.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -490,10 +563,9 @@ if ($action === 'dstar-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
-    } elseif (file_exists($lhFile)) {
-        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
     }
 
     $state['lastHeard'] = $lastHeard;
@@ -506,8 +578,20 @@ if ($action === 'dstar-status') {
     $stopped=file_exists('/var/lib/dstar-stopped');
     header('Content-Type: application/json'); echo json_encode(['gateway'=>$gw,'mmdvm'=>$mmd,'stopped'=>$stopped]); exit;
 }
-if ($action === 'dstar-start') { shell_exec('sudo /usr/local/bin/dstar-start.sh 2>/dev/null &'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
-if ($action === 'dstar-stop')  { shell_exec('sudo /usr/local/bin/dstar-stop.sh 2>/dev/null &'); header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit; }
+
+if ($action === 'dstar-start') {
+    clearTransmissionState('dstar');
+    saveServiceStartTime('dstar');
+    shell_exec('sudo /usr/local/bin/dstar-start.sh 2>/dev/null &');
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
+if ($action === 'dstar-stop')  {
+    shell_exec('sudo /usr/local/bin/dstar-stop.sh 2>/dev/null &');
+    clearTransmissionState('dstar');
+    header('Content-Type: application/json'); echo json_encode(['ok'=>true]); exit;
+}
+
 if ($action === 'dstar-logs')  {
     $lines=intval($_GET['lines']??15);
     $gw  = shell_exec("sudo journalctl -u dstargateway -n {$lines} --no-pager --output=short 2>/dev/null");
@@ -515,12 +599,29 @@ if ($action === 'dstar-logs')  {
     header('Content-Type: application/json'); echo json_encode(['gateway'=>htmlspecialchars($gw??''),'mmdvm'=>htmlspecialchars($mmd??'')]); exit;
 }
 
-// ── YSF ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  YSF TRANSMISSION
+// ══════════════════════════════════════════════════════════
 if ($action === 'ysf-transmission') {
     $stateFile = '/tmp/ysf_tx_state.json';
     $lhFile    = '/tmp/ysf_lastheard.json';
-    $log = shell_exec("sudo journalctl -u mmdvmysf -n 500 --no-pager --output=short 2>/dev/null");
-    if (empty(trim($log))) $log = shell_exec("sudo journalctl -u ysfgateway -n 500 --no-pager --output=short 2>/dev/null");
+
+    $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmysf 2>/dev/null'));
+    $ysfGwActive = trim(shell_exec('systemctl is-active ysfgateway 2>/dev/null'));
+    $serviceRunning = ($mmdvmActive === 'active' || $ysfGwActive === 'active');
+
+    $emptyState = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>'','lastHeard'=>[]];
+
+    if (!$serviceRunning) {
+        if (file_exists($stateFile)) @unlink($stateFile);
+        if (file_exists($lhFile)) @unlink($lhFile);
+        header('Content-Type: application/json');
+        echo json_encode($emptyState);
+        exit;
+    }
+
+    $log = getFilteredLog('mmdvmysf', 'ysf', 500);
+    if (empty(trim($log))) $log = getFilteredLog('ysfgateway', 'ysf', 500);
     $lines = array_reverse(explode("\n", $log));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','dest'=>'','source'=>''];
@@ -528,6 +629,7 @@ if ($action === 'ysf-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
+
     foreach ($lines as $line) {
         if (preg_match('/YSF.*(end of|lost RF|lost net|watchdog|timeout|no reply|voice end|fin)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -560,17 +662,18 @@ if ($action === 'ysf-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
-    } elseif (file_exists($lhFile)) {
-        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
     }
 
     $state['lastHeard'] = $lastHeard;
     header('Content-Type: application/json'); echo json_encode($state); exit;
 }
 
-// ── NXDN ──────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//  NXDN
+// ══════════════════════════════════════════════════════════
 if ($action === 'nxdn-status') {
     $gw  = trim(shell_exec('systemctl is-active nxdngateway 2>/dev/null'));
     $mmd = trim(shell_exec('systemctl is-active mmdvmnxdn 2>/dev/null'));
@@ -578,7 +681,10 @@ if ($action === 'nxdn-status') {
     echo json_encode(['gateway'=>$gw,'mmdvm'=>$mmd]);
     exit;
 }
+
 if ($action === 'nxdn-start') {
+    clearTransmissionState('nxdn');
+    saveServiceStartTime('nxdn');
     saveState('nxdn','on');
     shell_exec('sudo systemctl start mmdvmnxdn 2>/dev/null');
     sleep(2);
@@ -587,15 +693,18 @@ if ($action === 'nxdn-start') {
     echo json_encode(['ok'=>true]);
     exit;
 }
+
 if ($action === 'nxdn-stop') {
     saveState('nxdn','off');
     shell_exec('sudo systemctl stop nxdngateway 2>/dev/null');
     sleep(1);
     shell_exec('sudo systemctl stop mmdvmnxdn 2>/dev/null');
+    clearTransmissionState('nxdn');
     header('Content-Type: application/json');
     echo json_encode(['ok'=>true]);
     exit;
 }
+
 if ($action === 'nxdn-logs') {
     $lines = intval($_GET['lines'] ?? 15);
     $gw  = shell_exec("sudo journalctl -u nxdngateway -n {$lines} --no-pager --output=short 2>/dev/null");
@@ -608,7 +717,22 @@ if ($action === 'nxdn-logs') {
 if ($action === 'nxdn-transmission') {
     $stateFile = '/tmp/nxdn_tx_state.json';
     $lhFile    = '/tmp/nxdn_lastheard.json';
-    $log   = shell_exec("sudo journalctl -u mmdvmnxdn -n 500 --no-pager --output=short 2>/dev/null");
+
+    $mmdvmActive = trim(shell_exec('systemctl is-active mmdvmnxdn 2>/dev/null'));
+    $nxdnGwActive = trim(shell_exec('systemctl is-active nxdngateway 2>/dev/null'));
+    $serviceRunning = ($mmdvmActive === 'active' || $nxdnGwActive === 'active');
+
+    $emptyState = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>'','lastHeard'=>[]];
+
+    if (!$serviceRunning) {
+        if (file_exists($stateFile)) @unlink($stateFile);
+        if (file_exists($lhFile)) @unlink($lhFile);
+        header('Content-Type: application/json');
+        echo json_encode($emptyState);
+        exit;
+    }
+
+    $log = getFilteredLog('mmdvmnxdn', 'nxdn', 500);
     $lines = array_reverse(explode("\n", $log ?? ''));
 
     $state = ['active'=>false,'callsign'=>'','name'=>'','tg'=>'','source'=>''];
@@ -616,6 +740,7 @@ if ($action === 'nxdn-transmission') {
         $saved = json_decode(file_get_contents($stateFile), true);
         if (is_array($saved)) $state = $saved;
     }
+
     foreach ($lines as $line) {
         if (preg_match('/NXDN.*(end of|lost RF|watchdog|finished|timeout)/i', $line)) {
             $state['active'] = false; file_put_contents($stateFile, json_encode($state)); break;
@@ -645,10 +770,9 @@ if ($action === 'nxdn-transmission') {
             $seen[] = $cs; if (count($lastHeard) >= 5) break;
         }
     }
+
     if (!empty($lastHeard)) {
         file_put_contents($lhFile, json_encode($lastHeard));
-    } elseif (file_exists($lhFile)) {
-        $lastHeard = json_decode(file_get_contents($lhFile), true) ?: [];
     }
 
     $state['lastHeard'] = $lastHeard;
@@ -667,88 +791,15 @@ if ($action === 'nxdn-transmission') {
 <style>
 :root { --bg: #0a0e14; --surface: #111720; --border: #1e2d3d; --green: #00ff9f; --green-dim: #00cc7a; --red: #ff4560; --amber: #ffb300; --cyan: #00d4ff; --violet: #b57aff; --text: #a8b9cc; --text-dim: #4a5568; --font-mono: 'Share Tech Mono', monospace; --font-ui: 'Rajdhani', sans-serif; --font-orb: 'Orbitron', monospace; }
 * { box-sizing: border-box; }
-
-body {
-  background-image: url("fractals_6.png");
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: 100% 100%;
-
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 1rem;
-  min-height: 100vh;
-  padding: 0;
-}
-
-.ctrl-header { 
-    border-bottom: 1px solid var(--border); 
-    padding: 1rem 2rem; 
-    display: flex; 
-    flex-direction: column;
-    align-items: center; 
-    gap: .6rem; 
-    background: var(--surface); 
-    position: relative;
-}
-
-.maquina-info-box {
-    display: flex;
-    align-items: center;
-    background: rgba(17, 23, 32, 0.6); 
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;   
-    position: relative;
-    margin: 0;
-    order: 2;
-}
-.maquina-info-box:hover {
-    border-color: var(--cyan);
-    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-    background: rgba(30, 45, 61, 0.7);
-}
-.maquina-badge {
-    background-color: var(--green);
-    color: #000;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: bold;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    margin-right: 0.8rem;
-    letter-spacing: 1px;
-    box-shadow: 0 0 8px var(--green);
-}
-.maquina-detalles {
-    display: flex;
-    flex-direction: column;
-}
-.maquina-nom {
-    font-family: var(--font-ui);
-    font-weight: 700;
-    color: #ffffff;
-    font-size: 1.1rem;
-    line-height: 1.2;
-    text-transform: uppercase;
-}
-.maquina-dir-ip {
-    font-family: var(--font-mono);
-    color: var(--cyan);
-    font-size: 0.9rem;
-}
-
-.ctrl-header-top { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center;
-    gap: 1.5rem;
-    width: 100%;        
-    flex-wrap: wrap;
-}
-
+body { background-image: url("fractals_6.png"); background-repeat: no-repeat; background-position: center center; background-size: 100% 100%; color: var(--text); font-family: var(--font-ui); font-size: 1rem; min-height: 100vh; padding: 0; }
+.ctrl-header { border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; flex-direction: column; align-items: center; gap: .6rem; background: var(--surface); position: relative; }
+.maquina-info-box { display: flex; align-items: center; background: rgba(17, 23, 32, 0.6); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 1rem; cursor: pointer; transition: all 0.3s ease; position: relative; margin: 0; order: 2; }
+.maquina-info-box:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); background: rgba(30, 45, 61, 0.7); }
+.maquina-badge { background-color: var(--green); color: #000; font-family: var(--font-mono); font-size: 0.75rem; font-weight: bold; padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.8rem; letter-spacing: 1px; box-shadow: 0 0 8px var(--green); }
+.maquina-detalles { display: flex; flex-direction: column; }
+.maquina-nom { font-family: var(--font-ui); font-weight: 700; color: #ffffff; font-size: 1.1rem; line-height: 1.2; text-transform: uppercase; }
+.maquina-dir-ip { font-family: var(--font-mono); color: var(--cyan); font-size: 0.9rem; }
+.ctrl-header-top { display: flex; align-items: center; justify-content: center; gap: 1.5rem; width: 100%; flex-wrap: wrap; }
 .ctrl-header-top h1 { font-family: var(--font-ui); font-weight: 700; font-size: 1.5rem; letter-spacing: .08em; color: #e2eaf5; margin: 0; text-transform: uppercase; }
 .ctrl-header-btns { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: center; margin-top: .9rem; }
 .btn-header { font-family: var(--font-mono); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; background: transparent; border-radius: 4px; padding: .28rem .75rem; cursor: pointer; transition: background .2s; text-decoration: none; display: inline-block; }
@@ -1005,38 +1056,20 @@ button.btn-header { font-family: var(--font-mono); }
 <body>
 
 <div class="ctrl-header">
-    
     <div class="ctrl-header-top">
-
         <a href="http://rem-esp.es" target="_blank" style="order: 1;">
             <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:60px; width:auto; display:block;">
         </a>
-
         <a href="info_maquina.php" style="text-decoration: none; color: inherit; order: 2;" title="Configurar equipo">
-    <div class="maquina-info-box">
-        <span class="maquina-badge">ONLINE</span>
-        
-        <div class="maquina-detalles" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-            
-            <div class="maquina-nom"><?php echo htmlspecialchars($maquina_nombre); ?></div>
-            
-            <div class="maquina-dir-ip"><?php echo htmlspecialchars($maquina_ip); ?></div>
-        </div>
-        
-    </div>
-</a>
-
-        <h1 style="
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.9rem;
-            letter-spacing: 2px;
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px;
-            text-align: center;
-            order: 3;
-        ">
+            <div class="maquina-info-box">
+                <span class="maquina-badge">ONLINE</span>
+                <div class="maquina-detalles" style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+                    <div class="maquina-nom"><?php echo htmlspecialchars($maquina_nombre); ?></div>
+                    <div class="maquina-dir-ip"><?php echo htmlspecialchars($maquina_ip); ?></div>
+                </div>
+            </div>
+        </a>
+        <h1 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; letter-spacing: 2px; display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; text-align: center; order: 3;">
             <span style="color: var(--cyan);">SISTEMA</span>
             <span style="color: var(--cyan);">DE</span>
             <span style="color: var(--cyan);">CONTROL</span>
@@ -1046,14 +1079,11 @@ button.btn-header { font-family: var(--font-mono); }
             <span style="color: var(--violet);">RADIOAFICIONADOS</span>
             <span style="color: var(--amber);">PHPPlus</span>
         </h1>
-
     </div>
-
     <div class="ctrl-header-btns" style="margin-top: 15px; margin-bottom: 5px; width: 100%;">
         <a href="editor_general_config.php" class="btn-header green"> 📄 editor general </a>
         <a href="?action=backup-configs" class="btn-header amber"> 💾 Hacer copia de seguridad </a>
         <button onclick="openRestore()" class="btn-header cyan"> 📂 Restaurar copia de seguridad </button>
-        
         <div class="dropdown-wrap" id="dropActualizaciones">
             <button class="btn-header green">⬇ Actualizaciones ▾</button>
             <div class="dropdown-menu-custom">
@@ -1063,17 +1093,13 @@ button.btn-header { font-family: var(--font-mono); }
                 <button class="dropdown-item-custom" onclick="window.location.href='dstar_json_converter.php'">📡 Actualizar Reflectores D-STAR</button>
             </div>
         </div>
-        
         <button class="btn-header cyan" onclick="xtTtydOpen()">⌨ Terminal</button>
         <a href="extra.php" class="btn-header amber">☰ Menu Extra</a>
         <a href="bridge.php" class="btn-header violet">🔄 BRIDGES</a>
-      
         <button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Opi</button>
     </div>
+</div>
 
-</div>
-</div>
-</header>
 <main class="ctrl-body">
 <div class="station-card" style="justify-content:space-between;">
     <div class="station-card-main"><div class="station-callsign" id="scCallsign">📡 —</div></div>
@@ -1083,9 +1109,7 @@ button.btn-header { font-family: var(--font-mono); }
     <div class="station-meta-item" style="flex:1;align-items:flex-start;"><span class="station-meta-label" style="font-size:.55rem;">💾 RAM usada</span><span class="station-meta-value" id="siRam" style="color:var(--cyan);font-size:.75rem;min-width:4.5rem;white-space:nowrap;">—</span></div>
     <div class="station-meta-item" style="flex:1;align-items:flex-start;"><span class="station-meta-label" style="font-size:.55rem;">💾 RAM libre</span><span class="station-meta-value" id="siRamFree" style="color:var(--text);font-size:.75rem;min-width:4.5rem;white-space:nowrap;">—</span></div>
     <div class="station-meta-item" style="flex:1;align-items:flex-start;"><span class="station-meta-label" style="font-size:.55rem;">💿 Disco usado</span><span class="station-meta-value" id="siDisk" style="color:var(--amber);font-size:.75rem;min-width:4.5rem;white-space:nowrap;">—</span></div>
-    <div class="station-meta-item" style="flex:1;align-items:flex-start;"><span class="station-meta-label" style="font-size:.55rem;">💿 Libre</span><span 
-    
-    class="station-meta-value" id="siDiskFree" style="color:var(--green);font-size:.75rem;min-width:4.5rem;white-space:nowrap;">—</span></div>
+    <div class="station-meta-item" style="flex:1;align-items:flex-start;"><span class="station-meta-label" style="font-size:.55rem;">💿 Libre</span><span class="station-meta-value" id="siDiskFree" style="color:var(--green);font-size:.75rem;min-width:4.5rem;white-space:nowrap;">—</span></div>
     <div class="station-divider" style="height:50px;"></div>
     <div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:.4rem;"><?php
             $model = '';
@@ -1094,10 +1118,8 @@ button.btn-header { font-family: var(--font-mono); }
             if ($model === '') $model = trim(shell_exec('uname -m 2>/dev/null') ?? '');
             $ml = strtolower($model);
             $icon = str_contains($ml, 'raspberry') ? '🍓' : (str_contains($ml, 'orange') ? '🍊' : '🖥️');
-            
-            // --- TRIMMING PARA ORANGE PI ---
             if (str_contains($ml, 'orange')) {
-                $pos = stripos($model, 'orange'); // Busca "orange" sin importar mayúsculas
+                $pos = stripos($model, 'orange');
                 $modelShort = ($pos !== false) ? substr($model, $pos) : $model;
             } else {
                 $modelShort = str_contains($ml, 'raspberry') ? substr($model, 0, 14) : $model;
@@ -1107,6 +1129,7 @@ button.btn-header { font-family: var(--font-mono); }
         <span class="station-meta-value" id="siModel" style="color:var(--violet);font-size:.7rem;white-space:nowrap;"><?php echo htmlspecialchars($modelShort); ?></span>
     </div>
 </div>
+
 <div class="station-card" style="padding:1rem 2rem 1rem 3.0rem;">
     <div style="display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;justify-content:center;">
         <div class="status-item"><div class="dot" id="dot-mosquitto"></div><span>MOSQUITTO</span></div>
@@ -1123,6 +1146,7 @@ button.btn-header { font-family: var(--font-mono); }
         <div class="status-item"><div class="dot" id="dot-nxdngw"></div><span style="color:#ffd700;text-transform:uppercase;">NXDNGATEWAY</span></div>
     </div>
 </div>
+
 <div class="controls-section">
   <div class="service-card">
     <div class="service-card-label dmr" style="color:#fff;">▸ DMR · MMDVMHost + DMRGateway</div>
@@ -1196,6 +1220,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
   </div>
 </div>
+
 <div class="display-row">
   <div id="dmrDisplayPanel">
     <div class="panel-label">▸ DMR Display</div>
@@ -1220,6 +1245,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
   </div>
 </div>
+
 <div class="display-row" style="margin-top:1.2rem;">
   <div id="dstarDisplayPanel">
     <div class="panel-label" style="color:#00e5ff;">▸ D-STAR Display</div>
@@ -1244,6 +1270,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
   </div>
 </div>
+
 <div class="display-row" style="margin-top:1rem;">
   <div id="dmrLastHeardPanel">
     <div class="panel-label">▸ Últimos escuchados DMR</div>
@@ -1260,6 +1287,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
   </div>
 </div>
+
 <div class="display-row" style="margin-top:1rem;">
   <div id="dstarLastHeardPanel">
     <div class="panel-label" style="color:#00e5ff;">▸ Últimos escuchados D-STAR</div>
@@ -1278,6 +1306,7 @@ button.btn-header { font-family: var(--font-mono); }
     </div>
   </div>
 </div>
+
 <div class="log-grid" style="margin-top:2rem;">
 <div id="dmrLogPanels" style="display:contents;">
 <div class="log-panel"><div class="log-panel-header"><span class="svc-name">▸ MMDVMHost</span><button class="btn-clear" onclick="clearLog('logMmd')">limpiar</button></div><div class="log-output" id="logMmd">Esperando servicios…</div></div>
@@ -1410,8 +1439,7 @@ function getFlagByCall(callsign){
     const cs=callsign.toUpperCase().trim();
     for(const p of _FLAGS){
         if(p.re.test(cs)){
-            if(_winOS)
-                return'<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
+            if(_winOS) return'<img class="flag-emoji-img" src="'+_TBASE+p.t+'.png" alt="">';
             return'<span class="flag-emoji">'+p.e+'</span>';
         }
     }
@@ -1447,9 +1475,68 @@ async function fetchTransmission(){try{const r=await fetch('?action=transmission
 
 async function fetchYSFTransmission(){try{const r=await fetch('?action=ysf-transmission');const d=await r.json();if(d.active){ysfLastActiveTs=Date.now();showYSFActive(d);}else{if(ysfCurrentlyActive)showYSFIdle();}renderYSFLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){if(ysfCurrentlyActive&&(Date.now()-ysfLastActiveTs)>YSF_IDLE_TIMEOUT)showYSFIdle();}}
 
-async function checkStatus(){try{const r=await fetch('?action=status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';setDot('dot-gateway',gw?'active':'off');setDot('dot-mmdvm',mmd?'active':'off');setDot('dot-mosquitto',gw?'active':'off');running=gw||mmd;setDMRToggle(running);if(running)startRefresh();}catch(e){}}
-async function checkYSFStatus(){try{const r=await fetch('?action=ysf-status');const d=await r.json();ysfRunning=d.ysf==='active';setDot('dot-ysf',ysfRunning?'active':'off');setYSFToggle(ysfRunning||mmdvmYsfRunning);}catch(e){}}
-async function checkMMDVMYSFStatus(){try{const r=await fetch('?action=mmdvmysf-status');const d=await r.json();mmdvmYsfRunning=d.mmdvmysf==='active';setDot('dot-mmdvmysf',mmdvmYsfRunning?'active':'off');setYSFToggle(ysfRunning||mmdvmYsfRunning);}catch(e){}}
+// ═══ FUNCIÓN AUXILIAR: Limpiar lastheard de un modo ═══
+function clearLastHeardUI(mode) {
+    const map = {
+        'dmr':   { body: 'lhBody',      empty: 'Sin actividad reciente' },
+        'ysf':   { body: 'ysfLhBody',   empty: 'Sin actividad C4FM' },
+        'dstar': { body: 'dstarLhBody', empty: 'Sin actividad D-STAR' },
+        'nxdn':  { body: 'nxdnLhBody',  empty: 'Sin actividad NXDN' }
+    };
+    const cfg = map[mode];
+    if (cfg) {
+        const el = document.getElementById(cfg.body);
+        if (el) el.innerHTML = '<div class="lh-empty">' + cfg.empty + '</div>';
+    }
+}
+
+async function checkStatus(){
+    try{
+        const r=await fetch('?action=status');
+        const d=await r.json();
+        const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+        setDot('dot-gateway',gw?'active':'off');
+        setDot('dot-mmdvm',mmd?'active':'off');
+        setDot('dot-mosquitto',gw?'active':'off');
+        const wasRunning = running;
+        running=gw||mmd;
+        setDMRToggle(running);
+        if(running){
+            startRefresh();
+        } else if(wasRunning){
+            // Se acaba de detener
+            stopRefresh();
+            showIdle();
+            clearLastHeardUI('dmr');
+        }
+    }catch(e){}
+}
+
+async function checkYSFStatus(){
+    try{
+        const r=await fetch('?action=ysf-status');
+        const d=await r.json();
+        const wasRunning = ysfRunning;
+        ysfRunning=d.ysf==='active';
+        setDot('dot-ysf',ysfRunning?'active':'off');
+        setYSFToggle(ysfRunning||mmdvmYsfRunning);
+        if(!ysfRunning && !mmdvmYsfRunning && wasRunning){
+            showYSFIdle();
+            clearLastHeardUI('ysf');
+        }
+    }catch(e){}
+}
+
+async function checkMMDVMYSFStatus(){
+    try{
+        const r=await fetch('?action=mmdvmysf-status');
+        const d=await r.json();
+        mmdvmYsfRunning=d.mmdvmysf==='active';
+        setDot('dot-mmdvmysf',mmdvmYsfRunning?'active':'off');
+        setYSFToggle(ysfRunning||mmdvmYsfRunning);
+    }catch(e){}
+}
+
 function setDot(id,state){document.getElementById(id).className='dot'+(state==='active'?' active':state==='error'?' error':'');}
 
 function setDSTARToggle(on){const chk=document.getElementById('chkDSTAR'),lbl=document.getElementById('dstarToggleLabel'),sta=document.getElementById('dstarToggleStatus');chk.checked=on;lbl.style.color=on?'#00e5ff':'';sta.className='toggle-status'+(on?' on':'');sta.textContent=on?'ON':'OFF';document.getElementById('dstarRefreshBadge').style.display=on?'flex':'none';document.getElementById('dstarPanelMmd').style.display=on?'':'none';document.getElementById('dstarPanelGw').style.display=on?'':'none';document.getElementById('dstarDisplayPanel').style.display=on?'':'none';document.getElementById('dstarLastHeardPanel').style.display=on?'':'none';}
@@ -1466,8 +1553,30 @@ function renderDStarLastHeard(list,activeCall){const body=document.getElementByI
 async function fetchDStarTransmission(){try{const r=await fetch('?action=dstar-transmission');const d=await r.json();if(d.active)showDStarActive(d);else showDStarIdle();renderDStarLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){}}
 function startDStarTransmissionPoll(){fetchDStarTransmission();dstarTxTimer2=setInterval(fetchDStarTransmission,4000);}
 function stopDStarTransmissionPoll(){clearInterval(dstarTxTimer2);dstarTxTimer2=null;}
-async function checkDStarStatus(){try{const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');dstarRunning=(gw||mmd)&&!d.stopped;setDSTARToggle(dstarRunning);if(dstarRunning){startDStarLogs();startDStarTransmissionPoll();}}catch(e){}}
-async function toggleDStar(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDSTAR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=dstar-stop':'?action=dstar-start');let ok=false;for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,1000));const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';const isOn=(gw||mmd)&&!d.stopped;if(wasOn&&!isOn){ok=true;setDot('dot-dstargw','off');setDot('dot-dstarmmd','off');dstarRunning=false;setDSTARToggle(false);stopDStarLogs();stopDStarTransmissionPoll();showDStarIdle();clearLog('logDstarGw');clearLog('logDstarMmd');break;}if(!wasOn&&isOn){ok=true;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');dstarRunning=true;setDSTARToggle(true);startDStarLogs();startDStarTransmissionPoll();break;}}if(!ok){const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';dstarRunning=(gw||mmd)&&!d.stopped;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');setDSTARToggle(dstarRunning);}}catch(e){console.warn('toggleDStar error:',e);}finally{sw.classList.remove('busy');}}
+
+async function checkDStarStatus(){
+    try{
+        const r=await fetch('?action=dstar-status');
+        const d=await r.json();
+        const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+        setDot('dot-dstargw',gw?'active':'off');
+        setDot('dot-dstarmmd',mmd?'active':'off');
+        const wasRunning = dstarRunning;
+        dstarRunning=(gw||mmd)&&!d.stopped;
+        setDSTARToggle(dstarRunning);
+        if(dstarRunning){
+            startDStarLogs();
+            startDStarTransmissionPoll();
+        } else if(wasRunning){
+            stopDStarLogs();
+            stopDStarTransmissionPoll();
+            showDStarIdle();
+            clearLastHeardUI('dstar');
+        }
+    }catch(e){}
+}
+
+async function toggleDStar(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDSTAR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=dstar-stop':'?action=dstar-start');let ok=false;for(let i=0;i<15;i++){await new Promise(r=>setTimeout(r,1000));const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';const isOn=(gw||mmd)&&!d.stopped;if(wasOn&&!isOn){ok=true;setDot('dot-dstargw','off');setDot('dot-dstarmmd','off');dstarRunning=false;setDSTARToggle(false);stopDStarLogs();stopDStarTransmissionPoll();showDStarIdle();clearLog('logDstarGw');clearLog('logDstarMmd');clearLastHeardUI('dstar');break;}if(!wasOn&&isOn){ok=true;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');dstarRunning=true;setDSTARToggle(true);startDStarLogs();startDStarTransmissionPoll();break;}}if(!ok){const r=await fetch('?action=dstar-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';dstarRunning=(gw||mmd)&&!d.stopped;setDot('dot-dstargw',gw?'active':'off');setDot('dot-dstarmmd',mmd?'active':'off');setDSTARToggle(dstarRunning);}}catch(e){console.warn('toggleDStar error:',e);}finally{sw.classList.remove('busy');}}
 async function fetchDStarLogs(){try{const r=await fetch('?action=dstar-logs&lines=15');const d=await r.json();['logDstarGw:gateway','logDstarMmd:mmdvm'].forEach(pair=>{const[id,key]=pair.split(':');const el=document.getElementById(id);const atBot=el.scrollHeight-el.clientHeight<=el.scrollTop+10;el.innerHTML=colorize(d[key]);if(atBot)el.scrollTop=el.scrollHeight;});}catch(e){}}
 function startDStarLogs(){fetchDStarLogs();dstarTimer=setInterval(fetchDStarLogs,5000);}
 function stopDStarLogs(){clearInterval(dstarTimer);dstarTimer=null;}
@@ -1496,7 +1605,27 @@ function renderNXDNLastHeard(list,activeCall){const body=document.getElementById
 
 async function fetchNXDNTransmission(){try{const r=await fetch('?action=nxdn-transmission');const d=await r.json();if(d.active){nxdnLastActiveTs=Date.now();showNXDNActive(d);}else{if(nxdnCurrentlyActive&&(Date.now()-nxdnLastActiveTs)>NXDN_IDLE_TIMEOUT)showNXDNIdle();}renderNXDNLastHeard(d.lastHeard||[],d.active?d.callsign:null);}catch(e){if(nxdnCurrentlyActive&&(Date.now()-nxdnLastActiveTs)>NXDN_IDLE_TIMEOUT)showNXDNIdle();}}
 
-async function checkNXDNStatus(){try{const r=await fetch('?action=nxdn-status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';setDot('dot-nxdngw',gw?'active':'off');setDot('dot-nxdnmmd',mmd?'active':'off');nxdnRunning=gw||mmd;setNXDNToggle(nxdnRunning);if(nxdnRunning){startNXDNLogs();startNXDNTxPoll();}}catch(e){}}
+async function checkNXDNStatus(){
+    try{
+        const r=await fetch('?action=nxdn-status');
+        const d=await r.json();
+        const gw=d.gateway==='active',mmd=d.mmdvm==='active';
+        setDot('dot-nxdngw',gw?'active':'off');
+        setDot('dot-nxdnmmd',mmd?'active':'off');
+        const wasRunning = nxdnRunning;
+        nxdnRunning=gw||mmd;
+        setNXDNToggle(nxdnRunning);
+        if(nxdnRunning){
+            startNXDNLogs();
+            startNXDNTxPoll();
+        } else if(wasRunning){
+            stopNXDNLogs();
+            stopNXDNTxPoll();
+            showNXDNIdle();
+            clearLastHeardUI('nxdn');
+        }
+    }catch(e){}
+}
 
 async function toggleNXDN(chk){const wasOn=!chk.checked;const sw=document.getElementById('swNXDN');chk.checked=wasOn;sw.classList.add('busy');
 try{
@@ -1508,7 +1637,7 @@ try{
         const d=await r.json();
         const gw=d.gateway==='active',mmd=d.mmdvm==='active';
         const isOn=gw||mmd;
-        if(wasOn&&!isOn){ok=true;setDot('dot-nxdngw','off');setDot('dot-nxdnmmd','off');nxdnRunning=false;setNXDNToggle(false);stopNXDNLogs();stopNXDNTxPoll();showNXDNIdle();clearLog('logNxdnGw');clearLog('logNxdnMmd');break;}
+        if(wasOn&&!isOn){ok=true;setDot('dot-nxdngw','off');setDot('dot-nxdnmmd','off');nxdnRunning=false;setNXDNToggle(false);stopNXDNLogs();stopNXDNTxPoll();showNXDNIdle();clearLog('logNxdnGw');clearLog('logNxdnMmd');clearLastHeardUI('nxdn');break;}
         if(!wasOn&&isOn){ok=true;setDot('dot-nxdngw',gw?'active':'off');setDot('dot-nxdnmmd',mmd?'active':'off');nxdnRunning=true;setNXDNToggle(true);startNXDNLogs();startNXDNTxPoll();break;}
     }
     if(!ok)await checkNXDNStatus();
@@ -1521,8 +1650,9 @@ function stopNXDNLogs(){clearInterval(nxdnTimer);nxdnTimer=null;}
 function startNXDNTxPoll(){fetchNXDNTransmission();nxdnTxTimer=setInterval(fetchNXDNTransmission,4000);}
 function stopNXDNTxPoll(){clearInterval(nxdnTxTimer);nxdnTxTimer=null;}
 
-async function toggleServices(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDMR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=stop':'?action=start');await new Promise(r=>setTimeout(r,2200));const r=await fetch('?action=status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';running=gw||mmd;setDot('dot-gateway',gw?'active':'off');setDot('dot-mmdvm',mmd?'active':'off');setDot('dot-mosquitto',gw?'active':'off');setDMRToggle(running);if(wasOn){stopRefresh();clearLog('logGw');clearLog('logMmd');showIdle();document.getElementById('lhBody').innerHTML='<div class="lh-empty">Sin actividad reciente</div>';}else startRefresh();}finally{sw.classList.remove('busy');}}
-async function toggleYSF(chk){const wasOn=!chk.checked;const sw=document.getElementById('swYSF');chk.checked=wasOn;sw.classList.add('busy');try{if(wasOn){await fetch('?action=ysf-stop');await new Promise(r=>setTimeout(r,1000));await fetch('?action=mmdvmysf-stop');await new Promise(r=>setTimeout(r,2000));clearLog('logYsf');clearLog('logMmdvmYsf');stopYSFLogs();stopMMDVMYSFLogs();showYSFIdle();document.getElementById('ysfLhBody').innerHTML='<div class="lh-empty">Sin actividad C4FM</div>';}else{await fetch('?action=mmdvmysf-start');await new Promise(r=>setTimeout(r,2000));await fetch('?action=ysf-start');await new Promise(r=>setTimeout(r,1500));startYSFLogs();startMMDVMYSFLogs();}await checkYSFStatus();await checkMMDVMYSFStatus();}finally{sw.classList.remove('busy');}}
+async function toggleServices(chk){const wasOn=!chk.checked;const sw=document.getElementById('swDMR');chk.checked=wasOn;sw.classList.add('busy');try{await fetch(wasOn?'?action=stop':'?action=start');await new Promise(r=>setTimeout(r,2200));const r=await fetch('?action=status');const d=await r.json();const gw=d.gateway==='active',mmd=d.mmdvm==='active';running=gw||mmd;setDot('dot-gateway',gw?'active':'off');setDot('dot-mmdvm',mmd?'active':'off');setDot('dot-mosquitto',gw?'active':'off');setDMRToggle(running);if(wasOn){stopRefresh();clearLog('logGw');clearLog('logMmd');showIdle();clearLastHeardUI('dmr');}else startRefresh();}finally{sw.classList.remove('busy');}}
+
+async function toggleYSF(chk){const wasOn=!chk.checked;const sw=document.getElementById('swYSF');chk.checked=wasOn;sw.classList.add('busy');try{if(wasOn){await fetch('?action=ysf-stop');await new Promise(r=>setTimeout(r,1000));await fetch('?action=mmdvmysf-stop');await new Promise(r=>setTimeout(r,2000));clearLog('logYsf');clearLog('logMmdvmYsf');stopYSFLogs();stopMMDVMYSFLogs();showYSFIdle();clearLastHeardUI('ysf');}else{await fetch('?action=mmdvmysf-start');await new Promise(r=>setTimeout(r,2000));await fetch('?action=ysf-start');await new Promise(r=>setTimeout(r,1500));startYSFLogs();startMMDVMYSFLogs();}await checkYSFStatus();await checkMMDVMYSFStatus();}finally{sw.classList.remove('busy');}}
 
 function toggleDropdown(e){e.stopPropagation();document.getElementById('dropActualizaciones').classList.toggle('open');}
 document.addEventListener('click',()=>document.getElementById('dropActualizaciones').classList.remove('open'));
