@@ -3,6 +3,21 @@ require_once __DIR__ . '/auth.php';
 header('X-Content-Type-Options: nosniff');
 $action = $_GET['action'] ?? '';
 
+// ─── AQUÍ LO PEGAS ──────────────────────────────────────────────────
+$maquina_json_path = '/var/www/html/maquina.json';
+$maquina_nombre = 'Orangepi Salón'; 
+$maquina_ip = '—';                 
+
+if (file_exists($maquina_json_path)) {
+    $maquina_conte = file_get_contents($maquina_json_path);
+    $maquina_data = json_decode($maquina_conte, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($maquina_data)) {
+        $maquina_nombre = $maquina_data['nombre'] ?? $maquina_nombre;
+        $maquina_ip = $maquina_data['ip'] ?? $maquina_ip;
+    }
+}
+// ────────────────────────────────────────────────────────────────────
+
 function saveState($key, $value) {
     $file = '/var/lib/mmdvm-state';
     $lines = file_exists($file) ? file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : [];
@@ -666,8 +681,76 @@ body {
   padding: 0;
 }
 
-.ctrl-header { border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; flex-direction: column; align-items: center; gap: .6rem; background: var(--surface); }
-.ctrl-header-top { display: flex; align-items: center; gap: .8rem; }
+.ctrl-header { 
+    border-bottom: 1px solid var(--border); 
+    padding: 1rem 2rem; 
+    display: flex; 
+    flex-direction: column; /* Volvemos al diseño original en columna */
+    align-items: center; 
+    gap: .6rem; 
+    background: var(--surface); 
+    position: relative; /* ¡CRÍTICO! Esto permite que la máquina se alinee respecto al header */
+}
+
+.maquina-info-box {
+    display: flex;
+    align-items: center;
+    background: rgba(17, 23, 32, 0.6); 
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* ─── ESTO HACE LA MAGIA ─── */
+    position: relative;
+    margin: 0;          /* Quitamos márgenes raros */
+    order: 2;           /* Le dice al navegador que este elemento va SEGUNDO */
+}
+.maquina-info-box:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    background: rgba(30, 45, 61, 0.7);
+}
+.maquina-badge {
+    background-color: var(--green);
+    color: #000;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    margin-right: 0.8rem;
+    letter-spacing: 1px;
+    box-shadow: 0 0 8px var(--green);
+}
+.maquina-detalles {
+    display: flex;
+    flex-direction: column;
+}
+.maquina-nom {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 1.1rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+.maquina-dir-ip {
+    font-family: var(--font-mono);
+    color: var(--cyan);
+    font-size: 0.9rem;
+}
+
+.ctrl-header-top { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; /* Centra todo el bloque en pantallas grandes */
+    gap: 1.5rem;             /* Separación uniforme entre la máquina, el logo y el texto */
+    width: 100%;        
+    flex-wrap: wrap;         /* Si minimizas, se adapta sin romperse */
+}
+
 .ctrl-header-top h1 { font-family: var(--font-ui); font-weight: 700; font-size: 1.5rem; letter-spacing: .08em; color: #e2eaf5; margin: 0; text-transform: uppercase; }
 .ctrl-header-btns { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; justify-content: center; margin-top: .9rem; }
 .btn-header { font-family: var(--font-mono); font-size: .65rem; letter-spacing: .08em; text-transform: uppercase; background: transparent; border-radius: 4px; padding: .28rem .75rem; cursor: pointer; transition: background .2s; text-decoration: none; display: inline-block; }
@@ -922,49 +1005,71 @@ button.btn-header { font-family: var(--font-mono); }
 </style>
 </head>
 <body>
-<header class="ctrl-header">
-<div class="ctrl-header-top">
-<a href="http://rem-esp.es" target="_blank">
-  <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:60px;width:auto;">
-</a>
-<h1 style="
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.9rem;
-  letter-spacing: 2px;
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  text-align: center;
-">
-    <span style="color: var(--cyan);">SISTEMA</span>
-    <span style="color: var(--cyan);">DE</span>
-    <span style="color: var(--cyan);">CONTROL</span>
-    <span style="color: var(--green);">Y</span>
-    <span style="color: var(--green);">MONITORIZACIÓN</span>
-    <span style="color: var(--violet);">PARA</span>
-    <span style="color: var(--violet);">RADIOAFICIONADOS</span>
-    <span style="color: var(--amber);">PHPPlus</span>
-</h1>
-</div>
-<div class="ctrl-header-btns">
-    <a href="editor_general_config.php" class="btn-header green"> 📄 editor general </a>
-    <a href="?action=backup-configs" class="btn-header amber"> 💾 Hacer copia de seguridad </a>
-    <button onclick="openRestore()" class="btn-header cyan"> 📂 Restaurar copia de seguridad </button>
-    <div class="dropdown-wrap" id="dropActualizaciones">
-        <button class="btn-header green">⬇ Actualizaciones ▾</button>
-        <div class="dropdown-menu-custom">
-            <button class="dropdown-item-custom" onclick="runUpdate('imagen')">🖼 Actualizar Imagen</button>
-            <button class="dropdown-item-custom" onclick="runUpdate('ids')">📋 Actualizar IDS DMR</button>
-            <button class="dropdown-item-custom" onclick="runUpdate('ysf')">📡 Actualizar Reflectores YSF</button>
-            <button class="dropdown-item-custom" onclick="window.location.href='dstar_json_converter.php'">📡 Actualizar Reflectores D-STAR</button>
-        </div>
+
+<div class="ctrl-header">
+    
+    <div class="ctrl-header-top">
+
+        <a href="http://rem-esp.es" target="_blank" style="order: 1;">
+            <img src="Logo_REM-ESP_EA4RCR.png" alt="EA4RCR" style="height:60px; width:auto; display:block;">
+        </a>
+
+        <a href="info_maquina.php" style="text-decoration: none; color: inherit; order: 2;" title="Configurar equipo">
+            <div class="maquina-info-box">
+                <span class="maquina-badge">ONLINE</span>
+                <div class="maquina-detalles">
+                    <div class="maquina-nom"><?php echo htmlspecialchars($maquina_nombre); ?></div>
+                    <div class="maquina-dir-ip"><?php echo htmlspecialchars($maquina_ip); ?></div>
+                </div>
+            </div>
+        </a>
+
+        <h1 style="
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.9rem;
+            letter-spacing: 2px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            text-align: center;
+            order: 3;
+        ">
+            <span style="color: var(--cyan);">SISTEMA</span>
+            <span style="color: var(--cyan);">DE</span>
+            <span style="color: var(--cyan);">CONTROL</span>
+            <span style="color: var(--green);">Y</span>
+            <span style="color: var(--green);">MONITORIZACIÓN</span>
+            <span style="color: var(--violet);">PARA</span>
+            <span style="color: var(--violet);">RADIOAFICIONADOS</span>
+            <span style="color: var(--amber);">PHPPlus</span>
+        </h1>
+
     </div>
-    <button class="btn-header cyan" onclick="xtTtydOpen()">⌨ Terminal</button>
-    <a href="extra.php" class="btn-header amber">☰ Menu Extra</a>
-    <a href="bridge.php" class="btn-header violet">🔄 BRIDGES</a>
-  
-    <button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Opi</button>
+
+    <div class="ctrl-header-btns" style="margin-top: 15px; margin-bottom: 5px; width: 100%;">
+        <a href="editor_general_config.php" class="btn-header green"> 📄 editor general </a>
+        <a href="?action=backup-configs" class="btn-header amber"> 💾 Hacer copia de seguridad </a>
+        <button onclick="openRestore()" class="btn-header cyan"> 📂 Restaurar copia de seguridad </button>
+        
+        <div class="dropdown-wrap" id="dropActualizaciones">
+            <button class="btn-header green">⬇ Actualizaciones ▾</button>
+            <div class="dropdown-menu-custom">
+                <button class="dropdown-item-custom" onclick="runUpdate('imagen')">🖼 Actualizar Imagen</button>
+                <button class="dropdown-item-custom" onclick="runUpdate('ids')">📋 Actualizar IDS DMR</button>
+                <button class="dropdown-item-custom" onclick="runUpdate('ysf')">📡 Actualizar Reflectores YSF</button>
+                <button class="dropdown-item-custom" onclick="window.location.href='dstar_json_converter.php'">📡 Actualizar Reflectores D-STAR</button>
+            </div>
+        </div>
+        
+        <button class="btn-header cyan" onclick="xtTtydOpen()">⌨ Terminal</button>
+        <a href="extra.php" class="btn-header amber">☰ Menu Extra</a>
+        <a href="bridge.php" class="btn-header violet">🔄 BRIDGES</a>
+      
+        <button id="btnReboot" class="btn-header red" onclick="rebootPi()">⏻ Reiniciar Opi</button>
+    </div>
+
+</div>
 </div>
 </header>
 <main class="ctrl-body">
