@@ -211,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST" action="">
         <div class="form-group">
             <label for="nombre">Nombre de la máquina</label>
-            <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($data['nombre']); ?>" required placeholder="Ej: Orangepi Salón">
+            <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($data['nombre']); ?>" required placeholder="Ej: Orangepi casa">
         </div>
 
         <div class="form-group">
