@@ -865,32 +865,25 @@ button.btn-header { font-family: var(--font-mono); }
     }
 }
 
-/* ── Punto indicador lateral (igual para los 4) ── */
+/* ── Punto indicador lateral (spin giratorio) ── */
 .sw-busy-dot { 
     display: none; 
     position: absolute; 
     top: 50%; 
-    right: -20px; 
+    right: -18px; 
     transform: translateY(-50%); 
     width: 8px; 
     height: 8px; 
     border-radius: 50%; 
-    background: var(--amber);
-    box-shadow: 0 0 6px var(--amber);
-    animation: blink-dot 0.5s ease-in-out infinite;
+    border: 2px solid var(--amber); 
+    border-top-color: transparent; 
+    animation: spin .7s linear infinite; 
 }
 .sw.busy .sw-busy-dot { 
     display: block; 
 }
-@keyframes blink-dot { 
-    0%, 100% { 
-        opacity: 1; 
-        transform: translateY(-50%) scale(1);
-    }
-    50% { 
-        opacity: 0.2; 
-        transform: translateY(-50%) scale(0.7);
-    }
+@keyframes spin { 
+    to { transform: translateY(-50%) rotate(360deg); } 
 }
 
 .auto-badge { font-family: var(--font-mono); font-size: .72rem; color: var(--text-dim); display: flex; align-items: center; gap: .4rem; margin-top: .4rem; }
