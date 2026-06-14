@@ -756,7 +756,7 @@ button.btn-header { font-family: var(--font-mono); }
    SWITCH UNIFICADO - DMR / YSF / D-STAR / NXDN
    ══════════════════════════════════════════════════════ */
 
-/* ─ Contenedor base (igual para los 4) ── */
+/* ─ Contenedor base ── */
 .sw { 
     position: relative; 
     width: 56px; 
@@ -771,7 +771,7 @@ button.btn-header { font-family: var(--font-mono); }
     position: absolute; 
 }
 
-/* ── Track / fondo (igual para los 4) ── */
+/* ── Track / fondo ── */
 .sw-track { 
     position: absolute; 
     inset: 0; 
@@ -782,7 +782,7 @@ button.btn-header { font-family: var(--font-mono); }
     box-shadow: 0 0 4px rgba(255,34,68,0.4);
 }
 
-/* ── Knob / botón circular (igual para los 4) ── */
+/* ── Knob / botón circular ── */
 .sw-knob { 
     position: absolute; 
     top: 4px; 
@@ -795,7 +795,7 @@ button.btn-header { font-family: var(--font-mono); }
     transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; 
 }
 
-/* ── Estado ACTIVADO: track verde (igual para los 4) ─ */
+/* ── Estado ACTIVADO: track verde ─ */
 .sw.dmr input:checked ~ .sw-track  { 
     border-radius: 14px; 
     background: #0f2a15; 
@@ -814,14 +814,14 @@ button.btn-header { font-family: var(--font-mono); }
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
 }
-.sw#swNXDN input:checked ~ .sw-track { 
+.sw.nxdn input:checked ~ .sw-track { 
     border-radius: 14px; 
     background: #0f2a15; 
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
 }
 
-/* ── Estado ACTIVADO: knob verde (DMR, YSF, D-STAR, NXDN) ── */
+/* ── Estado ACTIVADO: knob verde ── */
 .sw.dmr input:checked ~ .sw-knob  { 
     transform: translateX(28px); 
     background: #00ff4c; 
@@ -845,7 +845,7 @@ button.btn-header { font-family: var(--font-mono); }
 
 
 /* ══════════════════════════════════════════════════════
-   EFECTO BUSY (igual para los 4)
+   EFECTO BUSY
    ══════════════════════════════════════════════════════ */
 
 /* ── Glow neón en el borde cuando está en proceso ── */
@@ -1269,7 +1269,7 @@ button.btn-header { font-family: var(--font-mono); }
     <div class="service-card-label" style="color:#ffd700;">▸ NXDN · MMDVMHost + NXDNGateway</div>
     <div class="toggle-row">
       <span class="toggle-label" id="nxdnToggleLabel">NXDN</span>
-      <label class="sw" id="swNXDN">
+      <label class="sw nxdn" id="swNXDN">
         <input type="checkbox" id="chkNXDN" onchange="toggleNXDN(this)">
         <span class="sw-track"></span><span class="sw-knob"></span><span class="sw-busy-dot"></span>
       </label>
