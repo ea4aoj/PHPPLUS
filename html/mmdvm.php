@@ -1285,10 +1285,10 @@ button.btn-header { font-family: var(--font-mono); }
 <div id="xtModal" class="xterm-modal" onclick="if(event.target===this)xtClose()">
 <div class="xterm-box">
   <div class="xterm-title">⌨ Emulador de terminal</div>
-  <div class="xterm-out" id="xtOut">pi@raspberry:~$ Terminal lista
+  <div class="xterm-out" id="xtOut">pi@orangepi:~$ Terminal lista
 </div>
   <div class="xterm-row">
-    <span class="xterm-pr" id="xtPr">pi@raspberry:~$</span>
+    <span class="xterm-pr" id="xtPr">pi@orangepi:~$</span>
     <input id="xtInp" class="xterm-inp" autocomplete="off" spellcheck="false" placeholder="escribe un comando…">
   </div>
   <div class="restore-btns">
