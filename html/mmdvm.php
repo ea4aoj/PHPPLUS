@@ -751,17 +751,148 @@ button.btn-header { font-family: var(--font-mono); }
 .toggle-label.on-ysf { color: var(--violet); }
 .toggle-status { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; color: var(--text-dim); min-width: 3rem; text-align: right; transition: color .3s; }
 .toggle-status.on { color: var(--green); }
-.sw { position: relative; width: 56px; height: 28px; flex-shrink: 0; cursor: pointer; }
-.sw input { opacity: 0; width: 0; height: 0; position: absolute; }
-.sw-track { position: absolute; inset: 0; border-radius: 2px; background: #1a2535; border: 2px solid #f00; transition: background .3s, border-color .3s, box-shadow .3s; }
-.sw-knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; background: #f00; box-shadow: 0 1px 4px rgba(0,0,0,.5); transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; }
-.sw.dmr input:checked ~ .sw-track, .sw.ysf input:checked ~ .sw-track, .sw.dstar input:checked ~ .sw-track { border-radius: 2px; background: #1a2535; border: 2px solid #00ff4c }
-.sw.dmr input:checked ~ .sw-knob, .sw.ysf input:checked ~ .sw-knob, .sw.dstar input:checked ~ .sw-knob { transform: translateX(28px); background:#00ff4c; box-shadow: 0 0 8px rgba(0,255,159,.6); }
-.sw#swNXDN input:checked ~ .sw-knob { transform: translateX(28px); background: #00ff4c; box-shadow: 0 0 8px rgba(255,215,0,.6); }
-.sw#swNXDN input:checked ~ .sw-track { border-color: #00ff4c; }
-.sw-busy-dot { display: none; position: absolute; top: 50%; right: -18px; transform: translateY(-50%); width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--amber); border-top-color: transparent; animation: spin .7s linear infinite; }
-.sw.busy .sw-busy-dot { display: block; }
-@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════
+   SWITCH UNIFICADO - DMR / YSF / D-STAR / NXDN
+   ══════════════════════════════════════════════════════ */
+
+/* ─ Contenedor base (igual para los 4) ── */
+.sw { 
+    position: relative; 
+    width: 56px; 
+    height: 28px; 
+    flex-shrink: 0; 
+    cursor: pointer; 
+}
+.sw input { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
+    position: absolute; 
+}
+
+/* ── Track / fondo (igual para los 4) ── */
+.sw-track { 
+    position: absolute; 
+    inset: 0; 
+    border-radius: 14px; 
+    background: #1a2535; 
+    border: 2px solid #ff2244; 
+    transition: background .3s, border-color .3s, box-shadow .3s; 
+    box-shadow: 0 0 4px rgba(255,34,68,0.4);
+}
+
+/* ── Knob / botón circular (igual para los 4) ── */
+.sw-knob { 
+    position: absolute; 
+    top: 4px; 
+    left: 3.5px; 
+    width: 20px; 
+    height: 20px; 
+    background: #ff2244; 
+    border-radius: 50%; 
+    box-shadow: 0 0 4px rgba(255,34,68,0.6);
+    transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; 
+}
+
+/* ── Estado ACTIVADO: track verde (igual para los 4) ─ */
+.sw.dmr input:checked ~ .sw-track  { 
+    border-radius: 14px; 
+    background: #0f2a15; 
+    border: 2px solid #00ff4c;
+    box-shadow: 0 0 6px rgba(0,255,76,0.5);
+}
+.sw.ysf input:checked ~ .sw-track   { 
+    border-radius: 14px; 
+    background: #0f2a15; 
+    border: 2px solid #00ff4c;
+    box-shadow: 0 0 6px rgba(0,255,76,0.5);
+}
+.sw.dstar input:checked ~ .sw-track  { 
+    border-radius: 14px; 
+    background: #0f2a15; 
+    border: 2px solid #00ff4c;
+    box-shadow: 0 0 6px rgba(0,255,76,0.5);
+}
+.sw#swNXDN input:checked ~ .sw-track { 
+    border-radius: 14px; 
+    background: #0f2a15; 
+    border: 2px solid #00ff4c;
+    box-shadow: 0 0 6px rgba(0,255,76,0.5);
+}
+
+/* ── Estado ACTIVADO: knob verde (DMR, YSF, D-STAR, NXDN) ── */
+.sw.dmr input:checked ~ .sw-knob  { 
+    transform: translateX(28px); 
+    background: #00ff4c; 
+    box-shadow: 0 0 8px rgba(0,255,76,0.8); 
+}
+.sw.ysf input:checked ~ .sw-knob  { 
+    transform: translateX(28px); 
+    background: #00ff4c; 
+    box-shadow: 0 0 8px rgba(0,255,76,0.8); 
+}
+.sw.dstar input:checked ~ .sw-knob { 
+    transform: translateX(28px); 
+    background: #00ff4c; 
+    box-shadow: 0 0 8px rgba(0,255,76,0.8); 
+}
+.sw.nxdn input:checked ~ .sw-knob { 
+    transform: translateX(28px); 
+    background: #00ff4c; 
+    box-shadow: 0 0 8px rgba(0,255,76,0.8); 
+}
+
+
+/* ══════════════════════════════════════════════════════
+   EFECTO BUSY (igual para los 4)
+   ══════════════════════════════════════════════════════ */
+
+/* ── Glow neón en el borde cuando está en proceso ── */
+.sw.busy .sw-track { 
+    animation: neon-glow 1.2s ease-in-out infinite; 
+}
+@keyframes neon-glow { 
+    0%, 100% { 
+        box-shadow: 0 0 6px rgba(255,179,0,0.6),
+                    0 0 12px rgba(255,179,0,0.3),
+                    inset 0 0 4px rgba(255,179,0,0.2);
+    }
+    50% { 
+        box-shadow: 0 0 10px rgba(255,179,0,0.9),
+                    0 0 20px rgba(255,179,0,0.5),
+                    inset 0 0 6px rgba(255,179,0,0.4);
+    }
+}
+
+/* ── Punto indicador lateral (igual para los 4) ── */
+.sw-busy-dot { 
+    display: none; 
+    position: absolute; 
+    top: 50%; 
+    right: -20px; 
+    transform: translateY(-50%); 
+    width: 8px; 
+    height: 8px; 
+    border-radius: 50%; 
+    background: var(--amber);
+    box-shadow: 0 0 6px var(--amber);
+    animation: blink-dot 0.5s ease-in-out infinite;
+}
+.sw.busy .sw-busy-dot { 
+    display: block; 
+}
+@keyframes blink-dot { 
+    0%, 100% { 
+        opacity: 1; 
+        transform: translateY(-50%) scale(1);
+    }
+    50% { 
+        opacity: 0.2; 
+        transform: translateY(-50%) scale(0.7);
+    }
+}
+
 .auto-badge { font-family: var(--font-mono); font-size: .72rem; color: var(--text-dim); display: flex; align-items: center; gap: .4rem; margin-top: .4rem; }
 .auto-badge .dot-sm { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
 .auto-badge.ysf .dot-sm { background: var(--violet); }
