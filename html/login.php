@@ -147,7 +147,7 @@ label { font-size:.75rem; color:var(--text-dim); letter-spacing:.1em; text-trans
  <div class="login-logo">
     <img src="Logo_REM-ESP_EA4RCR.png"
          alt="EA4RCR"
-         style="width:150px; height:auto;"
+         style="width:120px; height:auto;"
          onerror="this.style.display='none'">
   </div>
   <div class="login-title">MMDVM Control</div>
