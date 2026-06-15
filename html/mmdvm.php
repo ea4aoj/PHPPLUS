@@ -775,7 +775,7 @@ button.btn-header { font-family: var(--font-mono); }
 .sw-track { 
     position: absolute; 
     inset: 0; 
-    border-radius: 14px; 
+    border-radius: 0px; 
     background: #1a2535; 
     border: 2px solid #ff2244; 
     transition: background .3s, border-color .3s, box-shadow .3s; 
@@ -790,20 +790,20 @@ button.btn-header { font-family: var(--font-mono); }
     width: 20px; 
     height: 20px; 
     background: #ff2244; 
-    border-radius: 50%; 
+    border-radius: 0%; 
     box-shadow: 0 0 4px rgba(255,34,68,0.6);
     transition: transform .3s cubic-bezier(.4,0,.2,1), background .3s, box-shadow .3s; 
 }
 
 /* ── Estado ACTIVADO: track verde ─ */
 .sw.dmr input:checked ~ .sw-track  { 
-    border-radius: 14px; 
+    border-radius: 0px; 
     background: #0f2a15; 
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
 }
 .sw.ysf input:checked ~ .sw-track   { 
-    border-radius: 14px; 
+    border-radius: 0px; 
     background: #0f2a15; 
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
