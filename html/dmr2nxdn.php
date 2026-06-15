@@ -17,7 +17,7 @@ define('STOP_SCRIPT',  '/usr/local/bin/dmr2nxdn-stop.sh');
 define('INI_MMDVM',    '/home/pi/MMDVMHost/MMDVMDMR2NXDN.ini');
 define('INI_DMR2NXDN', '/home/pi/MMDVM_CM/DMR2NXDN/DMR2NXDN.ini');
 define('INI_NXDNGW',   '/home/pi/NXDNClients/NXDNGateway/NXDNGateway.ini');
-define('XDN_HOSTS',    '/home/pi/NXDNClients/NXDNGateway/XDNHosts.json');
+define('NXDN_HOSTS',    '/home/pi/NXDNClients/NXDNGateway/NXDNHosts.json');
 define('PID_MMDVM',  '/tmp/MMDVMDMR2NXDN.pid');
 define('PID_D2N',    '/tmp/DMR2NXDN.pid');
 define('PID_NXDNGW', '/tmp/NXDNGateway.pid');
@@ -107,8 +107,8 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 if ($action === 'nxdn-hosts') {
     $list = [];
-    if (file_exists(XDN_HOSTS)) {
-        $json = json_decode(file_get_contents(XDN_HOSTS), true);
+    if (file_exists(NXDN_HOSTS)) {
+        $json = json_decode(file_get_contents(NXDN_HOSTS), true);
         if (isset($json['reflectors']) && is_array($json['reflectors'])) {
             foreach ($json['reflectors'] as $ref) {
                 $id = intval($ref['designator'] ?? 0);
