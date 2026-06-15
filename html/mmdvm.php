@@ -126,14 +126,14 @@ if ($action === 'terminal') {
 if ($action === 'station-info') {
     $iniPath = '/home/pi/MMDVMHost/MMDVMHost.ini';
     $ini = parseMMDVMIni($iniPath);
-    $callsign = $ini['General']['Callsign'] ?? 'EA3EIZ';
-    $dmrid    = $ini['General']['Id'] ?? '214317526';
+    $callsign = $ini['General']['Callsign'] ?? 'EA4RCR';
+    $dmrid    = $ini['General']['Id'] ?? '2140000';
     $txfreq   = $ini['General']['TXFrequency'] ?? ($ini['General']['Frequency'] ?? '430000000');
-    $lat      = $ini['Info']['Latitude']    ?? '41.3851';
-    $lon      = $ini['Info']['Longitude']   ?? '2.1734';
-    $location = $ini['Info']['Location']    ?? 'Barcelona';
+    $lat      = $ini['Info']['Latitude']    ?? '0.0';
+    $lon      = $ini['Info']['Longitude']   ?? '0.0';
+    $location = $ini['Info']['Location']    ?? 'Madrid';
     $desc     = $ini['Info']['Description'] ?? '';
-    $locator  = (floatval($lat) != 0 || floatval($lon) != 0) ? latLonToLocator($lat, $lon) : 'JN11CK';
+    $locator  = (floatval($lat) != 0 || floatval($lon) != 0) ? latLonToLocator($lat, $lon) : 'IN80XX';
     $port     = $ini['Modem']['UARTPort'] ?? ($ini['modem']['UARTPort'] ?? '');
     $rxhz     = $ini['Info']['RXFrequency'] ?? '0';
     $txhz     = $ini['Info']['TXFrequency'] ?? $txfreq;
@@ -1618,7 +1618,7 @@ const UPDATE_TITLES={imagen:'🖼 Actualizar Imagen',ids:'📋 Actualizar IDs',y
 const UPDATE_ACTIONS={imagen:'?action=update-imagen',ids:'?action=update-ids',ysf:'?action=update-ysf',nxdn:'?action=update-nxdn'};
 async function runUpdate(type){document.getElementById('dropActualizaciones').classList.remove('open');document.getElementById('updateTitle').textContent=UPDATE_TITLES[type];const con=document.getElementById('updateConsole');con.textContent='⏳ Ejecutando, espera…';document.getElementById('updateCloseBtn').disabled=true;document.getElementById('updateModal').classList.add('open');try{const r=await fetch(UPDATE_ACTIONS[type]);const d=await r.json();con.textContent=d.output||'(sin salida)';con.scrollTop=con.scrollHeight;}catch(e){con.textContent='✖ Error de red: '+e.message;}finally{document.getElementById('updateCloseBtn').disabled=false;}}
 async function rebootPi(){
-    if(!confirm('¿Seguro que quieres reiniciar la Orangepi Pi?'))return;
+    if(!confirm('¿ Seguro que quieres reiniciar la Orangepi Pi ?'))return;
     const btn=document.getElementById('btnReboot');
     btn.textContent='⏻ Reiniciando…';
     btn.disabled=true;
