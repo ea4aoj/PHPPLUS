@@ -1141,7 +1141,7 @@ button.btn-header { font-family: var(--font-mono); }
             <button class="btn-header green">⬇ Actualizaciones ▾</button>
             <div class="dropdown-menu-custom">
                 <button class="dropdown-item-custom" onclick="runUpdate('imagen')">🖼 Actualizar Imagen</button>
-                <button class="dropdown-item-custom" onclick="runUpdate('ids')">📋 Actualizar IDS DMR</button>
+                <button class="dropdown-item-custom" onclick="runUpdate('ids')">📋 Actualizar IDS DMR y NXDN</button>
                 <button class="dropdown-item-custom" onclick="runUpdate('nxdn')">📡 Actualizar Reflectores NXDN</button>
                 <button class="dropdown-item-custom" onclick="runUpdate('ysf')">📡 Actualizar Reflectores YSF</button>
                 <button class="dropdown-item-custom" onclick="window.location.href='dstar_json_converter.php'">📡 Actualizar Reflectores D-STAR</button>
