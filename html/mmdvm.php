@@ -1618,7 +1618,7 @@ const UPDATE_TITLES={imagen:'🖼 Actualizar Imagen',ids:'📋 Actualizar IDs',y
 const UPDATE_ACTIONS={imagen:'?action=update-imagen',ids:'?action=update-ids',ysf:'?action=update-ysf',nxdn:'?action=update-nxdn'};
 async function runUpdate(type){document.getElementById('dropActualizaciones').classList.remove('open');document.getElementById('updateTitle').textContent=UPDATE_TITLES[type];const con=document.getElementById('updateConsole');con.textContent='⏳ Ejecutando, espera…';document.getElementById('updateCloseBtn').disabled=true;document.getElementById('updateModal').classList.add('open');try{const r=await fetch(UPDATE_ACTIONS[type]);const d=await r.json();con.textContent=d.output||'(sin salida)';con.scrollTop=con.scrollHeight;}catch(e){con.textContent='✖ Error de red: '+e.message;}finally{document.getElementById('updateCloseBtn').disabled=false;}}
 async function rebootPi(){
-    if(!confirm('¿Seguro que quieres reiniciar la Raspberry Pi?'))return;
+    if(!confirm('¿Seguro que quieres reiniciar la Orangepi Pi?'))return;
     const btn=document.getElementById('btnReboot');
     btn.textContent='⏻ Reiniciando…';
     btn.disabled=true;
@@ -1704,7 +1704,7 @@ function xtTtydClose(){
 
 (function(){
 var xtHist=[],xtHidx=-1,xtCwd='/home/pi';
-function xtPr(){return 'pi@raspberry:'+xtCwd.replace('/home/pi','~')+'$';}
+function xtPr(){return 'pi@orangepi:'+xtCwd.replace('/home/pi','~')+'$';}
 function xtApp(html){var o=document.getElementById('xtOut');o.innerHTML+=html+'\n';o.scrollTop=o.scrollHeight;}
 function xtEsc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 window.xtOpen=function(){document.getElementById('xtModal').classList.add('open');setTimeout(function(){document.getElementById('xtInp').focus();},80);};
