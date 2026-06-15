@@ -233,7 +233,7 @@ if ($action === 'stop') {
 }
 if ($action === 'update-imagen') { $output = shell_exec('sudo sh /home/pi/A108/actualiza_imagen.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
 if ($action === 'update-ids')    { $output = shell_exec('sudo sh /home/pi/A108/actualizar_ids.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
-if ($action === 'update-nxdn')    { $output = shell_exec('sudo sh /home/pi/NXDNClients/NXDNGateway/NXDNHostsUpdate.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
+if ($action === 'update-nxdn')    { $output = shell_exec('sudo sh /home/pi/A108/actualizar_ids_nxdn.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
 if ($action === 'update-ysf')    { $output = shell_exec('sudo sh /home/pi/A108/actualizar_reflectores_ysf.sh 2>&1'); header('Content-Type: application/json'); echo json_encode(['ok'=>true,'output'=>htmlspecialchars($output??'(sin salida)')]); exit; }
 if ($action === 'ysf-status') {
     $st = trim(shell_exec('sudo /usr/local/bin/ysf_status.sh 2>/dev/null'));
