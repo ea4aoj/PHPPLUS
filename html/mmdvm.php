@@ -782,7 +782,7 @@ button.btn-header { font-family: var(--font-mono); }
     box-shadow: 0 0 4px rgba(255,34,68,0.4);
 }
 
-/* ── Knob / botón circular ── */
+/* ── Knob / botón ── */
 .sw-knob { 
     position: absolute; 
     top: 4px; 
@@ -809,13 +809,13 @@ button.btn-header { font-family: var(--font-mono); }
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
 }
 .sw.dstar input:checked ~ .sw-track  { 
-    border-radius: 14px; 
+    border-radius: 0px; 
     background: #0f2a15; 
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
 }
 .sw.nxdn input:checked ~ .sw-track { 
-    border-radius: 14px; 
+    border-radius: 0px; 
     background: #0f2a15; 
     border: 2px solid #00ff4c;
     box-shadow: 0 0 6px rgba(0,255,76,0.5);
