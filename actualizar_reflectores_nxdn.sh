@@ -1,41 +1,43 @@
-#!/bin/bash
+#! /bin/bash
 
-printf "🔄 Iniciando actualización de NXDNHosts...\n"
+###############################################################################
+#
+# Copyright (C) 2025 by Jonathan Naylor G4KLX
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+###############################################################################
+#
+#
+NXDNHOSTS=/home/pi/NXDNClients/NXDNGateway/NXDNHosts.json
 
-# Ajuste de permisos previos (solo en /home/pi)
-printf "🔧 Ajustando permisos en directorios locales...\n"
-sudo chmod 777 -R /home/pi/NXDNClients > /dev/null 2>&1
-printf "✅ Permisos configurados correctamente.\n"
+###############################################################################
+#
+# Do not edit below here
+#
+###############################################################################
 
-# Ir al directorio base
-cd /home/pi || { 
-    printf "❌ Error: No se puede acceder a /home/pi\n"
-    exit 1
-}
+# Check we are root
+# if [ "$(id -u)" != "0" ] 
+# then
+# 	echo "This script must be run as root" 1>&2
+# 	exit 1
+# fi
 
-# Descarga del fichero correcto
-printf "📥 Descargando NXDNHosts.txt desde Pi-Star...\n"
+# Download the NXDNHosts.json file
+curl --fail --silent -S -L -o  ${NXDNHOSTS} -A "NXDNGateway - G4KLX" https://hostfiles.refcheck.radio/NXDNHosts.json
 
-if wget -O NXDNHosts.txt -q https://www.pistar.uk/downloads/NXDN_Hosts.txt; then
-    printf "✅ Descarga completada con éxito.\n"
-else
-    printf "❌ Error al descargar NXDN_Hosts.txt\n"
-    exit 1
-fi
+exit 0
 
-# Instalación en NXDNGateway
-printf "📤 Instalando NXDNHosts.txt en NXDNGateway...\n"
-
-if sudo mv /home/pi/NXDNHosts.txt /home/pi/NXDNClients/NXDNGateway/NXDNHosts.txt; then
-    printf "✅ Archivo instalado en NXDNGateway.\n"
-else
-    printf "❌ Error al mover el archivo a NXDNGateway.\n"
-    exit 1
-fi
-
-# Permisos finales
-sudo chmod 644 /home/pi/NXDNClients/NXDNGateway/NXDNHosts.txt > /dev/null 2>&1
-
-# Fin
-printf "🎉 NXDNHosts actualizados correctamente.\n"
-sleep 3
