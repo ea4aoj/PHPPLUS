@@ -25,7 +25,7 @@ URL="https://hostfiles.refcheck.radio/NXDNHosts.json"
 
 echo "🔄 ═══════════════════════════════════════════════"
 echo "📡  ACTUALIZACIÓN DE REFLECTORES NXDN"
-echo "🔄 ══════════════════════════════════════════════"
+echo "🔄 ═══════════════════════════════════════════════"
 echo ""
 echo "🌐  Fuente: $URL"
 echo "📂  Destino: $NXDNHOSTS"
@@ -44,7 +44,7 @@ echo ""
 HTTP_CODE=$(curl --silent --write-out "%{http_code}" -S -L -o "${NXDNHOSTS}" -A "NXDNGateway - G4KLX" "$URL")
 CURL_EXIT=$?
 
- echo "🔄 ══════════════════════════════════════════════"
+ echo "🔄 ═══════════════════════════════════════════════"
 
 if [ $CURL_EXIT -ne 0 ]; then
     echo "❌  ERROR: La descarga ha fallado (código curl: $CURL_EXIT)"
@@ -53,7 +53,7 @@ if [ $CURL_EXIT -ne 0 ]; then
         cp "${NXDNHOSTS}.bak" "$NXDNHOSTS" 2>/dev/null
         echo "🔄  Restaurada copia de seguridad anterior"
     fi
-    echo "🔄 ══════════════════════════════════════════════"
+    echo "🔄 ═══════════════════════════════════════════════"
     exit 1
 fi
 
@@ -63,7 +63,7 @@ if [ "$HTTP_CODE" -ge 400 ] 2>/dev/null; then
         cp "${NXDNHOSTS}.bak" "$NXDNHOSTS" 2>/dev/null
         echo "🔄  Restaurada copia de seguridad anterior"
     fi
-    echo "🔄 ══════════════════════════════════════════════"
+    echo "🔄 ═══════════════════════════════════════════════"
     exit 1
 fi
 
@@ -74,7 +74,7 @@ if [ ! -f "$NXDNHOSTS" ] || [ ! -s "$NXDNHOSTS" ]; then
         cp "${NXDNHOSTS}.bak" "$NXDNHOSTS" 2>/dev/null
         echo "🔄  Restaurada copia de seguridad anterior"
     fi
-    echo "🔄 ══════════════════════════════════════════════"
+    echo "🔄 ═══════════════════════════════════════════════"
     exit 1
 fi
 
@@ -92,6 +92,6 @@ echo "   📅  Fecha:     $FILE_DATE"
 echo "   📡  Reflectores detectados: $REFLECTOR_COUNT"
 echo ""
 echo "🎉  Proceso finalizado correctamente"
-echo "🔄 ══════════════════════════════════════════════"
+echo "🔄 ═══════════════════════════════════════════════"
 
 exit 0
