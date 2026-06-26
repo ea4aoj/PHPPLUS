@@ -23,7 +23,7 @@
 NXDNHOSTS=/home/pi/NXDNClients/NXDNGateway/NXDNHosts.json
 URL="https://hostfiles.refcheck.radio/NXDNHosts.json"
 
-echo "🔄 ══════════════════════════════════════════════"
+echo "🔄 ═══════════════════════════════════════════════"
 echo "📡  ACTUALIZACIÓN DE REFLECTORES NXDN"
 echo "🔄 ══════════════════════════════════════════════"
 echo ""
