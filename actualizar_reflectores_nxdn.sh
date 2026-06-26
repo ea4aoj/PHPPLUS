@@ -23,9 +23,9 @@
 NXDNHOSTS=/home/pi/NXDNClients/NXDNGateway/NXDNHosts.json
 URL="https://hostfiles.refcheck.radio/NXDNHosts.json"
 
-echo "🔄 ═══════════════════════════════════════════════════════"
+echo "🔄 ══════════════════════════════════════"
 echo "📡  ACTUALIZACIÓN DE REFLECTORES NXDN"
-echo "🔄 ═══════════════════════════════════════════════════════"
+echo "🔄 ══════════════════════════════════════"
 echo ""
 echo "🌐  Fuente: $URL"
 echo "📂  Destino: $NXDNHOSTS"
@@ -44,7 +44,7 @@ echo ""
 HTTP_CODE=$(curl --silent --write-out "%{http_code}" -S -L -o "${NXDNHOSTS}" -A "NXDNGateway - G4KLX" "$URL")
 CURL_EXIT=$?
 
-echo "🔄 ═══════════════════════════════════════════════════════"
+echo "🔄 ═════════════════════════════════════════"
 
 if [ $CURL_EXIT -ne 0 ]; then
     echo "❌  ERROR: La descarga ha fallado (código curl: $CURL_EXIT)"
