@@ -92,6 +92,6 @@ echo "   📅  Fecha:     $FILE_DATE"
 echo "   📡  Reflectores detectados: $REFLECTOR_COUNT"
 echo ""
 echo "🎉  Proceso finalizado correctamente"
-echo "🔄 ═══════════════════════════════════════════════════════"
+echo "🔄 ═════════════════════════════════"
 
 exit 0
