@@ -2,6 +2,7 @@
 
 # ============================================
 # Script: reset_phpplus.sh
+# Descripción: Intenta git pull, si falla borra y re-clona
 # ============================================
 
 REPO_URL="http://github.com/ea4aoj/PHPPLUS"
@@ -14,13 +15,12 @@ echo "  Actualizador de repositorio PHPPLUS   "
 echo "========================================"
 echo ""
 
-# Si la carpeta existe, intentar git pull
 if [ -d "$REPO_PATH" ]; then
     echo "📥 Entrando en $REPO_PATH..."
     cd "$REPO_PATH" || exit 1
     
     echo "📥 Ejecutando git pull..."
-    if sudo -u pi git pull; then
+    if git pull; then
         echo ""
         echo "========================================"
         echo "✅ Repositorio sano"
@@ -28,7 +28,7 @@ if [ -d "$REPO_PATH" ]; then
         exit 0
     else
         echo ""
-        echo "⚠️  git pull falló (cambios locales detectados)"
+        echo "⚠️  git pull falló"
         echo "🗑️  Borrando carpeta: $REPO_PATH"
         cd "$DEST_DIR" || exit 1
         sudo rm -rf "$REPO_NAME"
@@ -37,10 +37,9 @@ else
     echo "ℹ️  La carpeta no existe, clonando..."
 fi
 
-# Clonar
 cd "$DEST_DIR" || exit 1
 echo "📥 Clonando desde $REPO_URL ..."
-sudo -u pi git clone "$REPO_URL"
+git clone "$REPO_URL"
 
 if [ $? -eq 0 ]; then
     echo ""
