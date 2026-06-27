@@ -2,7 +2,7 @@
 
 # ============================================
 # Script: reset_phpplus.sh
-# Descripción: Intenta git pull, si falla borra y re-clona
+# Descripción: Intenta git pull, si falla borra con sudo y re-clona
 # ============================================
 
 # Configuración
@@ -15,12 +15,6 @@ echo "========================================"
 echo "  Actualizador de repositorio PHPPLUS   "
 echo "========================================"
 echo ""
-
-# Verificar que el directorio destino existe
-if [ ! -d "$DEST_DIR" ]; then
-    echo "❌ Error: El directorio $DEST_DIR no existe"
-    exit 1
-fi
 
 # Si la carpeta existe, intentar git pull
 if [ -d "$REPO_PATH" ]; then
@@ -38,8 +32,8 @@ if [ -d "$REPO_PATH" ]; then
         echo ""
         echo "⚠️  git pull falló, procediendo a re-clonar..."
         cd "$DEST_DIR" || exit 1
-        echo "🗑️  Borrando carpeta: $REPO_PATH"
-        rm -rf "$REPO_NAME"
+        echo "🗑️  Borrando carpeta con sudo: $REPO_PATH"
+        sudo rm -rf "$REPO_NAME"
     fi
 else
     echo "ℹ️  La carpeta $REPO_NAME no existe, clonando desde cero..."
@@ -60,7 +54,6 @@ else
     echo ""
     echo "========================================"
     echo "❌ Error al clonar el repositorio"
-    echo "Verifica tu conexión a internet"
     echo "========================================"
     exit 1
 fi
