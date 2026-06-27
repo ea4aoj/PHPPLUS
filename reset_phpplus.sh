@@ -20,7 +20,7 @@ if [ -d "$REPO_PATH" ]; then
     cd "$REPO_PATH" || exit 1
     
     echo "📥 Ejecutando git pull..."
-    if git pull; then
+    if sudo -u pi git pull; then
         echo ""
         echo "========================================"
         echo "✅ Repositorio sano"
@@ -40,7 +40,7 @@ fi
 # Clonar
 cd "$DEST_DIR" || exit 1
 echo "📥 Clonando desde $REPO_URL ..."
-git clone "$REPO_URL"
+sudo -u pi git clone "$REPO_URL"
 
 if [ $? -eq 0 ]; then
     echo ""
