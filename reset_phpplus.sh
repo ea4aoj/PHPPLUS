@@ -1,9 +1,9 @@
 #!/bin/sh
 
-# ============================================
+# ========================================================
 # Script: reset_phpplus.sh
 # Descripción: Intenta git pull, si falla borra y re-clona
-# ============================================
+# ========================================================
 
 REPO_URL="http://github.com/ea4aoj/PHPPLUS"
 REPO_NAME="PHPPLUS"
