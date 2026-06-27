@@ -23,14 +23,14 @@ if [ -d "$REPO_PATH" ]; then
     if git pull; then
         echo ""
         echo "========================================"
-        echo "✅ Repositorio actualizado correctamente"
+        echo "✅ Repositorio sano"
         echo "========================================"
         exit 0
     else
         echo ""
-        echo "⚠️  git pull falló, procediendo a re-clonar..."
-        cd "$DEST_DIR" || exit 1
+        echo "⚠️  git pull falló (cambios locales detectados)"
         echo "🗑️  Borrando carpeta: $REPO_PATH"
+        cd "$DEST_DIR" || exit 1
         sudo rm -rf "$REPO_NAME"
     fi
 else
