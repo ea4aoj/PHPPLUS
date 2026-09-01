@@ -11,7 +11,6 @@ printf "✅ Permisos configurados correctamente.\n"
 cd /home/pi || { printf "❌ Error: No se puede acceder a /home/pi\n"; exit 1; }
 
 printf "📥 Descargando YSFHosts.txt desde mirror oficial...\n"
-# Usamos -O para forzar el nombre del archivo y -q para que sea silencioso
 if wget -O YSFHosts.txt -q https://www.pistar.uk/downloads/YSF_Hosts.txt; then
     printf "✅ Descarga completada con éxito.\n"
 else
@@ -38,9 +37,7 @@ else
     exit 1
 fi
 
-# === NUEVO: generar YSFHosts.json a partir del .txt recién instalado ===
-# No existe una versión .json oficial en pistar.uk/RefCheck.Radio, así que la generamos
-# localmente en el mismo formato (campos que el .txt no trae quedan en null).
+# === Generar YSFHosts.json a partir del .txt recién instalado ===
 printf "🔄 Convirtiendo YSFHosts.txt a YSFHosts.json...\n"
 
 CONVERT_COUNT=$(python3 - <<'PYEOF'
@@ -63,17 +60,9 @@ try:
             designator, raw_name, description, ipv4, port = parts[0], parts[1], parts[2], parts[3], parts[4]
             user_count = parts[5] if len(parts) > 5 else ""
 
-            if raw_name.startswith("XX-"):
-                use_xx_prefix = True
-                country = None
-                name = raw_name[3:]
-            elif "-" in raw_name:
-                country, name = raw_name.split("-", 1)
-                use_xx_prefix = False
-            else:
-                country = None
-                name = raw_name
-                use_xx_prefix = False
+            use_xx_prefix = raw_name.startswith("XX-")
+            name = raw_name          # tal cual viene, sin separar prefijos
+            country = None           # no se deduce: no hay forma fiable de saber dónde acaba el país
 
             slug = re.sub(r"[^a-z0-9]+", "-", f"ysf-{designator}-{name}".lower()).strip("-")
 
