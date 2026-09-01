@@ -21,6 +21,8 @@ fi
 # Distribución a YSFGateway
 printf "📤 Instalando YSFHosts.txt en YSFGateway...\n"
 if sudo mv /home/pi/YSFHosts.txt /home/pi/YSFClients/YSFGateway/YSFHosts.txt; then
+    sudo chown pi:pi /home/pi/YSFClients/YSFGateway/YSFHosts.txt
+    sudo chmod 644 /home/pi/YSFClients/YSFGateway/YSFHosts.txt
     printf "✅ Archivo instalado en YSFGateway.\n"
 else
     printf "❌ Error al mover el archivo a YSFGateway.\n"
@@ -30,6 +32,7 @@ fi
 # Copia adicional a Fusion2X (usando sudo para escribir en /opt)
 printf "📤 Copiando YSFHosts.txt a Fusion2X (/opt)...\n"
 if sudo cp /home/pi/YSFClients/YSFGateway/YSFHosts.txt /opt/fusion2x/data/YSFHosts.txt; then
+    sudo chown pi:pi /opt/fusion2x/data/YSFHosts.txt
     sudo chmod 644 /opt/fusion2x/data/YSFHosts.txt
     printf "✅ Archivo copiado en /opt/fusion2x/data con permisos correctos.\n"
 else
@@ -38,9 +41,6 @@ else
 fi
 
 # === Generar YSFHosts.json a partir del .txt recién instalado ===
-# country/name separados (como el oficial); country nunca va en null porque
-# YSFGateway.cpp hace "std::string country = it[\"country\"]" sin comprobar null
-# y eso rompía el parseo completo del JSON.
 printf "🔄 Convirtiendo YSFHosts.txt a YSFHosts.json...\n"
 
 CONVERT_COUNT=$(python3 - <<'PYEOF'
@@ -135,6 +135,8 @@ fi
 
 printf "📤 Instalando YSFHosts.json en YSFGateway...\n"
 if sudo mv /home/pi/YSFHosts.json /home/pi/YSFClients/YSFGateway/YSFHosts.json; then
+    sudo chown pi:pi /home/pi/YSFClients/YSFGateway/YSFHosts.json
+    sudo chmod 644 /home/pi/YSFClients/YSFGateway/YSFHosts.json
     printf "✅ Archivo instalado en YSFGateway.\n"
 else
     printf "❌ Error al mover el archivo a YSFGateway.\n"
@@ -143,6 +145,7 @@ fi
 
 printf "📤 Copiando YSFHosts.json a Fusion2X (/opt)...\n"
 if sudo cp /home/pi/YSFClients/YSFGateway/YSFHosts.json /opt/fusion2x/data/YSFHosts.json; then
+    sudo chown pi:pi /opt/fusion2x/data/YSFHosts.json
     sudo chmod 644 /opt/fusion2x/data/YSFHosts.json
     printf "✅ Archivo copiado en /opt/fusion2x/data con permisos correctos.\n"
 else
