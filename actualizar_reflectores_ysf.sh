@@ -60,9 +60,17 @@ try:
             designator, raw_name, description, ipv4, port = parts[0], parts[1], parts[2], parts[3], parts[4]
             user_count = parts[5] if len(parts) > 5 else ""
 
-            use_xx_prefix = raw_name.startswith("XX-")
-            name = raw_name          # tal cual viene, sin separar prefijos
-            country = None           # no se deduce: no hay forma fiable de saber dónde acaba el país
+            if raw_name.startswith("XX-"):
+                use_xx_prefix = True
+                country = None
+                name = raw_name[3:]
+            elif "-" in raw_name:
+                country, name = raw_name.split("-", 1)
+                use_xx_prefix = False
+            else:
+                country = None
+                name = raw_name
+                use_xx_prefix = False
 
             slug = re.sub(r"[^a-z0-9]+", "-", f"ysf-{designator}-{name}".lower()).strip("-")
 
@@ -99,7 +107,7 @@ try:
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
             "generated_by": "update_ysfhosts.sh (conversion local desde YSFHosts.txt)",
             "source_txt": "https://www.pistar.uk/downloads/YSF_Hosts.txt",
-            "note": "JSON generado localmente a partir del .txt oficial. No existe una version .json oficial de RefCheck.Radio/pistar.uk; solo contiene los campos presentes en el .txt (designator, name, description, ipv4, port, user_count). El resto de campos se dejan en null porque no estan disponibles en el origen."
+            "note": "JSON generado localmente a partir del .txt oficial. No existe una version .json oficial de RefCheck.Radio/pistar.uk; solo contiene los campos presentes en el .txt (designator, name, description, ipv4, port, user_count, country cuando es deducible). El resto de campos se dejan en null porque no estan disponibles en el origen."
         },
         "reflectors": reflectors
     }
