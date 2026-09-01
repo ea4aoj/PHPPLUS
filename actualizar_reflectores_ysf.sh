@@ -38,7 +38,9 @@ else
 fi
 
 # === Generar YSFHosts.json a partir del .txt recién instalado ===
-# name = segundo campo del .txt tal cual (p.ej. "ES-ERA-IRESC"), sin separar el país
+# country/name separados (como el oficial); country nunca va en null porque
+# YSFGateway.cpp hace "std::string country = it[\"country\"]" sin comprobar null
+# y eso rompía el parseo completo del JSON.
 printf "🔄 Convirtiendo YSFHosts.txt a YSFHosts.json...\n"
 
 CONVERT_COUNT=$(python3 - <<'PYEOF'
@@ -61,26 +63,34 @@ try:
             designator, raw_name, description, ipv4, port = parts[0], parts[1], parts[2], parts[3], parts[4]
             user_count = parts[5] if len(parts) > 5 else ""
 
-            use_xx_prefix = raw_name.startswith("XX-")
-            name = raw_name
-            country = None
+            if raw_name.startswith("XX-"):
+                use_xx_prefix = True
+                country = ""
+                name = raw_name[3:]
+            elif "-" in raw_name:
+                country, name = raw_name.split("-", 1)
+                use_xx_prefix = False
+            else:
+                country = ""
+                name = raw_name
+                use_xx_prefix = False
 
             slug = re.sub(r"[^a-z0-9]+", "-", f"ysf-{designator}-{name}".lower()).strip("-")
 
             try:
                 port_num = int(port)
             except ValueError:
-                port_num = None
+                port_num = 0
 
             reflectors.append({
                 "designator": designator,
                 "name": name,
                 "use_xx_prefix": use_xx_prefix,
-                "description": description,
+                "description": description if description else name,
                 "slug": slug,
                 "url": None,
                 "dns": None,
-                "ipv4": ipv4,
+                "ipv4": ipv4 if ipv4 else None,
                 "ipv6": None,
                 "port": port_num,
                 "sponsor": None,
@@ -100,7 +110,7 @@ try:
             "generated": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
             "generated_by": "update_ysfhosts.sh (conversion local desde YSFHosts.txt)",
             "source_txt": "https://www.pistar.uk/downloads/YSF_Hosts.txt",
-            "note": "JSON generado localmente a partir del .txt oficial. 'name' es el segundo campo del .txt tal cual (incluye el prefijo de pais, p.ej. ES-ERA-IRESC), para que coincida con lo que se usa en la configuracion de YSFGateway. 'country' se deja en null porque no se separa del nombre."
+            "note": "JSON generado localmente. 'country' y 'name' van separados (YSFGateway reconstruye 'country-name' internamente); 'country' nunca es null, para 'XX-' se deja en cadena vacia."
         },
         "reflectors": reflectors
     }
